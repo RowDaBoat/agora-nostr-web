@@ -7,7 +7,7 @@ export default defineConfig({
     'global': 'globalThis'
   },
   optimizeDeps: {
-    exclude: ['@nostr-dev-kit/ndk-cache-sqlite-wasm', '@nostr-dev-kit/ndk-svelte5']
+    exclude: ['@nostr-dev-kit/cache-sqlite-wasm']
   },
   worker: {
     format: 'es'
