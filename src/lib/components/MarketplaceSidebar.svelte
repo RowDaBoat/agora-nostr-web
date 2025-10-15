@@ -1,12 +1,24 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import { NDKKind } from '@nostr-dev-kit/ndk';
+  import { settings } from '$lib/stores/settings.svelte';
+  import { NDKKind, NDKSubscriptionCacheUsage } from '@nostr-dev-kit/ndk';
   import { goto } from '$app/navigation';
+  import { getRelaysToUse } from '$lib/utils/relayUtils';
+
+  // Get relays to use based on selected relay
+  const relaysToUse = $derived(
+    getRelaysToUse(
+      settings.selectedRelay,
+      settings.relays.filter(r => r.enabled && r.read).map(r => r.url)
+    )
+  );
 
   // Subscribe to recent marketplace listings
   const subscription = ndk.$subscribe(() => ({
     filters: [{ kinds: [30402 as NDKKind], limit: 5 }], // NDKKind.Classified
     bufferMs: 100,
+    relayUrls: relaysToUse.length > 0 ? relaysToUse : undefined,
+    cacheUsage: relaysToUse.length > 0 ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.PARALLEL,
   }));
 
   const recentListings = $derived(

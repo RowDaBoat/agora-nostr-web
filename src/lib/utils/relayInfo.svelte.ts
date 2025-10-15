@@ -45,6 +45,12 @@ export function useRelayInfoCached(relayUrl: string | null) {
       return;
     }
 
+    // Only fetch relay info for actual relay URLs (ws:// or wss://)
+    if (!relayUrl.startsWith('ws://') && !relayUrl.startsWith('wss://')) {
+      info = null;
+      return;
+    }
+
     // Check cache first
     const cached = relayInfoCache.get(relayUrl);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {

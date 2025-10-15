@@ -5,6 +5,7 @@
   import TimeAgo from './TimeAgo.svelte';
   import EventActions from './EventActions.svelte';
   import { getArticleUrl } from '$lib/utils/articleUrl';
+  import { fetchUrlMetadata, type UrlMetadata } from '$lib/utils/urlMetadata';
 
   interface Props {
     event: NDKEvent;
@@ -49,8 +50,30 @@
     };
   });
 
+  // Calculate dynamic font size based on content length
+  const fontSize = $derived.by(() => {
+    const totalLength = contextText.length;
+
+    if (variant === 'grid') {
+      // Grid variant uses smaller sizes
+      if (totalLength < 100) return 'text-base';
+      if (totalLength < 200) return 'text-sm';
+      return 'text-xs';
+    }
+
+    // Feed and default variants
+    if (totalLength < 100) return 'text-2xl sm:text-3xl md:text-4xl';
+    if (totalLength < 200) return 'text-xl sm:text-2xl md:text-3xl';
+    if (totalLength < 350) return 'text-lg sm:text-xl md:text-2xl';
+    if (totalLength < 500) return 'text-base sm:text-lg md:text-xl';
+    return 'text-sm sm:text-base md:text-lg';
+  });
+
   // State for referenced article
   let referencedArticle = $state<NDKArticle | undefined>(undefined);
+
+  // State for URL metadata
+  let urlMetadata = $state<UrlMetadata | null>(null);
 
   // Fetch article if referenced
   $effect(() => {
@@ -68,7 +91,9 @@
     }
 
     const [kind, pubkey, dTag] = parts;
-    ndk.fetchEvent({
+
+    // Using raw filter components (not bech32), so disable guardrail
+    ndk.guardrailOff('fetch-events-usage').fetchEvent({
       kinds: [parseInt(kind)],
       authors: [pubkey],
       '#d': [dTag]
@@ -76,6 +101,22 @@
       if (article) {
         referencedArticle = NDKArticle.from(article);
       }
+    });
+  });
+
+  // Fetch URL metadata if it's a web URL
+  $effect(() => {
+    if (!sourceTag || sourceTag[0] !== 'r') {
+      urlMetadata = null;
+      return;
+    }
+
+    const url = sourceTag[1];
+    fetchUrlMetadata(url).then((metadata) => {
+      urlMetadata = metadata;
+    }).catch((err) => {
+      console.error('Failed to fetch URL metadata:', err);
+      urlMetadata = null;
     });
   });
 
@@ -87,7 +128,16 @@
     const value = sourceTag[1];
 
     if (type === 'r') {
-      // Web URL
+      // Web URL - use metadata title if available
+      const title = urlMetadata?.title || urlMetadata?.siteName;
+      if (title) {
+        return {
+          type: 'web' as const,
+          displayText: title,
+          url: value
+        };
+      }
+
       try {
         const url = new URL(value);
         return {
@@ -164,24 +214,21 @@
     <!-- Book page style highlight -->
     <div
       onclick={(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? navigateToSource : undefined}
-      class="relative aspect-square rounded-lg overflow-hidden bg-[#f9f7f4] shadow-lg mb-2 {(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? 'cursor-pointer' : ''}"
+      class="relative rounded-lg overflow-hidden bg-card border border-border shadow-lg mb-2 {(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? 'cursor-pointer' : ''}"
     >
-      <!-- Paper texture overlay -->
-      <div class="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=')]" />
-
       <!-- Content -->
-      <div class="relative h-full flex flex-col items-center justify-center p-8 sm:p-12">
+      <div class="relative flex flex-col items-center justify-center py-12 sm:py-16 px-8 sm:px-12 min-h-[200px] max-h-[600px]">
         <!-- Highlighted text with context -->
         <div class="relative z-10">
-          <p class="text-neutral-900 text-2xl sm:text-3xl md:text-4xl font-serif leading-relaxed text-center">
-            {highlightPosition.before}<mark class="bg-yellow-300/40 text-neutral-900">{highlightPosition.highlight}</mark>{highlightPosition.after}
+          <p class="text-card-foreground {fontSize} font-serif leading-relaxed text-center">
+            {highlightPosition.before}<mark class="bg-primary/20 text-card-foreground font-medium">{highlightPosition.highlight}</mark>{highlightPosition.after}
           </p>
         </div>
       </div>
 
       <!-- Source badge (small, bottom right corner) -->
       {#if sourceInfo}
-        <div class="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded text-xs text-neutral-600">
+        <div class="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded text-xs text-muted-foreground">
           {#if sourceInfo.type === 'web'}
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -207,13 +254,13 @@
   <div class="block p-4 hover:bg-card/30 transition-colors rounded-lg group">
     <div class="relative">
       <!-- Highlight marker line on the left -->
-      <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-yellow-400 to-primary rounded-full" />
+      <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/60 to-primary rounded-full" />
 
       <div class="pl-4">
         <!-- Highlighted text -->
         <div class="mb-3 relative">
           <p class="relative text-foreground text-base leading-relaxed font-serif italic">
-            "{highlightPosition.before}<mark class="bg-yellow-300/40 text-foreground not-italic">{highlightPosition.highlight}</mark>{highlightPosition.after}"
+            "{highlightPosition.before}<mark class="bg-primary/20 text-foreground font-medium not-italic">{highlightPosition.highlight}</mark>{highlightPosition.after}"
           </p>
         </div>
 
@@ -244,28 +291,33 @@
     </div>
   </div>
 {:else if variant === 'grid'}
-  <article class="hover:bg-card/30 transition-colors">
+  <article class="hover:bg-card/30 transition-colors w-full">
     <!-- Book page style highlight -->
     <div
       onclick={(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? navigateToSource : undefined}
-      class="relative aspect-square rounded-lg overflow-hidden bg-[#f9f7f4] shadow-lg {(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? 'cursor-pointer' : ''}"
+      class="relative aspect-square rounded-lg overflow-hidden bg-card border border-border shadow-lg w-full {(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? 'cursor-pointer' : ''}"
     >
-      <!-- Paper texture overlay -->
-      <div class="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=')]" />
-
       <!-- Content -->
-      <div class="relative h-full flex flex-col items-center justify-center p-4 sm:p-6">
+      <div class="relative flex flex-col items-center justify-center p-4 sm:p-6 min-h-[150px]">
         <!-- Highlighted text with context -->
         <div class="relative z-10">
-          <p class="text-neutral-900 text-sm sm:text-base font-serif leading-relaxed text-center line-clamp-6">
-            {highlightPosition.before}<mark class="bg-yellow-300/40 text-neutral-900">{highlightPosition.highlight}</mark>{highlightPosition.after}
+          <p class="text-card-foreground {fontSize} font-serif leading-relaxed text-center line-clamp-6">
+            {highlightPosition.before}<mark class="bg-primary/20 text-card-foreground font-medium">{highlightPosition.highlight}</mark>{highlightPosition.after}
           </p>
         </div>
       </div>
 
+      <!-- Highlighter icon (bottom left corner) -->
+      <div class="absolute bottom-2 left-2">
+        <svg class="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M18.5 1.15a2.25 2.25 0 00-3.18 0L3.78 12.69a2.25 2.25 0 000 3.18l4.35 4.35a2.25 2.25 0 003.18 0L22.85 8.68a2.25 2.25 0 000-3.18l-4.35-4.35zM9.93 18.84L5.16 14.07 15.3 3.93l4.77 4.77-10.14 10.14z"/>
+          <path d="M2.5 22.5h10v1.5h-10z" opacity="0.5"/>
+        </svg>
+      </div>
+
       <!-- Source badge (small, bottom right corner) -->
       {#if sourceInfo}
-        <div class="absolute bottom-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-white/80 backdrop-blur-sm rounded text-xs text-neutral-600">
+        <div class="absolute bottom-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-background/80 backdrop-blur-sm border border-border rounded text-xs text-muted-foreground">
           {#if sourceInfo.type === 'web'}
             <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -316,24 +368,21 @@
     <!-- Book page style highlight -->
     <div
       onclick={(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? navigateToSource : undefined}
-      class="relative aspect-square rounded-lg overflow-hidden bg-[#f9f7f4] shadow-lg mb-2 {(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? 'cursor-pointer' : ''}"
+      class="relative rounded-lg overflow-hidden bg-card border border-border shadow-lg mb-2 {(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? 'cursor-pointer' : ''}"
     >
-      <!-- Paper texture overlay -->
-      <div class="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=')]" />
-
       <!-- Content -->
-      <div class="relative h-full flex flex-col items-center justify-center p-8 sm:p-12">
+      <div class="relative flex flex-col items-center justify-center py-12 sm:py-16 px-8 sm:px-12 min-h-[200px] max-h-[600px]">
         <!-- Highlighted text with context -->
         <div class="relative z-10">
-          <p class="text-neutral-900 text-2xl sm:text-3xl md:text-4xl font-serif leading-relaxed text-center">
-            {highlightPosition.before}<mark class="bg-yellow-300/40 text-neutral-900">{highlightPosition.highlight}</mark>{highlightPosition.after}
+          <p class="text-card-foreground {fontSize} font-serif leading-relaxed text-center">
+            {highlightPosition.before}<mark class="bg-primary/20 text-card-foreground font-medium">{highlightPosition.highlight}</mark>{highlightPosition.after}
           </p>
         </div>
       </div>
 
       <!-- Source badge (small, bottom right corner) -->
       {#if sourceInfo}
-        <div class="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded text-xs text-neutral-600">
+        <div class="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded text-xs text-muted-foreground">
           {#if sourceInfo.type === 'web'}
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />

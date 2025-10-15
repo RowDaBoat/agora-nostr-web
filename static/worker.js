@@ -22591,16 +22591,57 @@ var SCHEMA = {
 };
 
 // src/db/migrations.ts
+var CURRENT_VERSION = 2;
+function getCurrentVersion(db) {
+  try {
+    const result = db.exec("SELECT version FROM schema_version LIMIT 1");
+    if (result && result.length > 0 && result[0].values && result[0].values.length > 0) {
+      return result[0].values[0][0];
+    }
+  } catch {}
+  return 0;
+}
+function setVersion(db, version) {
+  db.run("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)");
+  db.run("DELETE FROM schema_version");
+  db.run("INSERT INTO schema_version (version) VALUES (?)", [version]);
+}
 async function runMigrations(db) {
-  db.exec?.(SCHEMA.events);
-  db.exec?.(SCHEMA.profiles);
-  db.exec?.(SCHEMA.nutzap_monitor_state);
-  db.exec?.(SCHEMA.decrypted_events);
-  db.exec?.(SCHEMA.unpublished_events);
-  db.exec?.(SCHEMA.event_tags);
-  db.exec?.(SCHEMA.cache_data);
-  db.exec?.(SCHEMA.event_relays);
-  db.exec?.(SCHEMA.nip05);
+  const currentVersion = getCurrentVersion(db);
+  console.log(`[NDK Cache] Running migrations from version ${currentVersion} to ${CURRENT_VERSION}`);
+  try {
+    db.exec(SCHEMA.events);
+    db.exec(SCHEMA.profiles);
+    db.exec(SCHEMA.nutzap_monitor_state);
+    db.exec(SCHEMA.decrypted_events);
+    db.exec(SCHEMA.unpublished_events);
+    db.exec(SCHEMA.event_tags);
+    db.exec(SCHEMA.cache_data);
+    db.exec(SCHEMA.event_relays);
+    if (currentVersion < 1) {
+      console.log("[NDK Cache] Creating nip05 table (migration v1)");
+      db.exec(SCHEMA.nip05);
+    }
+    if (currentVersion < 2) {
+      console.log("[NDK Cache] Ensuring nip05 table exists (migration v2)");
+      db.exec(SCHEMA.nip05);
+    }
+    setVersion(db, CURRENT_VERSION);
+    console.log(`[NDK Cache] Migrations completed successfully, version is now ${CURRENT_VERSION}`);
+    try {
+      const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='nip05'");
+      if (!tables || tables.length === 0 || !tables[0].values || tables[0].values.length === 0) {
+        console.error("[NDK Cache] ERROR: nip05 table was not created!");
+      } else {
+        console.log("[NDK Cache] Verified: nip05 table exists");
+      }
+    } catch (verifyError) {
+      console.error("[NDK Cache] Failed to verify nip05 table:", verifyError);
+    }
+  } catch (error) {
+    console.error("[NDK Cache] Migration failed:", error);
+    throw error;
+  }
 }
 
 // src/functions/getCacheStats.ts
@@ -33559,7 +33600,7 @@ function fetchingEvents(filters, opts, warn, shouldWarnRatio, incrementCount) {
 fetchEvent() handles naddr decoding automatically and returns the event directly.`);
   } else if (isSingleIdLookup(filters)) {
     const filter = filterArray[0];
-    const eventId = filter.ids[0];
+    const eventId = filter.ids?.[0];
     warn("fetch-events-usage", `For fetching a single event, use fetchEvent() instead.
 
 \uD83D\uDCE6 Your filter:
@@ -40727,7 +40768,7 @@ function setEventDupSync(db, event, relay) {
 }
 
 // src/worker.ts
-var PROTOCOL_VERSION = "0.8.0";
+var PROTOCOL_VERSION = "0.8.1";
 var PROTOCOL_NAME = "ndk-cache-sqlite";
 var db = null;
 var SQL = null;
@@ -40817,14 +40858,20 @@ self.onmessage = async (event) => {
         break;
       }
       case "getProfiles": {
-        const { field, contains } = payload;
+        const { field, fields, contains } = payload;
+        const searchFields = fields || (field ? [field] : []);
+        if (searchFields.length === 0) {
+          throw new Error("Either 'field' or 'fields' must be provided");
+        }
+        const conditions = searchFields.map((f) => `json_extract(profile, '$.${f}') LIKE ?`).join(" OR ");
         const sql = `
                     SELECT pubkey, profile
                     FROM profiles
-                    WHERE json_extract(profile, '$.${field}') LIKE ?
+                    WHERE ${conditions}
                 `;
         const param = `%${contains}%`;
-        const stmt = db.prepare(sql, [param]);
+        const params = searchFields.map(() => param);
+        const stmt = db.prepare(sql, params);
         result = [];
         while (stmt.step()) {
           const row = stmt.getAsObject();

@@ -87,7 +87,7 @@
   });
 </script>
 
-<div class="h-screen flex flex-col">
+<div class="h-screen fixed top-0 left-0 right-0 bottom-0 z-[10000] md:h-full md:relative md:z-auto flex flex-col">
   <!-- Header -->
   <div class="sticky top-0 z-10 bg-black border-b border-neutral-800/50 px-4 py-3">
     <div class="flex items-center gap-3">

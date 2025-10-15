@@ -12,15 +12,16 @@
   import { createMediaPostModal } from '$lib/stores/createMediaPostModal.svelte';
   import { homePageFilter } from '$lib/stores/homePageFilter.svelte';
   import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';
-  import { AGORA_RELAYS, isAgoraRelay } from '$lib/utils/relayUtils';
+  import { AGORA_RELAYS, isAgoraRelay, getRelaysToUse } from '$lib/utils/relayUtils';
   import { messagesStore } from '$lib/stores/messages.svelte';
-  import { NDKKind, NDKArticle } from '@nostr-dev-kit/ndk';
+  import { NDKKind, NDKArticle, NDKSubscriptionCacheUsage } from '@nostr-dev-kit/ndk';
   import { getArticleUrl } from '$lib/utils/articleUrl';
   import RelaySelector from './RelaySelector.svelte';
   import LoginButton from './LoginButton.svelte';
   import UserMenu from './UserMenu.svelte';
   import MarketplaceSidebar from './MarketplaceSidebar.svelte';
   import NewMembersWidget from './NewMembersWidget.svelte';
+  import JournalistsSidebar from './JournalistsSidebar.svelte';
   import MobileBottomNav from './MobileBottomNav.svelte';
   import MobileComposeFAB from './MobileComposeFAB.svelte';
   import type { Snippet } from 'svelte';
@@ -49,13 +50,22 @@
 
   const shouldCollapseSidebar = $derived(layoutMode.mode === 'article');
 
-  // Subscribe to recent articles for the sidebar (only from Agora relays)
+  // Get relays to use for sidebar subscriptions
+  const sidebarRelaysToUse = $derived(
+    getRelaysToUse(
+      settings.selectedRelay,
+      settings.relays.filter(r => r.enabled && r.read).map(r => r.url)
+    )
+  );
+
+  // Subscribe to recent articles for the sidebar
   const recentArticlesSubscription = $derived.by(() => {
     if (!hideRightSidebar && !sidebarStore.rightSidebar) {
       return ndk.$subscribe(() => ({
         filters: [{ kinds: [NDKKind.Article], limit: 5 }],
         bufferMs: 500,
-        relayUrls: [...AGORA_RELAYS],
+        relayUrls: sidebarRelaysToUse.length > 0 ? sidebarRelaysToUse : undefined,
+        cacheUsage: sidebarRelaysToUse.length > 0 ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.PARALLEL,
         closeOnEose: true,
       }));
     }
@@ -353,9 +363,9 @@
     </aside>
 
     <!-- Main Content Container -->
-    <div class="flex-1 flex {sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} transition-all duration-300 ease-in-out">
+    <div class="flex-1 flex {sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} transition-all duration-300 ease-in-out min-h-screen">
       <!-- Center column - Main content -->
-      <div class={`w-full lg:flex-1 ${hideRightSidebar ? 'lg:max-w-[900px]' : 'lg:max-w-[600px]'} min-w-0 flex flex-col min-h-screen border-x border-border`}>
+      <div class={`w-full lg:flex-1 ${hideRightSidebar ? 'lg:max-w-[900px]' : 'lg:max-w-[600px]'} min-w-0 flex flex-col h-full border-x border-border`}>
         <!-- Page content -->
         <main class="flex-1 pb-20 md:pb-0 bg-background">
           {@render children()}
@@ -400,39 +410,7 @@
               </div>
 
               <!-- Journalists Widget -->
-              <div class="p-4 bg-card rounded-lg border border-border">
-                <div class="flex items-center gap-2 mb-4">
-                  <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                  <h2 class="text-lg font-semibold text-card-foreground">Journalists</h2>
-                </div>
-                <div class="space-y-3">
-                  <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-foreground font-bold">A</div>
-                    <div class="flex-1">
-                      <p class="text-sm font-medium text-card-foreground">Anonymous</p>
-                      <p class="text-xs text-muted-foreground">Journalist</p>
-                    </div>
-                    <button class="px-3 py-1 text-xs font-medium text-primary hover:bg-primary/10 rounded-full transition-colors">
-                      Follow
-                    </button>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-foreground font-bold">A</div>
-                    <div class="flex-1">
-                      <p class="text-sm font-medium text-card-foreground">Anonymous</p>
-                      <p class="text-xs text-muted-foreground">Journalist</p>
-                    </div>
-                    <button class="px-3 py-1 text-xs font-medium text-primary hover:bg-primary/10 rounded-full transition-colors">
-                      Follow
-                    </button>
-                  </div>
-                </div>
-                <a href="/journalists" class="block mt-4 text-sm text-primary hover:underline">
-                  View all journalists →
-                </a>
-              </div>
+              <JournalistsSidebar />
 
               <!-- Marketplace Widget -->
               <MarketplaceSidebar />

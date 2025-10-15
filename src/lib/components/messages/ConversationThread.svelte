@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { NDKMessage } from '@nostr-dev-kit/messages';
+  import { NDKEvent } from '@nostr-dev-kit/ndk';
+  import { EventContent } from '@nostr-dev-kit/svelte';
   import TimeAgo from '../TimeAgo.svelte';
   import { onMount } from 'svelte';
   import { ndk } from '$lib/ndk.svelte';
@@ -112,7 +114,13 @@
               ? 'bg-orange-500 text-white rounded-tr-sm'
               : 'bg-neutral-900 text-white rounded-tl-sm'}"
           >
-            <p class="whitespace-pre-wrap break-words">{message.content}</p>
+            <div class="whitespace-pre-wrap break-words line-clamp-[20] hover:line-clamp-none transition-all">
+              {#if message.rumor}
+                <EventContent {ndk} event={new NDKEvent(ndk, message.rumor)} />
+              {:else}
+                {message.content}
+              {/if}
+            </div>
           </div>
 
           <!-- Timestamp -->

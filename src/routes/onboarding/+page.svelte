@@ -11,8 +11,7 @@
   import Step5Introduction from '$lib/pages/onboarding/Step7Introduction.svelte';
   import Step6Welcome from '$lib/pages/onboarding/Step8Welcome.svelte';
 
-  let hasInitialized = $state(false);
-  let signer = $state<NDKPrivateKeySigner>(NDKPrivateKeySigner.generate());
+  let signer = $state<NDKPrivateKeySigner | null>(null);
 
   // Derived values from store
   const currentStep = $derived(onboardingStore.currentStep);
@@ -26,19 +25,18 @@
 
   // Generate key and login (runs once)
   $effect(() => {
-    console.log('[Onboarding] Login effect triggered:', { hasInitialized, hasSigner: !!signer });
-    if (hasInitialized || !signer) return;
-    hasInitialized = true;
+      if (signer) return;
 
-    (async () => {
-      try {
-        console.log('[Onboarding] Attempting login with signer...');
-        await ndk.$sessions?.login(signer);
-        console.log('[Onboarding] ✓ Logged in with new keypair, pubkey:', signer.pubkey);
-      } catch (err) {
-        console.error('[Onboarding] ✗ Error logging in with new keypair:', err);
-      }
-    })();
+      (async () => {
+        try {
+          signer = NDKPrivateKeySigner.generate();
+          console.log('[Onboarding] Attempting login with signer...');
+          await ndk.$sessions?.login(signer);
+          console.log('[Onboarding] ✓ Logged in with new keypair, pubkey:', signer.pubkey);
+        } catch (err) {
+          console.error('[Onboarding] ✗ Error logging in with new keypair:', err);
+        }
+      })();
   });
 
   // Publish invite confirmation and copy contacts when user is ready

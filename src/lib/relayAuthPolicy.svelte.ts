@@ -3,6 +3,7 @@ import { NDKEvent, NDKKind } from '@nostr-dev-kit/ndk';
 import type NDK from '@nostr-dev-kit/ndk';
 import createDebug from 'debug';
 import { relayAuthModal } from './stores/relayAuthModal.svelte';
+import { isAgoraRelay } from './utils/relayUtils';
 
 const debug = createDebug('agora:relay:auth');
 
@@ -88,9 +89,8 @@ export function createAuthPolicyWithConfirmation({ ndk }: { ndk?: NDK } = {}): N
   return async (relay: NDKRelay, challenge: string): Promise<boolean | NDKEvent> => {
     debug(`Relay ${relay.url} requested authentication`);
 
-    // Auto-authenticate to agorawlc.com relays without prompting
-    const isAgorawlcRelay = relay.url.includes('agorawlc.com');
-    if (isAgorawlcRelay) {
+    // Auto-authenticate to Agora relays without prompting
+    if (isAgoraRelay(relay.url)) {
       return true;
       debug(`Auto-authenticating to agorawlc.com relay: ${relay.url}`);
 

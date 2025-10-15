@@ -7,15 +7,16 @@ export const AGORAS_SELECTION = 'agoras';
 
 /** Agora relay URLs */
 export const AGORA_RELAYS = [
-  'wss://ve.agorawlc.com',
-  'wss://ni.agorawlc.com',
-  'wss://zw.agorawlc.com',
+	"wss://ve.agorawlc.com/",
+	"wss://ni.agorawlc.com/",
+	"wss://zw.agorawlc.com/",
+	"wss://4cfbf6275e9a.ngrok.app/",
 ] as const;
 
 /** Default relays for NIP-60 wallet events */
 export const WALLET_DEFAULT_RELAYS = [
-  'wss://relay.primal.net',
-  'wss://relay.nostr.band',
+  'wss://relay.primal.net/',
+  'wss://relay.nostr.band/',
 ] as const;
 
 /**
@@ -29,9 +30,9 @@ export type SupportedLanguage = 'en' | 'es' | 'fa' | 'km' | 'sn';
  * set the language to the mapped value
  */
 export const AGORA_LANGUAGE_MAP: Record<string, SupportedLanguage> = {
-  'wss://ve.agorawlc.com': 'es', // Venezuela - Spanish
-  'wss://ni.agorawlc.com': 'es', // Nicaragua - Spanish
-  'wss://zw.agorawlc.com': 'en', // Zimbabwe - English
+  'wss://ve.agorawlc.com/': 'es', // Venezuela - Spanish
+  'wss://ni.agorawlc.com/': 'es', // Nicaragua - Spanish
+  'wss://zw.agorawlc.com/': 'en', // Zimbabwe - English
 };
 
 /**
@@ -41,7 +42,7 @@ export const AGORA_LANGUAGE_MAP: Record<string, SupportedLanguage> = {
  */
 export function isAgoraRelay(url: string | null | undefined): boolean {
   if (!url) return false;
-  return url.includes('agorawlc.com');
+  return url.includes('agorawlc.com') || url.includes('ngrok.app');
 }
 
 /**
@@ -56,8 +57,8 @@ export function isAgorasSelection(selectedRelay: string | null | undefined): boo
 /**
  * Gets the relay URLs to use based on the selectedRelay value
  * @param selectedRelay - The selectedRelay value from settings (null, "agoras", or a specific relay URL)
- * @param enabledRelays - Array of enabled relay URLs
- * @returns Array of relay URLs to use
+ * @param enabledRelays - Array of enabled relay URLs (unused when selectedRelay is null)
+ * @returns Array of relay URLs to use (empty array for "Following" mode)
  */
 export function getRelaysToUse(
   selectedRelay: string | null | undefined,
@@ -69,7 +70,7 @@ export function getRelaysToUse(
   if (selectedRelay) {
     return [selectedRelay];
   }
-  return enabledRelays;
+  return [];
 }
 
 /**

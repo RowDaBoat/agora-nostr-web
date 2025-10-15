@@ -1,17 +1,22 @@
 <script lang="ts">
   import { marked } from 'marked';
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
+  import { Avatar } from '@nostr-dev-kit/svelte';
+  import { ndk } from '$lib/ndk.svelte';
+  import { SvelteMap } from 'svelte/reactivity';
 
   interface Props {
     content: string;
     emojiTags?: string[][];
     highlights?: NDKEvent[];
     onTextSelected?: (text: string, range: Range) => void;
+    onHighlightClick?: (highlight: NDKEvent) => void;
   }
 
-  let { content, emojiTags, highlights = [], onTextSelected }: Props = $props();
+  let { content, emojiTags, highlights = [], onTextSelected, onHighlightClick }: Props = $props();
 
   let contentElement = $state<HTMLDivElement>();
+  let avatarData = $state<Array<{ pubkey: string; top: number; right: string }>>([]);
 
   const hasMarkdown = $derived.by(() => {
     const markdownPatterns = [
@@ -56,10 +61,28 @@
     }
   });
 
+  // Recalculate avatar positions on resize
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => {
+      if (avatarData.length > 0) {
+        // Re-run the avatar positioning logic
+        addHighlightAvatars();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  });
+
   function applyHighlights() {
     if (!contentElement) return;
 
-    // Reset any existing highlights
+    // Reset any existing highlights and avatars
     const existingMarks = contentElement.querySelectorAll('mark.nostr-highlight');
     existingMarks.forEach(mark => {
       const parent = mark.parentNode;
@@ -69,20 +92,27 @@
       }
     });
 
+    // Remove existing avatar containers
+    const existingAvatars = contentElement.querySelectorAll('.highlight-avatar-container');
+    existingAvatars.forEach(avatar => avatar.remove());
+
     // Apply each highlight
     highlights.forEach(highlight => {
       const highlightText = highlight.content.trim();
-      if (!highlightText) return;
+      if (!highlightText || !contentElement) return;
 
       try {
-        highlightTextInElement(contentElement, highlightText, highlight.pubkey);
+        highlightTextInElement(contentElement, highlightText, highlight);
       } catch (err) {
         console.warn('Failed to apply highlight:', err);
       }
     });
+
+    // Add avatars after all highlights are applied
+    addHighlightAvatars();
   }
 
-  function highlightTextInElement(element: HTMLElement, searchText: string, pubkey: string) {
+  function highlightTextInElement(element: HTMLElement, searchText: string, highlightEvent: NDKEvent) {
     const walker = document.createTreeWalker(
       element,
       NodeFilter.SHOW_TEXT,
@@ -113,8 +143,18 @@
 
       const mark = document.createElement('mark');
       mark.className = 'nostr-highlight';
-      mark.dataset.pubkey = pubkey;
+      mark.dataset.pubkey = highlightEvent.pubkey;
+      mark.dataset.highlightId = highlightEvent.id;
       mark.textContent = highlighted;
+
+      // Add click handler if callback is provided
+      if (onHighlightClick) {
+        mark.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onHighlightClick(highlightEvent);
+        });
+      }
 
       const parent = node.parentNode;
       if (parent) {
@@ -125,30 +165,107 @@
       }
     });
   }
+
+  function addHighlightAvatars() {
+    if (!contentElement) return;
+
+    const marks = contentElement.querySelectorAll('mark.nostr-highlight');
+    const containerRect = contentElement.getBoundingClientRect();
+
+    // Group marks by their containing block element
+    const blockMap = new SvelteMap<HTMLElement, Set<string>>();
+
+    marks.forEach(mark => {
+      // Find the containing block element (p, h1, h2, etc.)
+      let block = mark.parentElement;
+      while (block && block !== contentElement) {
+        const tagName = block.tagName.toLowerCase();
+        if (['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'blockquote', 'div'].includes(tagName)) {
+          break;
+        }
+        block = block.parentElement;
+      }
+
+      if (block && block !== contentElement) {
+        const pubkey = (mark as HTMLElement).dataset.pubkey;
+        if (pubkey) {
+          if (!blockMap.has(block)) {
+            blockMap.set(block, new Set());
+          }
+          blockMap.get(block)?.add(pubkey);
+        }
+      }
+    });
+
+    // Prepare avatar data for rendering with calculated positions
+    const newAvatarData: Array<{ pubkey: string; top: number; right: string }> = [];
+
+    blockMap.forEach((pubkeys, block) => {
+      const blockRect = block.getBoundingClientRect();
+      const topPosition = blockRect.top - containerRect.top;
+
+      // Add avatar data for each pubkey
+      Array.from(pubkeys).forEach((pubkey, position) => {
+        newAvatarData.push({
+          pubkey,
+          top: topPosition + (position * 40), // Stack avatars vertically if multiple
+          right: '-3rem'
+        });
+      });
+    });
+
+    avatarData = newAvatarData;
+  }
 </script>
 
-{#if hasMarkdown}
-  <div
-    bind:this={contentElement}
-    onmouseup={handleMouseUp}
-    role="article"
-    class="article-content prose prose-lg dark:prose-invert max-w-none select-text"
-  >
-    {@html htmlContent}
-  </div>
-{:else}
-  <div
-    bind:this={contentElement}
-    onmouseup={handleMouseUp}
-    role="article"
-    class="article-content text-lg leading-[1.8] font-serif whitespace-pre-wrap select-text"
-  >
-    {content}
-  </div>
-{/if}
+<div class="article-wrapper">
+  {#if hasMarkdown}
+    <div
+      bind:this={contentElement}
+      onmouseup={handleMouseUp}
+      role="article"
+      class="article-content prose prose-lg dark:prose-invert max-w-none select-text"
+    >
+      {@html htmlContent}
+    </div>
+  {:else}
+    <div
+      bind:this={contentElement}
+      onmouseup={handleMouseUp}
+      role="article"
+      class="article-content text-lg leading-[1.8] font-serif whitespace-pre-wrap select-text"
+    >
+      {content}
+    </div>
+  {/if}
+
+  <!-- Floating avatars for highlights -->
+  {#each avatarData as { pubkey, top, right }, index (pubkey + index)}
+    <div
+      class="highlight-avatar"
+      style="position: absolute; top: {top}px; right: {right};"
+    >
+      <Avatar {ndk} {pubkey} class="w-8 h-8 rounded-full ring-2 ring-background shadow-lg" />
+    </div>
+  {/each}
+</div>
 
 <style>
   @reference "../../app.css";
+
+  .article-wrapper {
+    position: relative;
+  }
+
+  .highlight-avatar {
+    pointer-events: auto;
+    z-index: 10;
+  }
+
+  .highlight-avatar:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s;
+  }
 
   :global(.article-content) {
     color: hsl(var(--foreground));
@@ -234,15 +351,18 @@
 
   /* Nostr highlight styles */
   :global(mark.nostr-highlight) {
-    @apply bg-yellow-200/60 dark:bg-yellow-500/30;
-    @apply border-b-2 border-yellow-400 dark:border-yellow-500;
+    background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+    border-bottom: 2px solid color-mix(in srgb, var(--color-primary) 60%, transparent);
+    color: hsl(var(--foreground));
     @apply transition-all duration-200;
     @apply cursor-pointer;
     padding: 0.125rem 0;
+    pointer-events: auto;
+    user-select: none;
   }
 
   :global(mark.nostr-highlight:hover) {
-    @apply bg-yellow-300/80 dark:bg-yellow-500/50;
-    @apply border-yellow-500 dark:border-yellow-400;
+    background-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+    border-bottom-color: var(--color-primary);
   }
 </style>

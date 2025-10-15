@@ -8,9 +8,6 @@
     article: NDKArticle;
   }
 
-  const CARD_WIDTH = 240;
-  const CARD_HEIGHT = 360;
-
   let { article }: Props = $props();
 
   const author = ndk.$fetchUser(() => article.pubkey);
@@ -30,8 +27,7 @@
 
 <a
   href={articleUrl}
-  class="group block flex-shrink-0 rounded-2xl overflow-hidden bg-card hover:bg-muted transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/10"
-  style="width: {CARD_WIDTH}px; height: {CARD_HEIGHT}px;"
+  class="group block flex-shrink-0 w-[280px] h-[360px] rounded-2xl overflow-hidden bg-card hover:bg-muted transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/10"
 >
   <!-- Cover Image -->
   <div class="relative w-full h-48 overflow-hidden bg-gradient-to-br bg-primary/20">

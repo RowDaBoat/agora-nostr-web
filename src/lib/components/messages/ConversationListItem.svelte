@@ -61,8 +61,8 @@
 
       <!-- Unread badge -->
       {#if conversation.getUnreadCount() > 0}
-        <div class="ml-2 flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-orange-500 flex items-center justify-center">
-          <span class="text-xs font-bold text-white">
+        <div class="ml-2 flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-primary flex items-center justify-center">
+          <span class="text-xs font-bold text-primary-foreground">
             {conversation.getUnreadCount() > 99 ? '99+' : conversation.getUnreadCount()}
           </span>
         </div>

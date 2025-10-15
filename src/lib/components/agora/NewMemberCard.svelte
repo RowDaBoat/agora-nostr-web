@@ -28,42 +28,38 @@
 	<Avatar {ndk} pubkey={memberPubkey} class="w-12 h-12 rounded-full" />
 
 	<div class="flex-1 min-w-0">
-		<div class="flex items-start justify-between gap-2">
-			<div class="flex-1 min-w-0">
-				<a href="/p/{memberUser.npub}" class="block group">
-					<h4 class="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-						{memberProfile?.displayName || memberProfile?.name || 'Anon'}
-					</h4>
-					{#if memberProfile?.nip05}
-						<p class="text-sm text-muted-foreground truncate">
-							{memberProfile.nip05}
-						</p>
-					{/if}
-				</a>
+		<a href="/p/{memberUser.npub}" class="block group">
+			<h4 class="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+				{memberProfile?.displayName || memberProfile?.name || 'Anon'}
+			</h4>
+			{#if memberProfile?.nip05}
+				<p class="text-sm text-muted-foreground truncate">
+					{memberProfile.nip05}
+				</p>
+			{/if}
+		</a>
 
-				<div class="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-					<span>Joined {formatTimeAgo(joinedAt)}</span>
-					{#if inviterPubkey && inviterProfile}
-						<span>•</span>
-						<span>
-							Invited by
-							<a href="/p/{ndk.getUser({ pubkey: inviterPubkey }).npub}" class="text-primary hover:underline">
-								{inviterProfile.displayName || inviterProfile.name || 'someone'}
-							</a>
-						</span>
-					{/if}
-				</div>
+		<div class="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1 text-xs text-muted-foreground">
+			<span>Joined {formatTimeAgo(joinedAt)}</span>
+			{#if inviterPubkey && inviterProfile}
+				<span>•</span>
+				<span>
+					Invited by
+					<a href="/p/{ndk.getUser({ pubkey: inviterPubkey }).npub}" class="text-primary hover:underline">
+						{inviterProfile.displayName || inviterProfile.name || 'someone'}
+					</a>
+				</span>
+			{/if}
+		</div>
 
-				{#if memberProfile?.about}
-					<p class="mt-2 text-sm text-foreground/80 line-clamp-2">
-						{memberProfile.about}
-					</p>
-				{/if}
-			</div>
+		{#if memberProfile?.about}
+			<p class="mt-2 text-sm text-foreground/80 line-clamp-2">
+				{memberProfile.about}
+			</p>
+		{/if}
 
-			<div class="flex-shrink-0">
-				<FollowButton pubkey={memberPubkey} />
-			</div>
+		<div class="mt-2">
+			<FollowButton pubkey={memberPubkey} />
 		</div>
 	</div>
 </div>

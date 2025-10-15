@@ -13,7 +13,7 @@
   }
 </script>
 
-<div class="h-screen flex flex-col">
+<div class="h-full flex flex-col">
   <!-- Header -->
   <div class="sticky top-0 z-10 bg-background border-b border-border/50 px-4 py-3">
     <div class="flex items-center justify-between">

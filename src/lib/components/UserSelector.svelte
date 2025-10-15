@@ -28,7 +28,7 @@
     open = $bindable(false)
   }: Props = $props();
   let searchQuery = $state('');
-  let buttonElement: any = $state(null);
+  let buttonElement: HTMLButtonElement | null = null;
   let dropdownPosition = $state({ top: 0, left: 0, width: 0 });
 
   const currentUser = ndk.$currentUser;
@@ -47,18 +47,38 @@
     return new Set(contactList.tags.filter(tag => tag[0] === 'p').map(tag => tag[1]));
   });
 
+  let cachedFilteredProfiles = $state<Map<string, { name?: string; displayName?: string; nip05?: string }>>(new Map());
+
   const filteredFollows = $derived.by(() => {
     if (!searchQuery) return Array.from(userFollows).slice(0, 50);
+
+    // Filter cached profiles that are also in follows
+    const filtered = Array.from(cachedFilteredProfiles.entries())
+      .filter(([pubkey]) => userFollows.has(pubkey))
+      .map(([pubkey]) => pubkey);
+
+    return filtered.slice(0, 50);
+  });
+
+  // Update cached profiles when search query changes
+  $effect(() => {
+    if (!searchQuery.trim() || !ndk.cacheAdapter?.getProfiles) {
+      cachedFilteredProfiles = new Map();
+      return;
+    }
+
     const search = searchQuery.toLowerCase();
-    return Array.from(userFollows).filter(pubkey => {
-      const profile = ndk.$fetchProfile(() => pubkey) as { name?: string; displayName?: string; nip05?: string } | undefined;
-      return (
-        pubkey.toLowerCase().includes(search) ||
-        profile?.name?.toLowerCase().includes(search) ||
-        profile?.displayName?.toLowerCase().includes(search) ||
-        profile?.nip05?.toLowerCase().includes(search)
-      );
-    }).slice(0, 50);
+
+    // Use cache adapter to efficiently search across name, displayName, and nip05
+    ndk.cacheAdapter.getProfiles({
+      fields: ['name', 'displayName', 'nip05'],
+      contains: search
+    }).then((profiles) => {
+      cachedFilteredProfiles = profiles ?? new Map();
+    }).catch(err => {
+      console.error('Failed to search profiles:', err);
+      cachedFilteredProfiles = new Map();
+    });
   });
 
   function handleClick() {
@@ -158,7 +178,7 @@
 
 <div class="relative">
   <Button
-    bind:this={buttonElement}
+    bind:ref={buttonElement}
     type="button"
     variant="ghost"
     size={iconOnly ? 'icon' : 'default'}

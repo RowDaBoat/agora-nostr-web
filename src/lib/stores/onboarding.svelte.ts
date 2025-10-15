@@ -1,5 +1,5 @@
 import { ndk } from '$lib/ndk.svelte';
-import { NDKEvent, NDKRelaySet, isValidPubkey, type NDKPrivateKeySigner, NDKKind } from '@nostr-dev-kit/ndk';
+import { NDKEvent, NDKRelaySet, isValidPubkey, type NDKPrivateKeySigner, NDKKind, NDKCashuMintList } from '@nostr-dev-kit/ndk';
 import { NDKCashuWallet } from '@nostr-dev-kit/wallet';
 import { settings } from './settings.svelte';
 import { getAgoraLanguage, WALLET_DEFAULT_RELAYS } from '$lib/utils/relayUtils';
@@ -384,51 +384,61 @@ class OnboardingStore {
     }
 
     try {
-      console.log('[Store] Fetching inviter wallet for:', invite.inviter);
+      console.log('[Store] Fetching inviter mint list (kind 10019) for:', invite.inviter);
 
-      // Fetch the inviter's wallet event (kind 17375)
-      const inviterWalletEvent = await ndk.fetchEvent({
-        kinds: [NDKKind.CashuWallet],
+      // Fetch the inviter's public mint list (kind 10019)
+      const inviterMintListEvent = await ndk.fetchEvent({
+        kinds: [NDKKind.CashuMintList],
         authors: [invite.inviter]
       });
 
-      if (!inviterWalletEvent) {
-        console.log('[Store] ⊘ No wallet found for inviter, creating default wallet');
-        // Create wallet with default mint
+      if (!inviterMintListEvent) {
+        console.log('[Store] ⊘ No mint list found for inviter, creating default wallet');
         await this.createDefaultWallet();
         return;
       }
 
-      console.log('[Store] ✓ Found inviter wallet event');
-
-      // Parse the inviter's wallet to extract configuration
-      const inviterWallet = await NDKCashuWallet.from(inviterWalletEvent);
-
-      if (!inviterWallet) {
-        console.log('[Store] ✗ Could not parse inviter wallet, creating default wallet');
-        await this.createDefaultWallet();
-        return;
-      }
-
-      // Extract mints and relays from inviter's wallet
-      const mints = inviterWallet.mints;
-      const relays = inviterWallet.relaySet?.relayUrls
-        ? Array.from(inviterWallet.relaySet.relayUrls)
-        : [...WALLET_DEFAULT_RELAYS];
-
-      console.log('[Store] Copying wallet config from inviter:', {
-        mints,
-        relays
+      console.log('[Store] ✓ Found inviter mint list event');
+      console.log('[Store] Raw mint list event:', {
+        id: inviterMintListEvent.id,
+        kind: inviterMintListEvent.kind,
+        content: inviterMintListEvent.content,
+        tags: inviterMintListEvent.tags
       });
 
-      // Create new wallet with inviter's configuration
-      const newWallet = await NDKCashuWallet.create(
-        ndk,
-        mints,
-        relays
-      );
+      // Parse the inviter's public mint list
+      const inviterMintList = NDKCashuMintList.from(inviterMintListEvent);
+      console.log('[Store] Parsed mint list:', {
+        mints: inviterMintList?.mints,
+        relays: inviterMintList?.relays,
+        hasData: !!inviterMintList
+      });
 
-      console.log('[Store] ✓ Created and published wallet with inviter\'s configuration');
+      if (!inviterMintList || !inviterMintList.mints || inviterMintList.mints.length === 0) {
+        console.log('[Store] ✗ No mints found in mint list, creating default wallet');
+        await this.createDefaultWallet();
+        return;
+      }
+
+      // Extract mints from the mint list
+      const mints = inviterMintList.mints;
+      const relays = [...WALLET_DEFAULT_RELAYS];
+
+      console.log('[Store] 💰 CREATING WALLET WITH MINTS:', {
+        mintsCount: mints.length,
+        mints: mints,
+        relaysCount: relays.length,
+        relays: relays
+      });
+
+      // Create new wallet with inviter's public mints
+      const wallet = await NDKCashuWallet.create(ndk, mints, relays);
+
+      console.log('[Store] ✓ Created and published wallet with inviter\'s mints');
+      console.log('[Store] 💰 WALLET CREATED:', {
+        walletMints: wallet?.mints,
+        walletRelays: wallet?.relays
+      });
 
     } catch (err) {
       console.error('[Store] ✗ Error creating wallet from inviter:', err);
@@ -442,8 +452,21 @@ class OnboardingStore {
     try {
       const defaultMints = ['https://mint.minibits.cash/Bitcoin'];
       const defaultRelays = [...WALLET_DEFAULT_RELAYS];
+
+      console.log('[Store] 💰 CREATING DEFAULT WALLET WITH:', {
+        mintsCount: defaultMints.length,
+        mints: defaultMints,
+        relaysCount: defaultRelays.length,
+        relays: defaultRelays
+      });
+
       const wallet = await NDKCashuWallet.create(ndk, defaultMints, defaultRelays);
-      console.log('[Store] ✓ Created wallet with default mints:', defaultMints, 'and relays:', defaultRelays);
+
+      console.log('[Store] ✓ Created wallet with default mints');
+      console.log('[Store] 💰 DEFAULT WALLET CREATED:', {
+        walletMints: wallet?.mints,
+        walletRelays: wallet?.relays
+      });
     } catch (err) {
       console.error('[Store] ✗ Error creating default wallet:', err);
     }

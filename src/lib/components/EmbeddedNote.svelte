@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { NDKEvent, NDKSvelte } from '@nostr-dev-kit/ndk';
-  import { NDKKind } from '@nostr-dev-kit/ndk';
+  import { NDKKind, NDKArticle } from '@nostr-dev-kit/ndk';
   import NoteCard from './NoteCard.svelte';
+  import ArticlePreviewCard from './ArticlePreviewCard.svelte';
 
   interface Props {
     ndk: NDKSvelte;
@@ -43,10 +44,12 @@
     }
   }
 
-  // Only render text notes (kind 1, 1111) with NoteCard
-  // For other kinds, show a simple loading/error state for now
   const isTextNote = $derived(
     fetchedEvent && (fetchedEvent.kind === NDKKind.Text || fetchedEvent.kind === NDKKind.GenericReply)
+  );
+
+  const isArticle = $derived(
+    fetchedEvent && fetchedEvent.kind === NDKKind.Article
   );
 </script>
 
@@ -65,6 +68,11 @@
     <!-- Use NoteCard for text notes - it already has the compact mobile layout -->
     <div class="my-2 border border-border rounded-lg overflow-hidden bg-card">
       <NoteCard event={fetchedEvent} showActions={false} onNavigate={handleNavigate} />
+    </div>
+  {:else if isArticle}
+    <!-- Use ArticlePreviewCard for articles (kind 30023) -->
+    <div class="my-2">
+      <ArticlePreviewCard article={NDKArticle.from(fetchedEvent)} variant="compact" />
     </div>
   {:else}
     <!-- For other event kinds, show a simple preview -->

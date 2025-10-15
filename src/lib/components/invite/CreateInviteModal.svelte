@@ -175,6 +175,28 @@ Looking forward to connecting with you on the open social web!`;
 		}
 	}
 
+	async function shareInvite() {
+		if (!navigator.share) {
+			console.log('Web Share API not supported, falling back to copy');
+			await copyToClipboard();
+			return;
+		}
+
+		try {
+			await navigator.share({
+				title: 'Join Agora',
+				text: isPersonalized && recipientName
+					? `${recipientName}, you're invited to join Agora!`
+					: 'You\'re invited to join Agora, a new kind of social network!',
+				url: inviteLink
+			});
+		} catch (error) {
+			if ((error as Error).name !== 'AbortError') {
+				console.error('Failed to share:', error);
+			}
+		}
+	}
+
 	function handleClose() {
 		// Reset form
 		welcomeMessage = DEFAULT_WELCOME_MESSAGE;
@@ -425,7 +447,7 @@ Looking forward to connecting with you on the open social web!`;
 						</p>
 					</div>
 
-					<div class="bg-muted rounded-xl p-4">
+					<div class="bg-muted rounded-xl p-4 space-y-3">
 						<div class="flex items-center space-x-2">
 							<Input
 								type="text"
@@ -450,6 +472,16 @@ Looking forward to connecting with you on the open social web!`;
 								{/if}
 							</Button>
 						</div>
+						<Button
+							onclick={shareInvite}
+							variant="outline"
+							class="w-full"
+						>
+							<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+							</svg>
+							Share
+						</Button>
 					</div>
 
 					<Dialog.Footer class="flex gap-3 sm:space-x-0">

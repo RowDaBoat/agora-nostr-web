@@ -8,6 +8,7 @@
   import ArticleContent from '$lib/components/ArticleContent.svelte';
   import CommentSection from '$lib/components/CommentSection.svelte';
   import TextHighlightToolbar from '$lib/components/TextHighlightToolbar.svelte';
+  import HighlightCard from '$lib/components/HighlightCard.svelte';
   import type { NDKArticle } from '@nostr-dev-kit/ndk';
   import { NDKKind, NDKList, NDKEvent } from '@nostr-dev-kit/ndk';
   import { nip19 } from 'nostr-tools';
@@ -26,6 +27,7 @@
   let selectedText = $state('');
   let selectedRange = $state<Range | null>(null);
   let toolbarPosition = $state({ x: 0, y: 0 });
+  let selectedHighlight = $state<NDKEvent | null>(null);
 
   const naddr = $derived($page.params.naddr);
   const currentUser = ndk.$currentUser;
@@ -102,7 +104,7 @@
     const rect = range.getBoundingClientRect();
     toolbarPosition = {
       x: rect.left + rect.width / 2,
-      y: rect.top + window.scrollY,
+      y: rect.top, // position: fixed uses viewport coords, no need to add scrollY
     };
 
     showHighlightToolbar = true;
@@ -127,6 +129,14 @@
 
     // Clear the text selection
     window.getSelection()?.removeAllRanges();
+  }
+
+  function handleHighlightClick(highlight: NDKEvent) {
+    selectedHighlight = highlight;
+  }
+
+  function closeDrawer() {
+    selectedHighlight = null;
   }
 
   async function handleBookmark() {
@@ -391,6 +401,7 @@
           emojiTags={article.tags}
           {highlights}
           onTextSelected={handleTextSelected}
+          onHighlightClick={handleHighlightClick}
         />
       </article>
 
@@ -409,6 +420,38 @@
       </div>
     </main>
   </div>
+
+  <!-- Highlight Drawer -->
+  {#if selectedHighlight}
+    <!-- Backdrop -->
+    <div
+      class="drawer-backdrop"
+      onclick={closeDrawer}
+      role="button"
+      tabindex="0"
+      aria-label="Close drawer"
+    ></div>
+
+    <!-- Drawer -->
+    <div class="drawer">
+      <div class="drawer-header">
+        <h2 class="drawer-title">Highlight</h2>
+        <button
+          type="button"
+          onclick={closeDrawer}
+          class="drawer-close-btn"
+          aria-label="Close"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="drawer-content">
+        <HighlightCard event={selectedHighlight} variant="default" />
+      </div>
+    </div>
+  {/if}
 {/if}
 
 <style>
@@ -666,6 +709,88 @@
     padding: 0 1.5rem;
   }
 
+  /* Drawer styles */
+  .drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 90%;
+    max-width: 500px;
+    background: var(--color-background);
+    z-index: 50;
+    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+  }
+
+  .drawer-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-foreground);
+    margin: 0;
+  }
+
+  .drawer-close-btn {
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+    color: var(--color-muted-foreground);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+  }
+
+  .drawer-close-btn:hover {
+    background: var(--color-muted);
+    color: var(--color-foreground);
+  }
+
+  .drawer-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
   @media (max-width: 640px) {
     .article-header h1 {
       font-size: 1rem;
@@ -686,6 +811,11 @@
 
     .article-content {
       padding: 1.5rem 1rem;
+    }
+
+    .drawer {
+      width: 100%;
+      max-width: none;
     }
   }
 </style>

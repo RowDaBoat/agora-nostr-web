@@ -5,6 +5,7 @@
   import { Button } from '$lib/components/ui/button';
   import { toast } from '$lib/stores/toast.svelte';
   import UserSelector from '$lib/components/UserSelector.svelte';
+  import MentionPicker from '$lib/components/MentionPicker.svelte';
   import type { Snippet } from 'svelte';
 
   interface Props {
@@ -37,6 +38,12 @@
   let isDragging = $state(false);
   let uploadedImages = $state<Array<{ url: string; preview: string }>>([]);
   let isUploading = $state(false);
+
+  // Mention picker state
+  let showMentionPicker = $state(false);
+  let mentionSearchQuery = $state('');
+  let mentionStartIndex = $state(0);
+  let mentionPickerPosition = $state({ top: 0, left: 0 });
 
   async function handleFileSelect(file: File) {
     if (!file.type.startsWith('image/')) {
@@ -163,6 +170,111 @@
   function triggerFileInput() {
     fileInput?.click();
   }
+
+  function getCaretCoordinates() {
+    if (!textareaElement) return { top: 0, left: 0 };
+
+    const textarea = textareaElement;
+    const cursorPosition = textarea.selectionStart;
+
+    // Create a mirror div to calculate position
+    const div = document.createElement('div');
+    const styles = window.getComputedStyle(textarea);
+    const properties = [
+      'boxSizing', 'width', 'height', 'overflowX', 'overflowY',
+      'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+      'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+      'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch', 'fontSize',
+      'lineHeight', 'fontFamily', 'textAlign', 'textTransform', 'textIndent',
+      'textDecoration', 'letterSpacing', 'wordSpacing'
+    ];
+
+    properties.forEach(prop => {
+      div.style[prop as any] = styles[prop as any];
+    });
+
+    div.style.position = 'absolute';
+    div.style.visibility = 'hidden';
+    div.style.whiteSpace = 'pre-wrap';
+    div.style.wordWrap = 'break-word';
+
+    document.body.appendChild(div);
+
+    const textBeforeCursor = textarea.value.substring(0, cursorPosition);
+    div.textContent = textBeforeCursor;
+
+    const span = document.createElement('span');
+    span.textContent = textarea.value.substring(cursorPosition) || '.';
+    div.appendChild(span);
+
+    const rect = textarea.getBoundingClientRect();
+    const coordinates = {
+      top: rect.top + span.offsetTop + parseInt(styles.borderTopWidth) - textarea.scrollTop + 20,
+      left: rect.left + span.offsetLeft + parseInt(styles.borderLeftWidth)
+    };
+
+    document.body.removeChild(div);
+    return coordinates;
+  }
+
+  function handleInput(event: Event) {
+    const textarea = event.target as HTMLTextAreaElement;
+    const cursorPosition = textarea.selectionStart;
+    const textBeforeCursor = textarea.value.substring(0, cursorPosition);
+
+    // Find the last @ before cursor
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtIndex !== -1) {
+      // Check if there's a space between @ and cursor
+      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+
+      // Only show picker if:
+      // 1. @ is at start or preceded by whitespace/newline
+      // 2. No spaces after @ (still typing the mention)
+      const charBeforeAt = lastAtIndex > 0 ? textBeforeCursor[lastAtIndex - 1] : ' ';
+      const hasSpaceAfterAt = textAfterAt.includes(' ') || textAfterAt.includes('\n');
+
+      if ((charBeforeAt === ' ' || charBeforeAt === '\n' || lastAtIndex === 0) && !hasSpaceAfterAt) {
+        mentionStartIndex = lastAtIndex;
+        mentionSearchQuery = textAfterAt;
+        mentionPickerPosition = getCaretCoordinates();
+        showMentionPicker = true;
+        return;
+      }
+    }
+
+    // Close picker if no valid @ found
+    showMentionPicker = false;
+  }
+
+  function insertMention(nprofile: string) {
+    const textarea = textareaElement;
+    if (!textarea) return;
+
+    const cursorPosition = textarea.selectionStart;
+
+    // Replace from @ to cursor with the nprofile
+    const beforeMention = value.substring(0, mentionStartIndex);
+    const afterMention = value.substring(cursorPosition);
+
+    value = beforeMention + nprofile + ' ' + afterMention;
+
+    // Set cursor position after the mention
+    const newCursorPos = mentionStartIndex + nprofile.length + 1;
+    setTimeout(() => {
+      textarea.selectionStart = textarea.selectionEnd = newCursorPos;
+      textarea.focus();
+    }, 0);
+
+    showMentionPicker = false;
+    mentionSearchQuery = '';
+  }
+
+  function closeMentionPicker() {
+    showMentionPicker = false;
+    mentionSearchQuery = '';
+  }
 </script>
 
 <div class="relative flex-1 flex flex-col {className}">
@@ -187,6 +299,7 @@
       {placeholder}
       {autofocus}
       {disabled}
+      oninput={handleInput}
       onpaste={handlePaste}
       class="w-full min-h-[120px] max-md:flex-1 max-md:min-h-0 bg-transparent text-foreground placeholder-neutral-500 resize-none focus:outline-none focus:ring-0 text-lg"
     ></textarea>
@@ -248,3 +361,12 @@
     />
   </div>
 </div>
+
+{#if showMentionPicker}
+  <MentionPicker
+    position={mentionPickerPosition}
+    searchQuery={mentionSearchQuery}
+    onSelect={insertMention}
+    onClose={closeMentionPicker}
+  />
+{/if}

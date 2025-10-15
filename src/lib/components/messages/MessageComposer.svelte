@@ -88,8 +88,4 @@
       {/if}
     </button>
   </div>
-
-  <p class="text-xs text-neutral-500 mt-2">
-    Press Enter to send, Shift+Enter for new line
-  </p>
 </div>
