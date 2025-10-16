@@ -8,6 +8,12 @@
   let user = $derived(ndk.$currentUser);
   let profile = ndk.$fetchProfile(() => user?.pubkey);
 
+  // Fetch the profile event reactively to get hashtags
+  let profileEvent = ndk.$fetchEvent(() => user ? {
+    kinds: [0],
+    authors: [user.pubkey]
+  } : undefined);
+
   let isSubmitting = $state(false);
   let isSaved = $state(false);
   let error = $state<string | null>(null);
@@ -41,29 +47,15 @@
     hashtags: '' // Comma-separated hashtags
   });
 
-  // Load existing hashtags from user's profile event
-  async function loadHashtags() {
-    if (!user) return '';
-
-    try {
-      const profileEvent = await ndk.fetchEvent({
-        kinds: [0],
-        authors: [user.pubkey]
-      });
-
-      if (profileEvent) {
-        const tTags = profileEvent.tags.filter(tag => tag[0] === 't');
-        return tTags.map(tag => tag[1]).join(', ');
-      }
-    } catch (err) {
-      console.error('Failed to load hashtags:', err);
-    }
-    return '';
-  }
-
   // Update form when profile loads
   $effect(() => {
     if (profile) {
+      // Extract hashtags from profile event
+      const hashtags = profileEvent?.tags
+        ?.filter(tag => tag[0] === 't')
+        ?.map(tag => tag[1])
+        ?.join(', ') || '';
+
       formData = {
         name: profile.name || '',
         displayName: profile.displayName || '',
@@ -73,13 +65,8 @@
         nip05: profile.nip05 || '',
         lud16: profile.lud16 || '',
         website: profile.website || '',
-        hashtags: ''
+        hashtags
       };
-
-      // Load hashtags asynchronously
-      loadHashtags().then(tags => {
-        formData.hashtags = tags;
-      });
     }
   });
 
