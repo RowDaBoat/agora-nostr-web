@@ -275,6 +275,13 @@
     showMentionPicker = false;
     mentionSearchQuery = '';
   }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    // Stop Enter key from bubbling up to prevent triggering actions on NoteCards
+    if (event.key === 'Enter') {
+      event.stopPropagation();
+    }
+  }
 </script>
 
 <div class="relative flex-1 flex flex-col {className}">
@@ -301,6 +308,7 @@
       {disabled}
       oninput={handleInput}
       onpaste={handlePaste}
+      onkeydown={handleKeyDown}
       class="w-full min-h-[120px] max-md:flex-1 max-md:min-h-0 bg-transparent text-foreground placeholder-neutral-500 resize-none focus:outline-none focus:ring-0 text-lg"
     ></textarea>
 
