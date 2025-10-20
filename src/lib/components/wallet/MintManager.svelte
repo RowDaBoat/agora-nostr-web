@@ -30,14 +30,13 @@
     }
 
     try {
-      const walletInstance = wallet.wallet;
-      if (!walletInstance) {
-        error = 'Wallet not initialized';
-        return;
-      }
+      const currentMints = mints;
+      const updatedMints = [...currentMints, newMintUrl.trim()];
 
-      walletInstance.mints = [...walletInstance.mints, newMintUrl.trim()];
-      await walletInstance.publish();
+      await wallet.updateWallet({
+        mints: updatedMints,
+        relays: wallet.relays
+      });
 
       newMintUrl = '';
       error = null;
@@ -50,14 +49,13 @@
   async function removeMint(mint: string) {
     if (confirm(`Remove mint: ${mint}?`)) {
       try {
-        const walletInstance = wallet.wallet;
-        if (!walletInstance) {
-          error = 'Wallet not initialized';
-          return;
-        }
+        const currentMints = mints;
+        const updatedMints = currentMints.filter(m => m !== mint);
 
-        walletInstance.mints = walletInstance.mints.filter((m: string) => m !== mint);
-        await walletInstance.publish();
+        await wallet.updateWallet({
+          mints: updatedMints,
+          relays: wallet.relays
+        });
       } catch (e) {
         error = e instanceof Error ? e.message : String(e);
       }

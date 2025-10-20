@@ -7,12 +7,12 @@
 
   const filters: Array<{ value: NotificationFilter; label: string }> = [
     { value: 'all', label: 'All' },
-    { value: 'replies', label: 'Replies' },
-    { value: 'mentions', label: 'Mentions' },
-    { value: 'quotes', label: 'Quotes' },
-    { value: 'reactions', label: 'Reactions' },
-    { value: 'reposts', label: 'Reposts' },
-    { value: 'zaps', label: 'Zaps' },
+    { value: 'reply', label: 'Replies' },
+    { value: 'mention', label: 'Mentions' },
+    { value: 'quote', label: 'Quotes' },
+    { value: 'reaction', label: 'Reactions' },
+    { value: 'repost', label: 'Reposts' },
+    { value: 'zap', label: 'Zaps' },
   ];
 
   function handleFilterChange(filter: NotificationFilter) {
@@ -47,14 +47,7 @@
   </div>
 
   <div class="min-h-screen">
-    {#if notificationsManager.isLoading}
-      <div class="p-8 text-center text-muted-foreground">
-        <svg class="w-8 h-8 animate-spin mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-        Loading notifications...
-      </div>
-    {:else if notificationsManager.notifications.length === 0}
+    {#if notificationsManager.notifications.length === 0}
       <div class="p-8 text-center text-muted-foreground">
         <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />

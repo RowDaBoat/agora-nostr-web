@@ -63,7 +63,7 @@
         oninput={handleInput}
         placeholder="Type a message..."
         rows="1"
-        class="w-full px-4 py-3 bg-neutral-900 border border-neutral-800 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none min-h-[48px] max-h-[200px]"
+        class="w-full px-4 py-3 bg-neutral-900 border border-neutral-800 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none min-h-[48px] max-h-[200px]"
         disabled={sending}
       />
       <div class="absolute right-3 bottom-3 text-xs text-neutral-600">
@@ -74,7 +74,7 @@
     <button
       onclick={handleSend}
       disabled={!message.trim() || sending}
-      class="px-6 py-3 bg-orange-500 hover:bg-orange-500/90 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 h-[48px]"
+      class="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 h-[48px]"
     >
       {#if sending}
         <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">

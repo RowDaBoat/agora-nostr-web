@@ -22608,7 +22608,6 @@ function setVersion(db, version) {
 }
 async function runMigrations(db) {
   const currentVersion = getCurrentVersion(db);
-  console.log(`[NDK Cache] Running migrations from version ${currentVersion} to ${CURRENT_VERSION}`);
   try {
     db.exec(SCHEMA.events);
     db.exec(SCHEMA.profiles);
@@ -22619,21 +22618,16 @@ async function runMigrations(db) {
     db.exec(SCHEMA.cache_data);
     db.exec(SCHEMA.event_relays);
     if (currentVersion < 1) {
-      console.log("[NDK Cache] Creating nip05 table (migration v1)");
       db.exec(SCHEMA.nip05);
     }
     if (currentVersion < 2) {
-      console.log("[NDK Cache] Ensuring nip05 table exists (migration v2)");
       db.exec(SCHEMA.nip05);
     }
     setVersion(db, CURRENT_VERSION);
-    console.log(`[NDK Cache] Migrations completed successfully, version is now ${CURRENT_VERSION}`);
     try {
       const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='nip05'");
       if (!tables || tables.length === 0 || !tables[0].values || tables[0].values.length === 0) {
         console.error("[NDK Cache] ERROR: nip05 table was not created!");
-      } else {
-        console.log("[NDK Cache] Verified: nip05 table exists");
       }
     } catch (verifyError) {
       console.error("[NDK Cache] Failed to verify nip05 table:", verifyError);
@@ -33397,753 +33391,31 @@ function calculateRelaySetsFromFilters(ndk, filters, pool, relayGoalPerAuthor) {
   const a = calculateRelaySetsFromFilter(ndk, filters, pool, relayGoalPerAuthor);
   return a;
 }
-function checkMissingKind(event, error) {
-  if (event.kind === undefined || event.kind === null) {
-    error("event-missing-kind", `Cannot sign event without 'kind'.
-
-\uD83D\uDCE6 Event data:
-   • content: ${event.content ? `"${event.content.substring(0, 50)}${event.content.length > 50 ? "..." : ""}"` : "(empty)"}
-   • tags: ${event.tags.length} tag${event.tags.length !== 1 ? "s" : ""}
-   • kind: ${event.kind} ❌
-
-Set event.kind before signing.`, "Example: event.kind = 1; // for text note", false);
-  }
-}
-function checkContentIsObject(event, error) {
-  if (typeof event.content === "object") {
-    const contentPreview = JSON.stringify(event.content, null, 2).substring(0, 200);
-    error("event-content-is-object", `Event content is an object. Content must be a string.
-
-\uD83D\uDCE6 Your content (${typeof event.content}):
-${contentPreview}${JSON.stringify(event.content).length > 200 ? "..." : ""}
-
-❌ event.content = { ... }  // WRONG
-✅ event.content = JSON.stringify({ ... })  // CORRECT`, "Use JSON.stringify() for structured data: event.content = JSON.stringify(data)", false);
-  }
-}
-function checkCreatedAtMilliseconds(event, error) {
-  if (event.created_at && event.created_at > 10000000000) {
-    const correctValue = Math.floor(event.created_at / 1000);
-    const dateString = new Date(event.created_at).toISOString();
-    error("event-created-at-milliseconds", `Event created_at is in milliseconds, not seconds.
-
-\uD83D\uDCE6 Your value:
-   • created_at: ${event.created_at} ❌
-   • Interpreted as: ${dateString}
-   • Should be: ${correctValue} ✅
-
-Nostr timestamps MUST be in seconds since Unix epoch.`, "Use Math.floor(Date.now() / 1000) instead of Date.now()", false);
-  }
-}
-function checkInvalidPTags(event, error) {
-  const pTags = event.getMatchingTags("p");
-  pTags.forEach((tag, idx) => {
-    if (tag[1] && !/^[0-9a-f]{64}$/i.test(tag[1])) {
-      const tagPreview = JSON.stringify(tag);
-      error("tag-invalid-p-tag", `p-tag[${idx}] has invalid pubkey.
-
-\uD83D\uDCE6 Your tag:
-   ${tagPreview}
-
-❌ Invalid value: "${tag[1]}"
-   • Length: ${tag[1].length} (expected 64)
-   • Format: ${tag[1].startsWith("npub") ? "bech32 (npub)" : "unknown"}
-
-p-tags MUST contain 64-character hex pubkeys.`, tag[1].startsWith("npub") ? `Use ndkUser.pubkey instead of npub:
-   ✅ event.tags.push(['p', ndkUser.pubkey])
-   ❌ event.tags.push(['p', 'npub1...'])` : "p-tags must contain valid hex pubkeys (64 characters, 0-9a-f)", false);
-    }
-  });
-}
-function checkInvalidETags(event, error) {
-  const eTags = event.getMatchingTags("e");
-  eTags.forEach((tag, idx) => {
-    if (tag[1] && !/^[0-9a-f]{64}$/i.test(tag[1])) {
-      const tagPreview = JSON.stringify(tag);
-      const isBech32 = tag[1].startsWith("note") || tag[1].startsWith("nevent");
-      error("tag-invalid-e-tag", `e-tag[${idx}] has invalid event ID.
-
-\uD83D\uDCE6 Your tag:
-   ${tagPreview}
-
-❌ Invalid value: "${tag[1]}"
-   • Length: ${tag[1].length} (expected 64)
-   • Format: ${isBech32 ? "bech32 (note/nevent)" : "unknown"}
-
-e-tags MUST contain 64-character hex event IDs.`, isBech32 ? `Use event.id instead of bech32:
-   ✅ event.tags.push(['e', referencedEvent.id])
-   ❌ event.tags.push(['e', 'note1...'])` : "e-tags must contain valid hex event IDs (64 characters, 0-9a-f)", false);
-    }
-  });
-}
-function checkManualReplyMarkers(event, warn, replyEvents) {
-  if (event.kind !== 1)
-    return;
-  if (replyEvents.has(event))
-    return;
-  const eTagsWithMarkers = event.tags.filter((tag) => tag[0] === "e" && (tag[3] === "reply" || tag[3] === "root"));
-  if (eTagsWithMarkers.length > 0) {
-    const tagList = eTagsWithMarkers.map((tag, idx) => `   ${idx + 1}. ${JSON.stringify(tag)}`).join(`
-`);
-    warn("event-manual-reply-markers", `Event has ${eTagsWithMarkers.length} e-tag(s) with manual reply/root markers.
-
-\uD83D\uDCE6 Your tags with markers:
-${tagList}
-
-⚠️  Manual reply markers detected! This will cause incorrect threading.`, `Reply events MUST be created using .reply():
-
-   ✅ CORRECT:
-   const replyEvent = originalEvent.reply();
-   replyEvent.content = 'good point!';
-   await replyEvent.publish();
-
-   ❌ WRONG:
-   event.tags.push(['e', eventId, '', 'reply']);
-
-NDK handles all reply threading automatically - never add reply/root markers manually.`);
-  }
-}
-function checkHashtagsWithPrefix(event, error) {
-  const tTags = event.getMatchingTags("t");
-  tTags.forEach((tag, idx) => {
-    if (tag[1] && tag[1].startsWith("#")) {
-      const tagPreview = JSON.stringify(tag);
-      error("tag-hashtag-with-prefix", `t-tag[${idx}] contains hashtag with # prefix.
-
-\uD83D\uDCE6 Your tag:
-   ${tagPreview}
-
-❌ Invalid value: "${tag[1]}"
-
-Hashtag tags should NOT include the # symbol.`, `Remove the # prefix from hashtag tags:
-   ✅ event.tags.push(['t', 'nostr'])
-   ❌ event.tags.push(['t', '#nostr'])`, false);
-    }
-  });
-}
-function signing(event, error, warn, replyEvents) {
-  checkMissingKind(event, error);
-  checkContentIsObject(event, error);
-  checkCreatedAtMilliseconds(event, error);
-  checkInvalidPTags(event, error);
-  checkInvalidETags(event, error);
-  checkHashtagsWithPrefix(event, error);
-  checkManualReplyMarkers(event, warn, replyEvents);
-}
-function isNip33Pattern(filters) {
-  const filterArray = Array.isArray(filters) ? filters : [filters];
-  if (filterArray.length !== 1)
-    return false;
-  const filter = filterArray[0];
-  return filter.kinds && Array.isArray(filter.kinds) && filter.kinds.length === 1 && filter.authors && Array.isArray(filter.authors) && filter.authors.length === 1 && filter["#d"] && Array.isArray(filter["#d"]) && filter["#d"].length === 1;
-}
-function isSingleIdLookup(filters) {
-  const filterArray = Array.isArray(filters) ? filters : [filters];
-  if (filterArray.length !== 1)
-    return false;
-  const filter = filterArray[0];
-  return filter.ids && Array.isArray(filter.ids) && filter.ids.length === 1;
-}
-function isReplaceableEventFilter(filters) {
-  const filterArray = Array.isArray(filters) ? filters : [filters];
-  if (filterArray.length === 0) {
+function isValidHex64(value) {
+  if (typeof value !== "string" || value.length !== 64) {
     return false;
   }
-  return filterArray.every((filter) => {
-    if (!filter.kinds || !Array.isArray(filter.kinds) || filter.kinds.length === 0) {
+  for (let i3 = 0;i3 < 64; i3++) {
+    const c = value.charCodeAt(i3);
+    if (!(c >= 48 && c <= 57 || c >= 97 && c <= 102 || c >= 65 && c <= 70)) {
       return false;
     }
-    if (!filter.authors || !Array.isArray(filter.authors) || filter.authors.length === 0) {
-      return false;
-    }
-    const allKindsReplaceable = filter.kinds.every((kind) => {
-      return kind === 0 || kind === 3 || kind >= 1e4 && kind <= 19999;
-    });
-    return allKindsReplaceable;
-  });
+  }
+  return true;
 }
-function formatFilter(filter) {
-  const formatted = JSON.stringify(filter, null, 2);
-  return formatted.split(`
-`).map((line, idx) => idx === 0 ? line : `   ${line}`).join(`
-`);
-}
-function fetchingEvents(filters, opts, warn, shouldWarnRatio, incrementCount) {
-  incrementCount();
-  if (opts?.cacheUsage === "ONLY_CACHE") {
-    return;
-  }
-  const filterArray = Array.isArray(filters) ? filters : [filters];
-  const formattedFilters = filterArray.map(formatFilter).join(`
-
-   ---
-
-   `);
-  if (isNip33Pattern(filters)) {
-    const filter = filterArray[0];
-    warn("fetch-events-usage", `For fetching a NIP-33 addressable event, use fetchEvent() with the naddr directly.
-
-\uD83D\uDCE6 Your filter:
-   ` + formattedFilters + `
-
-  ❌ BAD:  const decoded = nip19.decode(naddr);
-           const events = await ndk.fetchEvents({
-             kinds: [decoded.data.kind],
-             authors: [decoded.data.pubkey],
-             "#d": [decoded.data.identifier]
-           });
-           const event = Array.from(events)[0];
-
-  ✅ GOOD: const event = await ndk.fetchEvent(naddr);
-  ✅ GOOD: const event = await ndk.fetchEvent('naddr1...');
-
-fetchEvent() handles naddr decoding automatically and returns the event directly.`);
-  } else if (isSingleIdLookup(filters)) {
-    const filter = filterArray[0];
-    const eventId = filter.ids?.[0];
-    warn("fetch-events-usage", `For fetching a single event, use fetchEvent() instead.
-
-\uD83D\uDCE6 Your filter:
-   ` + formattedFilters + `
-
-\uD83D\uDCA1 Looking for event: ` + eventId + `
-
-  ❌ BAD:  const events = await ndk.fetchEvents({ ids: [eventId] });
-  ✅ GOOD: const event = await ndk.fetchEvent(eventId);
-  ✅ GOOD: const event = await ndk.fetchEvent('note1...');
-  ✅ GOOD: const event = await ndk.fetchEvent('nevent1...');
-
-fetchEvent() is optimized for single event lookups and returns the event directly.`);
-  } else if (isReplaceableEventFilter(filters)) {
-    return;
-  } else {
-    if (!shouldWarnRatio()) {
-      return;
-    }
-    let filterAnalysis = "";
-    const hasLimit = filterArray.some((f) => f.limit !== undefined);
-    const totalKinds = new Set(filterArray.flatMap((f) => f.kinds || [])).size;
-    const totalAuthors = new Set(filterArray.flatMap((f) => f.authors || [])).size;
-    if (hasLimit) {
-      const maxLimit = Math.max(...filterArray.map((f) => f.limit || 0));
-      filterAnalysis += `
-   • Limit: ${maxLimit} event${maxLimit !== 1 ? "s" : ""}`;
-    }
-    if (totalKinds > 0) {
-      filterAnalysis += `
-   • Kinds: ${totalKinds} type${totalKinds !== 1 ? "s" : ""}`;
-    }
-    if (totalAuthors > 0) {
-      filterAnalysis += `
-   • Authors: ${totalAuthors} author${totalAuthors !== 1 ? "s" : ""}`;
-    }
-    warn("fetch-events-usage", `fetchEvents() is a BLOCKING operation that waits for EOSE.
-In most cases, you should use subscribe() instead.
-
-\uD83D\uDCE6 Your filter` + (filterArray.length > 1 ? "s" : "") + `:
-   ` + formattedFilters + (filterAnalysis ? `
-
-\uD83D\uDCCA Filter analysis:` + filterAnalysis : "") + `
-
-  ❌ BAD:  const events = await ndk.fetchEvents(filter);
-  ✅ GOOD: ndk.subscribe(filter, { onEvent: (e) => ... });
-
-Only use fetchEvents() when you MUST block until data arrives.`, "For one-time queries, use fetchEvent() instead of fetchEvents() when expecting a single result.");
-  }
-}
-var GuardrailCheckId = {
-  NDK_NO_CACHE: "ndk-no-cache",
-  FILTER_BECH32_IN_ARRAY: "filter-bech32-in-array",
-  FILTER_INVALID_HEX: "filter-invalid-hex",
-  FILTER_ONLY_LIMIT: "filter-only-limit",
-  FILTER_LARGE_LIMIT: "filter-large-limit",
-  FILTER_EMPTY: "filter-empty",
-  FILTER_SINCE_AFTER_UNTIL: "filter-since-after-until",
-  FILTER_INVALID_A_TAG: "filter-invalid-a-tag",
-  FILTER_HASHTAG_WITH_PREFIX: "filter-hashtag-with-prefix",
-  FETCH_EVENTS_USAGE: "fetch-events-usage",
-  EVENT_MISSING_KIND: "event-missing-kind",
-  EVENT_PARAM_REPLACEABLE_NO_DTAG: "event-param-replaceable-no-dtag",
-  EVENT_CREATED_AT_MILLISECONDS: "event-created-at-milliseconds",
-  EVENT_NO_NDK_INSTANCE: "event-no-ndk-instance",
-  EVENT_CONTENT_IS_OBJECT: "event-content-is-object",
-  EVENT_MODIFIED_AFTER_SIGNING: "event-modified-after-signing",
-  EVENT_MANUAL_REPLY_MARKERS: "event-manual-reply-markers",
-  TAG_E_FOR_PARAM_REPLACEABLE: "tag-e-for-param-replaceable",
-  TAG_BECH32_VALUE: "tag-bech32-value",
-  TAG_DUPLICATE: "tag-duplicate",
-  TAG_INVALID_P_TAG: "tag-invalid-p-tag",
-  TAG_INVALID_E_TAG: "tag-invalid-e-tag",
-  TAG_HASHTAG_WITH_PREFIX: "tag-hashtag-with-prefix",
-  SUBSCRIBE_NOT_STARTED: "subscribe-not-started",
-  SUBSCRIBE_CLOSE_ON_EOSE_NO_HANDLER: "subscribe-close-on-eose-no-handler",
-  SUBSCRIBE_PASSED_EVENT_NOT_FILTER: "subscribe-passed-event-not-filter",
-  SUBSCRIBE_AWAITED: "subscribe-awaited",
-  RELAY_INVALID_URL: "relay-invalid-url",
-  RELAY_HTTP_INSTEAD_OF_WS: "relay-http-instead-of-ws",
-  RELAY_NO_ERROR_HANDLERS: "relay-no-error-handlers",
-  VALIDATION_PUBKEY_IS_NPUB: "validation-pubkey-is-npub",
-  VALIDATION_PUBKEY_WRONG_LENGTH: "validation-pubkey-wrong-length",
-  VALIDATION_EVENT_ID_IS_BECH32: "validation-event-id-is-bech32",
-  VALIDATION_EVENT_ID_WRONG_LENGTH: "validation-event-id-wrong-length"
-};
-function checkCachePresence(ndk, shouldCheck) {
-  if (!shouldCheck(GuardrailCheckId.NDK_NO_CACHE))
-    return;
-  setTimeout(() => {
-    if (!ndk.cacheAdapter) {
-      const isBrowser = typeof window !== "undefined";
-      const suggestion = isBrowser ? "Consider using @nostr-dev-kit/ndk-cache-dexie or @nostr-dev-kit/ndk-cache-sqlite-wasm" : "Consider using @nostr-dev-kit/ndk-cache-redis or @nostr-dev-kit/ndk-cache-sqlite";
-      const message = `
-\uD83E\uDD16 AI_GUARDRAILS WARNING: NDK initialized without a cache adapter. Apps perform significantly better with caching.
-
-\uD83D\uDCA1 ${suggestion}
-
-\uD83D\uDD07 To disable this check:
-   ndk.aiGuardrails.skip('${GuardrailCheckId.NDK_NO_CACHE}')
-   or set: ndk.aiGuardrails = { skip: new Set(['${GuardrailCheckId.NDK_NO_CACHE}']) }`;
-      console.warn(message);
-    }
-  }, 2500);
-}
-var AIGuardrails = class {
-  enabled = false;
-  skipSet = /* @__PURE__ */ new Set;
-  extensions = /* @__PURE__ */ new Map;
-  _nextCallDisabled = null;
-  _replyEvents = /* @__PURE__ */ new WeakSet;
-  _fetchEventsCount = 0;
-  _subscribeCount = 0;
-  constructor(mode = false) {
-    this.setMode(mode);
-  }
-  register(namespace, hooks) {
-    if (this.extensions.has(namespace)) {
-      console.warn(`AIGuardrails: Extension '${namespace}' already registered, overwriting`);
-    }
-    const wrappedHooks = {};
-    for (const [key, fn] of Object.entries(hooks)) {
-      if (typeof fn === "function") {
-        wrappedHooks[key] = (...args) => {
-          if (!this.enabled)
-            return;
-          fn(...args, this.shouldCheck.bind(this), this.error.bind(this), this.warn.bind(this));
-        };
-      }
-    }
-    this.extensions.set(namespace, wrappedHooks);
-    this[namespace] = wrappedHooks;
-  }
-  setMode(mode) {
-    if (typeof mode === "boolean") {
-      this.enabled = mode;
-      this.skipSet.clear();
-    } else if (mode && typeof mode === "object") {
-      this.enabled = true;
-      this.skipSet = mode.skip || /* @__PURE__ */ new Set;
-    }
-  }
-  isEnabled() {
-    return this.enabled;
-  }
-  shouldCheck(id) {
-    if (!this.enabled)
-      return false;
-    if (this.skipSet.has(id))
-      return false;
-    if (this._nextCallDisabled === "all")
-      return false;
-    if (this._nextCallDisabled && this._nextCallDisabled.has(id))
-      return false;
-    return true;
-  }
-  skip(id) {
-    this.skipSet.add(id);
-  }
-  enable(id) {
-    this.skipSet.delete(id);
-  }
-  getSkipped() {
-    return Array.from(this.skipSet);
-  }
-  captureAndClearNextCallDisabled() {
-    const captured = this._nextCallDisabled;
-    this._nextCallDisabled = null;
-    return captured;
-  }
-  incrementFetchEventsCount() {
-    this._fetchEventsCount++;
-  }
-  incrementSubscribeCount() {
-    this._subscribeCount++;
-  }
-  shouldWarnAboutFetchEventsRatio() {
-    const totalCalls = this._fetchEventsCount + this._subscribeCount;
-    if (totalCalls <= 6) {
-      return false;
-    }
-    const ratio = this._fetchEventsCount / totalCalls;
-    return ratio > 0.5;
-  }
-  error(id, message, hint, canDisable = true) {
-    if (!this.shouldCheck(id))
-      return;
-    const fullMessage = this.formatMessage(id, "ERROR", message, hint, canDisable);
-    console.error(fullMessage);
-    throw new Error(fullMessage);
-  }
-  warn(id, message, hint) {
-    if (!this.shouldCheck(id))
-      return;
-    const fullMessage = this.formatMessage(id, "WARNING", message, hint, true);
-    console.error(fullMessage);
-    throw new Error(fullMessage);
-  }
-  formatMessage(id, level, message, hint, canDisable = true) {
-    let output4 = `
-\uD83E\uDD16 AI_GUARDRAILS ${level}: ${message}`;
-    if (hint) {
-      output4 += `
-
-\uD83D\uDCA1 ${hint}`;
-    }
-    if (canDisable) {
-      output4 += `
-
-\uD83D\uDD07 To disable this check:
-   ndk.guardrailOff('${id}').yourMethod()  // For one call`;
-      output4 += `
-   ndk.aiGuardrails.skip('${id}')  // Permanently`;
-      output4 += `
-   or set: ndk.aiGuardrails = { skip: new Set(['${id}']) }`;
-    }
-    return output4;
-  }
-  ndkInstantiated(ndk) {
-    if (!this.enabled)
-      return;
-    checkCachePresence(ndk, this.shouldCheck.bind(this));
-  }
-  ndk = {
-    fetchingEvents: (filters, opts) => {
-      if (!this.enabled)
-        return;
-      fetchingEvents(filters, opts, this.warn.bind(this), this.shouldWarnAboutFetchEventsRatio.bind(this), this.incrementFetchEventsCount.bind(this));
-    }
-  };
-  event = {
-    signing: (event) => {
-      if (!this.enabled)
-        return;
-      signing(event, this.error.bind(this), this.warn.bind(this), this._replyEvents);
-    },
-    publishing: (_event) => {
-      if (!this.enabled)
-        return;
-    },
-    received: (_event, _relay) => {
-      if (!this.enabled)
-        return;
-    },
-    creatingReply: (event) => {
-      if (!this.enabled)
-        return;
-      this._replyEvents.add(event);
-    }
-  };
-  subscription = {
-    created: (_filters, _opts) => {
-      if (!this.enabled)
-        return;
-      this.incrementSubscribeCount();
-    }
-  };
-  relay = {
-    connected: (_relay) => {
-      if (!this.enabled)
-        return;
-    }
-  };
-};
 function isValidPubkey(pubkey) {
-  return typeof pubkey === "string" && /^[0-9a-f]{64}$/i.test(pubkey);
+  return isValidHex64(pubkey);
 }
-function processFilters(filters, mode = "validate", debug9, ndk) {
-  if (mode === "ignore") {
-    return filters;
+function isValidNip05(input) {
+  if (typeof input !== "string") {
+    return false;
   }
-  const issues = [];
-  const processedFilters = filters.map((filter, index) => {
-    if (ndk?.aiGuardrails.isEnabled()) {
-      runAIGuardrailsForFilter(filter, index, ndk);
-    }
-    const result = processFilter(filter, mode, index, issues, debug9);
-    return result;
-  });
-  if (mode === "validate" && issues.length > 0) {
-    throw new Error(`Invalid filter(s) detected:
-${issues.join(`
-`)}`);
-  }
-  return processedFilters;
-}
-function processFilter(filter, mode, filterIndex, issues, debug9) {
-  const isValidating = mode === "validate";
-  const cleanedFilter = isValidating ? filter : { ...filter };
-  if (filter.ids) {
-    const validIds = [];
-    filter.ids.forEach((id, idx) => {
-      if (id === undefined) {
-        if (isValidating) {
-          issues.push(`Filter[${filterIndex}].ids[${idx}] is undefined`);
-        } else {
-          debug9?.(`Fixed: Removed undefined value at ids[${idx}]`);
-        }
-      } else if (typeof id !== "string") {
-        if (isValidating) {
-          issues.push(`Filter[${filterIndex}].ids[${idx}] is not a string (got ${typeof id})`);
-        } else {
-          debug9?.(`Fixed: Removed non-string value at ids[${idx}] (was ${typeof id})`);
-        }
-      } else if (!/^[0-9a-f]{64}$/i.test(id)) {
-        if (isValidating) {
-          issues.push(`Filter[${filterIndex}].ids[${idx}] is not a valid 64-char hex string: "${id}"`);
-        } else {
-          debug9?.(`Fixed: Removed invalid hex string at ids[${idx}]`);
-        }
-      } else {
-        validIds.push(id);
-      }
-    });
-    if (!isValidating) {
-      cleanedFilter.ids = validIds.length > 0 ? validIds : undefined;
+  for (let i3 = 0;i3 < input.length; i3++) {
+    if (input.charCodeAt(i3) === 46) {
+      return true;
     }
   }
-  if (filter.authors) {
-    const validAuthors = [];
-    filter.authors.forEach((author, idx) => {
-      if (author === undefined) {
-        if (isValidating) {
-          issues.push(`Filter[${filterIndex}].authors[${idx}] is undefined`);
-        } else {
-          debug9?.(`Fixed: Removed undefined value at authors[${idx}]`);
-        }
-      } else if (typeof author !== "string") {
-        if (isValidating) {
-          issues.push(`Filter[${filterIndex}].authors[${idx}] is not a string (got ${typeof author})`);
-        } else {
-          debug9?.(`Fixed: Removed non-string value at authors[${idx}] (was ${typeof author})`);
-        }
-      } else if (!/^[0-9a-f]{64}$/i.test(author)) {
-        if (isValidating) {
-          issues.push(`Filter[${filterIndex}].authors[${idx}] is not a valid 64-char hex pubkey: "${author}"`);
-        } else {
-          debug9?.(`Fixed: Removed invalid hex pubkey at authors[${idx}]`);
-        }
-      } else {
-        validAuthors.push(author);
-      }
-    });
-    if (!isValidating) {
-      cleanedFilter.authors = validAuthors.length > 0 ? validAuthors : undefined;
-    }
-  }
-  if (filter.kinds) {
-    const validKinds = [];
-    filter.kinds.forEach((kind, idx) => {
-      if (kind === undefined) {
-        if (isValidating) {
-          issues.push(`Filter[${filterIndex}].kinds[${idx}] is undefined`);
-        } else {
-          debug9?.(`Fixed: Removed undefined value at kinds[${idx}]`);
-        }
-      } else if (typeof kind !== "number") {
-        if (isValidating) {
-          issues.push(`Filter[${filterIndex}].kinds[${idx}] is not a number (got ${typeof kind})`);
-        } else {
-          debug9?.(`Fixed: Removed non-number value at kinds[${idx}] (was ${typeof kind})`);
-        }
-      } else if (!Number.isInteger(kind)) {
-        if (isValidating) {
-          issues.push(`Filter[${filterIndex}].kinds[${idx}] is not an integer: ${kind}`);
-        } else {
-          debug9?.(`Fixed: Removed non-integer value at kinds[${idx}]: ${kind}`);
-        }
-      } else if (kind < 0 || kind > 65535) {
-        if (isValidating) {
-          issues.push(`Filter[${filterIndex}].kinds[${idx}] is out of valid range (0-65535): ${kind}`);
-        } else {
-          debug9?.(`Fixed: Removed out-of-range kind at kinds[${idx}]: ${kind}`);
-        }
-      } else {
-        validKinds.push(kind);
-      }
-    });
-    if (!isValidating) {
-      cleanedFilter.kinds = validKinds.length > 0 ? validKinds : undefined;
-    }
-  }
-  for (const key in filter) {
-    if (key.startsWith("#") && key.length === 2) {
-      const tagValues = filter[key];
-      if (Array.isArray(tagValues)) {
-        const validValues = [];
-        tagValues.forEach((value, idx) => {
-          if (value === undefined) {
-            if (isValidating) {
-              issues.push(`Filter[${filterIndex}].${key}[${idx}] is undefined`);
-            } else {
-              debug9?.(`Fixed: Removed undefined value at ${key}[${idx}]`);
-            }
-          } else if (typeof value !== "string") {
-            if (isValidating) {
-              issues.push(`Filter[${filterIndex}].${key}[${idx}] is not a string (got ${typeof value})`);
-            } else {
-              debug9?.(`Fixed: Removed non-string value at ${key}[${idx}] (was ${typeof value})`);
-            }
-          } else {
-            if ((key === "#e" || key === "#p") && !/^[0-9a-f]{64}$/i.test(value)) {
-              if (isValidating) {
-                issues.push(`Filter[${filterIndex}].${key}[${idx}] is not a valid 64-char hex string: "${value}"`);
-              } else {
-                debug9?.(`Fixed: Removed invalid hex string at ${key}[${idx}]`);
-              }
-            } else {
-              validValues.push(value);
-            }
-          }
-        });
-        if (!isValidating) {
-          cleanedFilter[key] = validValues.length > 0 ? validValues : undefined;
-        }
-      }
-    }
-  }
-  if (!isValidating) {
-    Object.keys(cleanedFilter).forEach((key) => {
-      if (cleanedFilter[key] === undefined) {
-        delete cleanedFilter[key];
-      }
-    });
-  }
-  return cleanedFilter;
-}
-function runAIGuardrailsForFilter(filter, filterIndex, ndk) {
-  const guards = ndk.aiGuardrails;
-  const filterPreview = JSON.stringify(filter, null, 2);
-  if (Object.keys(filter).length === 1 && filter.limit !== undefined) {
-    guards.error(GuardrailCheckId.FILTER_ONLY_LIMIT, `Filter[${filterIndex}] contains only 'limit' without any filtering criteria.
-
-\uD83D\uDCE6 Your filter:
-${filterPreview}
-
-⚠️  This will fetch random events from relays without any criteria.`, `Add filtering criteria:
-   ✅ { kinds: [1], limit: 10 }
-   ✅ { authors: [pubkey], limit: 10 }
-   ❌ { limit: 10 }`);
-  }
-  if (Object.keys(filter).length === 0) {
-    guards.error(GuardrailCheckId.FILTER_EMPTY, `Filter[${filterIndex}] is empty.
-
-\uD83D\uDCE6 Your filter:
-${filterPreview}
-
-⚠️  This will request ALL events from relays, which is never what you want.`, `Add filtering criteria like 'kinds', 'authors', or tags.`, false);
-  }
-  if (filter.since !== undefined && filter.until !== undefined && filter.since > filter.until) {
-    const sinceDate = new Date(filter.since * 1000).toISOString();
-    const untilDate = new Date(filter.until * 1000).toISOString();
-    guards.error(GuardrailCheckId.FILTER_SINCE_AFTER_UNTIL, `Filter[${filterIndex}] has 'since' AFTER 'until'.
-
-\uD83D\uDCE6 Your filter:
-${filterPreview}
-
-❌ since: ${filter.since} (${sinceDate})
-❌ until: ${filter.until} (${untilDate})
-
-No events can match this time range!`, `'since' must be BEFORE 'until'. Both are Unix timestamps in seconds.`, false);
-  }
-  const bech32Regex = /^n(addr|event|ote|pub|profile)1/;
-  const hexRegex = /^[0-9a-f]{64}$/i;
-  if (filter.ids) {
-    filter.ids.forEach((id, idx) => {
-      if (typeof id === "string") {
-        if (bech32Regex.test(id)) {
-          guards.error(GuardrailCheckId.FILTER_BECH32_IN_ARRAY, `Filter[${filterIndex}].ids[${idx}] contains bech32: "${id}". IDs must be hex, not bech32.`, `Use filterFromId() to decode bech32 first: import { filterFromId } from "@nostr-dev-kit/ndk"`, false);
-        } else if (!hexRegex.test(id)) {
-          guards.error(GuardrailCheckId.FILTER_INVALID_HEX, `Filter[${filterIndex}].ids[${idx}] is not a valid 64-char hex string: "${id}"`, `Event IDs must be 64-character hexadecimal strings. Invalid IDs often come from corrupted data in user-generated lists. Always validate hex strings before using them in filters:
-
-   const validIds = ids.filter(id => /^[0-9a-f]{64}$/i.test(id));`, false);
-        }
-      }
-    });
-  }
-  if (filter.authors) {
-    filter.authors.forEach((author, idx) => {
-      if (typeof author === "string") {
-        if (bech32Regex.test(author)) {
-          guards.error(GuardrailCheckId.FILTER_BECH32_IN_ARRAY, `Filter[${filterIndex}].authors[${idx}] contains bech32: "${author}". Authors must be hex pubkeys, not npub.`, `Use ndkUser.pubkey instead. Example: { authors: [ndkUser.pubkey] }`, false);
-        } else if (!hexRegex.test(author)) {
-          guards.error(GuardrailCheckId.FILTER_INVALID_HEX, `Filter[${filterIndex}].authors[${idx}] is not a valid 64-char hex pubkey: "${author}"`, `Kind:3 follow lists can contain invalid entries like labels ("Follow List"), partial strings ("highlig"), or other corrupted data. You MUST validate all pubkeys before using them in filters.
-
-   Example:
-   const validPubkeys = pubkeys.filter(p => /^[0-9a-f]{64}$/i.test(p));
-   ndk.subscribe({ authors: validPubkeys, kinds: [1] });`, false);
-        }
-      }
-    });
-  }
-  for (const key in filter) {
-    if (key.startsWith("#") && key.length === 2) {
-      const tagValues = filter[key];
-      if (Array.isArray(tagValues)) {
-        tagValues.forEach((value, idx) => {
-          if (typeof value === "string") {
-            if (key === "#e" || key === "#p") {
-              if (bech32Regex.test(value)) {
-                guards.error(GuardrailCheckId.FILTER_BECH32_IN_ARRAY, `Filter[${filterIndex}].${key}[${idx}] contains bech32: "${value}". Tag values must be decoded.`, `Use filterFromId() or nip19.decode() to get the hex value first.`, false);
-              } else if (!hexRegex.test(value)) {
-                guards.error(GuardrailCheckId.FILTER_INVALID_HEX, `Filter[${filterIndex}].${key}[${idx}] is not a valid 64-char hex string: "${value}"`, `${key === "#e" ? "Event IDs" : "Public keys"} in tag filters must be 64-character hexadecimal strings. Kind:3 follow lists and other user-generated content can contain invalid data. Always filter before using:
-
-   const validValues = values.filter(v => /^[0-9a-f]{64}$/i.test(v));`, false);
-              }
-            }
-          }
-        });
-      }
-    }
-  }
-  if (filter["#a"]) {
-    const aTags = filter["#a"];
-    aTags?.forEach((aTag, idx) => {
-      if (typeof aTag === "string") {
-        if (!/^\d+:[0-9a-f]{64}:.*$/.test(aTag)) {
-          guards.error(GuardrailCheckId.FILTER_INVALID_A_TAG, `Filter[${filterIndex}].#a[${idx}] has invalid format: "${aTag}". Must be "kind:pubkey:d-tag".`, `Example: "30023:fa984bd7dbb282f07e16e7ae87b26a2a7b9b90b7246a44771f0cf5ae58018f52:my-article"`, false);
-        } else {
-          const kind = Number.parseInt(aTag.split(":")[0], 10);
-          if (kind < 30000 || kind > 39999) {
-            guards.error(GuardrailCheckId.FILTER_INVALID_A_TAG, `Filter[${filterIndex}].#a[${idx}] uses non-addressable kind ${kind}: "${aTag}". #a filters are only for addressable events (kinds 30000-39999).`, `Addressable events include:
-   • 30000-30039: Parameterized Replaceable Events (profiles, settings, etc.)
-   • 30040-39999: Other addressable events
-
-For regular events (kind ${kind}), use:
-   • #e filter for specific event IDs
-   • kinds + authors filters for event queries`, false);
-          }
-        }
-      }
-    });
-  }
-  if (filter["#t"]) {
-    const tTags = filter["#t"];
-    tTags?.forEach((tag, idx) => {
-      if (typeof tag === "string" && tag.startsWith("#")) {
-        guards.error(GuardrailCheckId.FILTER_HASHTAG_WITH_PREFIX, `Filter[${filterIndex}].#t[${idx}] contains hashtag with # prefix: "${tag}". Hashtag values should NOT include the # symbol.`, `Remove the # prefix from hashtag filters:
-   ✅ { "#t": ["nostr"] }
-   ❌ { "#t": ["#nostr"] }`, false);
-      }
-    });
-  }
+  return false;
 }
 function mergeTags(tags1, tags2) {
   const tagMap = /* @__PURE__ */ new Map;
@@ -34337,7 +33609,7 @@ async function decrypt4(sender, signer, scheme) {
     throw new Error("Failed to decrypt event.");
   this.content = decrypted;
   if (this.ndk?.cacheAdapter?.addDecryptedEvent) {
-    this.ndk.cacheAdapter.addDecryptedEvent(this);
+    this.ndk.cacheAdapter.addDecryptedEvent(this.id, this);
   }
 }
 async function isEncryptionEnabled(signer, scheme) {
@@ -37857,6 +37129,750 @@ function wrapEvent(event) {
     return klass.from(event);
   return event;
 }
+function checkMissingKind(event, error) {
+  if (event.kind === undefined || event.kind === null) {
+    error("event-missing-kind", `Cannot sign event without 'kind'.
+
+\uD83D\uDCE6 Event data:
+   • content: ${event.content ? `"${event.content.substring(0, 50)}${event.content.length > 50 ? "..." : ""}"` : "(empty)"}
+   • tags: ${event.tags.length} tag${event.tags.length !== 1 ? "s" : ""}
+   • kind: ${event.kind} ❌
+
+Set event.kind before signing.`, "Example: event.kind = 1; // for text note", false);
+  }
+}
+function checkContentIsObject(event, error) {
+  if (typeof event.content === "object") {
+    const contentPreview = JSON.stringify(event.content, null, 2).substring(0, 200);
+    error("event-content-is-object", `Event content is an object. Content must be a string.
+
+\uD83D\uDCE6 Your content (${typeof event.content}):
+${contentPreview}${JSON.stringify(event.content).length > 200 ? "..." : ""}
+
+❌ event.content = { ... }  // WRONG
+✅ event.content = JSON.stringify({ ... })  // CORRECT`, "Use JSON.stringify() for structured data: event.content = JSON.stringify(data)", false);
+  }
+}
+function checkCreatedAtMilliseconds(event, error) {
+  if (event.created_at && event.created_at > 10000000000) {
+    const correctValue = Math.floor(event.created_at / 1000);
+    const dateString = new Date(event.created_at).toISOString();
+    error("event-created-at-milliseconds", `Event created_at is in milliseconds, not seconds.
+
+\uD83D\uDCE6 Your value:
+   • created_at: ${event.created_at} ❌
+   • Interpreted as: ${dateString}
+   • Should be: ${correctValue} ✅
+
+Nostr timestamps MUST be in seconds since Unix epoch.`, "Use Math.floor(Date.now() / 1000) instead of Date.now()", false);
+  }
+}
+function checkInvalidPTags(event, error) {
+  const pTags = event.getMatchingTags("p");
+  pTags.forEach((tag, idx) => {
+    if (tag[1] && !/^[0-9a-f]{64}$/i.test(tag[1])) {
+      const tagPreview = JSON.stringify(tag);
+      error("tag-invalid-p-tag", `p-tag[${idx}] has invalid pubkey.
+
+\uD83D\uDCE6 Your tag:
+   ${tagPreview}
+
+❌ Invalid value: "${tag[1]}"
+   • Length: ${tag[1].length} (expected 64)
+   • Format: ${tag[1].startsWith("npub") ? "bech32 (npub)" : "unknown"}
+
+p-tags MUST contain 64-character hex pubkeys.`, tag[1].startsWith("npub") ? `Use ndkUser.pubkey instead of npub:
+   ✅ event.tags.push(['p', ndkUser.pubkey])
+   ❌ event.tags.push(['p', 'npub1...'])` : "p-tags must contain valid hex pubkeys (64 characters, 0-9a-f)", false);
+    }
+  });
+}
+function checkInvalidETags(event, error) {
+  const eTags = event.getMatchingTags("e");
+  eTags.forEach((tag, idx) => {
+    if (tag[1] && !/^[0-9a-f]{64}$/i.test(tag[1])) {
+      const tagPreview = JSON.stringify(tag);
+      const isBech32 = tag[1].startsWith("note") || tag[1].startsWith("nevent");
+      error("tag-invalid-e-tag", `e-tag[${idx}] has invalid event ID.
+
+\uD83D\uDCE6 Your tag:
+   ${tagPreview}
+
+❌ Invalid value: "${tag[1]}"
+   • Length: ${tag[1].length} (expected 64)
+   • Format: ${isBech32 ? "bech32 (note/nevent)" : "unknown"}
+
+e-tags MUST contain 64-character hex event IDs.`, isBech32 ? `Use event.id instead of bech32:
+   ✅ event.tags.push(['e', referencedEvent.id])
+   ❌ event.tags.push(['e', 'note1...'])` : "e-tags must contain valid hex event IDs (64 characters, 0-9a-f)", false);
+    }
+  });
+}
+function checkManualReplyMarkers(event, warn, replyEvents) {
+  if (event.kind !== 1)
+    return;
+  if (replyEvents.has(event))
+    return;
+  const eTagsWithMarkers = event.tags.filter((tag) => tag[0] === "e" && (tag[3] === "reply" || tag[3] === "root"));
+  if (eTagsWithMarkers.length > 0) {
+    const tagList = eTagsWithMarkers.map((tag, idx) => `   ${idx + 1}. ${JSON.stringify(tag)}`).join(`
+`);
+    warn("event-manual-reply-markers", `Event has ${eTagsWithMarkers.length} e-tag(s) with manual reply/root markers.
+
+\uD83D\uDCE6 Your tags with markers:
+${tagList}
+
+⚠️  Manual reply markers detected! This will cause incorrect threading.`, `Reply events MUST be created using .reply():
+
+   ✅ CORRECT:
+   const replyEvent = originalEvent.reply();
+   replyEvent.content = 'good point!';
+   await replyEvent.publish();
+
+   ❌ WRONG:
+   event.tags.push(['e', eventId, '', 'reply']);
+
+NDK handles all reply threading automatically - never add reply/root markers manually.`);
+  }
+}
+function checkHashtagsWithPrefix(event, error) {
+  const tTags = event.getMatchingTags("t");
+  tTags.forEach((tag, idx) => {
+    if (tag[1] && tag[1].startsWith("#")) {
+      const tagPreview = JSON.stringify(tag);
+      error("tag-hashtag-with-prefix", `t-tag[${idx}] contains hashtag with # prefix.
+
+\uD83D\uDCE6 Your tag:
+   ${tagPreview}
+
+❌ Invalid value: "${tag[1]}"
+
+Hashtag tags should NOT include the # symbol.`, `Remove the # prefix from hashtag tags:
+   ✅ event.tags.push(['t', 'nostr'])
+   ❌ event.tags.push(['t', '#nostr'])`, false);
+    }
+  });
+}
+function signing(event, error, warn, replyEvents) {
+  checkMissingKind(event, error);
+  checkContentIsObject(event, error);
+  checkCreatedAtMilliseconds(event, error);
+  checkInvalidPTags(event, error);
+  checkInvalidETags(event, error);
+  checkHashtagsWithPrefix(event, error);
+  checkManualReplyMarkers(event, warn, replyEvents);
+}
+function isNip33Pattern(filters) {
+  const filterArray = Array.isArray(filters) ? filters : [filters];
+  if (filterArray.length !== 1)
+    return false;
+  const filter = filterArray[0];
+  return filter.kinds && Array.isArray(filter.kinds) && filter.kinds.length === 1 && filter.authors && Array.isArray(filter.authors) && filter.authors.length === 1 && filter["#d"] && Array.isArray(filter["#d"]) && filter["#d"].length === 1;
+}
+function isSingleIdLookup(filters) {
+  const filterArray = Array.isArray(filters) ? filters : [filters];
+  if (filterArray.length !== 1)
+    return false;
+  const filter = filterArray[0];
+  return filter.ids && Array.isArray(filter.ids) && filter.ids.length === 1;
+}
+function isReplaceableEventFilter(filters) {
+  const filterArray = Array.isArray(filters) ? filters : [filters];
+  if (filterArray.length === 0) {
+    return false;
+  }
+  return filterArray.every((filter) => {
+    if (!filter.kinds || !Array.isArray(filter.kinds) || filter.kinds.length === 0) {
+      return false;
+    }
+    if (!filter.authors || !Array.isArray(filter.authors) || filter.authors.length === 0) {
+      return false;
+    }
+    const allKindsReplaceable = filter.kinds.every((kind) => {
+      return kind === 0 || kind === 3 || kind >= 1e4 && kind <= 19999;
+    });
+    return allKindsReplaceable;
+  });
+}
+function formatFilter(filter) {
+  const formatted = JSON.stringify(filter, null, 2);
+  return formatted.split(`
+`).map((line, idx) => idx === 0 ? line : `   ${line}`).join(`
+`);
+}
+function fetchingEvents(filters, opts, warn, shouldWarnRatio, incrementCount) {
+  incrementCount();
+  if (opts?.cacheUsage === "ONLY_CACHE") {
+    return;
+  }
+  const filterArray = Array.isArray(filters) ? filters : [filters];
+  const formattedFilters = filterArray.map(formatFilter).join(`
+
+   ---
+
+   `);
+  if (isNip33Pattern(filters)) {
+    const filter = filterArray[0];
+    warn("fetch-events-usage", `For fetching a NIP-33 addressable event, use fetchEvent() with the naddr directly.
+
+\uD83D\uDCE6 Your filter:
+   ` + formattedFilters + `
+
+  ❌ BAD:  const decoded = nip19.decode(naddr);
+           const events = await ndk.fetchEvents({
+             kinds: [decoded.data.kind],
+             authors: [decoded.data.pubkey],
+             "#d": [decoded.data.identifier]
+           });
+           const event = Array.from(events)[0];
+
+  ✅ GOOD: const event = await ndk.fetchEvent(naddr);
+  ✅ GOOD: const event = await ndk.fetchEvent('naddr1...');
+
+fetchEvent() handles naddr decoding automatically and returns the event directly.`);
+  } else if (isSingleIdLookup(filters)) {
+    const filter = filterArray[0];
+    const eventId = filter.ids?.[0];
+    warn("fetch-events-usage", `For fetching a single event, use fetchEvent() instead.
+
+\uD83D\uDCE6 Your filter:
+   ` + formattedFilters + `
+
+\uD83D\uDCA1 Looking for event: ` + eventId + `
+
+  ❌ BAD:  const events = await ndk.fetchEvents({ ids: [eventId] });
+  ✅ GOOD: const event = await ndk.fetchEvent(eventId);
+  ✅ GOOD: const event = await ndk.fetchEvent('note1...');
+  ✅ GOOD: const event = await ndk.fetchEvent('nevent1...');
+
+fetchEvent() is optimized for single event lookups and returns the event directly.`);
+  } else if (isReplaceableEventFilter(filters)) {
+    return;
+  } else {
+    if (!shouldWarnRatio()) {
+      return;
+    }
+    let filterAnalysis = "";
+    const hasLimit = filterArray.some((f) => f.limit !== undefined);
+    const totalKinds = new Set(filterArray.flatMap((f) => f.kinds || [])).size;
+    const totalAuthors = new Set(filterArray.flatMap((f) => f.authors || [])).size;
+    if (hasLimit) {
+      const maxLimit = Math.max(...filterArray.map((f) => f.limit || 0));
+      filterAnalysis += `
+   • Limit: ${maxLimit} event${maxLimit !== 1 ? "s" : ""}`;
+    }
+    if (totalKinds > 0) {
+      filterAnalysis += `
+   • Kinds: ${totalKinds} type${totalKinds !== 1 ? "s" : ""}`;
+    }
+    if (totalAuthors > 0) {
+      filterAnalysis += `
+   • Authors: ${totalAuthors} author${totalAuthors !== 1 ? "s" : ""}`;
+    }
+    warn("fetch-events-usage", `fetchEvents() is a BLOCKING operation that waits for EOSE.
+In most cases, you should use subscribe() instead.
+
+\uD83D\uDCE6 Your filter` + (filterArray.length > 1 ? "s" : "") + `:
+   ` + formattedFilters + (filterAnalysis ? `
+
+\uD83D\uDCCA Filter analysis:` + filterAnalysis : "") + `
+
+  ❌ BAD:  const events = await ndk.fetchEvents(filter);
+  ✅ GOOD: ndk.subscribe(filter, { onEvent: (e) => ... });
+
+Only use fetchEvents() when you MUST block until data arrives.`, "For one-time queries, use fetchEvent() instead of fetchEvents() when expecting a single result.");
+  }
+}
+var GuardrailCheckId = {
+  NDK_NO_CACHE: "ndk-no-cache",
+  FILTER_BECH32_IN_ARRAY: "filter-bech32-in-array",
+  FILTER_INVALID_HEX: "filter-invalid-hex",
+  FILTER_ONLY_LIMIT: "filter-only-limit",
+  FILTER_LARGE_LIMIT: "filter-large-limit",
+  FILTER_EMPTY: "filter-empty",
+  FILTER_SINCE_AFTER_UNTIL: "filter-since-after-until",
+  FILTER_INVALID_A_TAG: "filter-invalid-a-tag",
+  FILTER_HASHTAG_WITH_PREFIX: "filter-hashtag-with-prefix",
+  FETCH_EVENTS_USAGE: "fetch-events-usage",
+  EVENT_MISSING_KIND: "event-missing-kind",
+  EVENT_PARAM_REPLACEABLE_NO_DTAG: "event-param-replaceable-no-dtag",
+  EVENT_CREATED_AT_MILLISECONDS: "event-created-at-milliseconds",
+  EVENT_NO_NDK_INSTANCE: "event-no-ndk-instance",
+  EVENT_CONTENT_IS_OBJECT: "event-content-is-object",
+  EVENT_MODIFIED_AFTER_SIGNING: "event-modified-after-signing",
+  EVENT_MANUAL_REPLY_MARKERS: "event-manual-reply-markers",
+  TAG_E_FOR_PARAM_REPLACEABLE: "tag-e-for-param-replaceable",
+  TAG_BECH32_VALUE: "tag-bech32-value",
+  TAG_DUPLICATE: "tag-duplicate",
+  TAG_INVALID_P_TAG: "tag-invalid-p-tag",
+  TAG_INVALID_E_TAG: "tag-invalid-e-tag",
+  TAG_HASHTAG_WITH_PREFIX: "tag-hashtag-with-prefix",
+  SUBSCRIBE_NOT_STARTED: "subscribe-not-started",
+  SUBSCRIBE_CLOSE_ON_EOSE_NO_HANDLER: "subscribe-close-on-eose-no-handler",
+  SUBSCRIBE_PASSED_EVENT_NOT_FILTER: "subscribe-passed-event-not-filter",
+  SUBSCRIBE_AWAITED: "subscribe-awaited",
+  RELAY_INVALID_URL: "relay-invalid-url",
+  RELAY_HTTP_INSTEAD_OF_WS: "relay-http-instead-of-ws",
+  RELAY_NO_ERROR_HANDLERS: "relay-no-error-handlers",
+  VALIDATION_PUBKEY_IS_NPUB: "validation-pubkey-is-npub",
+  VALIDATION_PUBKEY_WRONG_LENGTH: "validation-pubkey-wrong-length",
+  VALIDATION_EVENT_ID_IS_BECH32: "validation-event-id-is-bech32",
+  VALIDATION_EVENT_ID_WRONG_LENGTH: "validation-event-id-wrong-length"
+};
+function checkCachePresence(ndk, shouldCheck) {
+  if (!shouldCheck(GuardrailCheckId.NDK_NO_CACHE))
+    return;
+  setTimeout(() => {
+    if (!ndk.cacheAdapter) {
+      const isBrowser = typeof window !== "undefined";
+      const suggestion = isBrowser ? "Consider using @nostr-dev-kit/ndk-cache-dexie or @nostr-dev-kit/ndk-cache-sqlite-wasm" : "Consider using @nostr-dev-kit/ndk-cache-redis or @nostr-dev-kit/ndk-cache-sqlite";
+      const message = `
+\uD83E\uDD16 AI_GUARDRAILS WARNING: NDK initialized without a cache adapter. Apps perform significantly better with caching.
+
+\uD83D\uDCA1 ${suggestion}
+
+\uD83D\uDD07 To disable this check:
+   ndk.aiGuardrails.skip('${GuardrailCheckId.NDK_NO_CACHE}')
+   or set: ndk.aiGuardrails = { skip: new Set(['${GuardrailCheckId.NDK_NO_CACHE}']) }`;
+      console.warn(message);
+    }
+  }, 2500);
+}
+var AIGuardrails = class {
+  enabled = false;
+  skipSet = /* @__PURE__ */ new Set;
+  extensions = /* @__PURE__ */ new Map;
+  _nextCallDisabled = null;
+  _replyEvents = /* @__PURE__ */ new WeakSet;
+  _fetchEventsCount = 0;
+  _subscribeCount = 0;
+  constructor(mode = false) {
+    this.setMode(mode);
+  }
+  register(namespace, hooks) {
+    if (this.extensions.has(namespace)) {
+      console.warn(`AIGuardrails: Extension '${namespace}' already registered, overwriting`);
+    }
+    const wrappedHooks = {};
+    for (const [key, fn] of Object.entries(hooks)) {
+      if (typeof fn === "function") {
+        wrappedHooks[key] = (...args) => {
+          if (!this.enabled)
+            return;
+          fn(...args, this.shouldCheck.bind(this), this.error.bind(this), this.warn.bind(this));
+        };
+      }
+    }
+    this.extensions.set(namespace, wrappedHooks);
+    this[namespace] = wrappedHooks;
+  }
+  setMode(mode) {
+    if (typeof mode === "boolean") {
+      this.enabled = mode;
+      this.skipSet.clear();
+    } else if (mode && typeof mode === "object") {
+      this.enabled = true;
+      this.skipSet = mode.skip || /* @__PURE__ */ new Set;
+    }
+  }
+  isEnabled() {
+    return this.enabled;
+  }
+  shouldCheck(id) {
+    if (!this.enabled)
+      return false;
+    if (this.skipSet.has(id))
+      return false;
+    if (this._nextCallDisabled === "all")
+      return false;
+    if (this._nextCallDisabled && this._nextCallDisabled.has(id))
+      return false;
+    return true;
+  }
+  skip(id) {
+    this.skipSet.add(id);
+  }
+  enable(id) {
+    this.skipSet.delete(id);
+  }
+  getSkipped() {
+    return Array.from(this.skipSet);
+  }
+  captureAndClearNextCallDisabled() {
+    const captured = this._nextCallDisabled;
+    this._nextCallDisabled = null;
+    return captured;
+  }
+  incrementFetchEventsCount() {
+    this._fetchEventsCount++;
+  }
+  incrementSubscribeCount() {
+    this._subscribeCount++;
+  }
+  shouldWarnAboutFetchEventsRatio() {
+    const totalCalls = this._fetchEventsCount + this._subscribeCount;
+    if (totalCalls <= 6) {
+      return false;
+    }
+    const ratio = this._fetchEventsCount / totalCalls;
+    return ratio > 0.5;
+  }
+  error(id, message, hint, canDisable = true) {
+    if (!this.shouldCheck(id))
+      return;
+    const fullMessage = this.formatMessage(id, "ERROR", message, hint, canDisable);
+    console.error(fullMessage);
+    throw new Error(fullMessage);
+  }
+  warn(id, message, hint) {
+    if (!this.shouldCheck(id))
+      return;
+    const fullMessage = this.formatMessage(id, "WARNING", message, hint, true);
+    console.error(fullMessage);
+    throw new Error(fullMessage);
+  }
+  formatMessage(id, level, message, hint, canDisable = true) {
+    let output4 = `
+\uD83E\uDD16 AI_GUARDRAILS ${level}: ${message}`;
+    if (hint) {
+      output4 += `
+
+\uD83D\uDCA1 ${hint}`;
+    }
+    if (canDisable) {
+      output4 += `
+
+\uD83D\uDD07 To disable this check:
+   ndk.guardrailOff('${id}').yourMethod()  // For one call`;
+      output4 += `
+   ndk.aiGuardrails.skip('${id}')  // Permanently`;
+      output4 += `
+   or set: ndk.aiGuardrails = { skip: new Set(['${id}']) }`;
+    }
+    return output4;
+  }
+  ndkInstantiated(ndk) {
+    if (!this.enabled)
+      return;
+    checkCachePresence(ndk, this.shouldCheck.bind(this));
+  }
+  ndk = {
+    fetchingEvents: (filters, opts) => {
+      if (!this.enabled)
+        return;
+      fetchingEvents(filters, opts, this.warn.bind(this), this.shouldWarnAboutFetchEventsRatio.bind(this), this.incrementFetchEventsCount.bind(this));
+    }
+  };
+  event = {
+    signing: (event) => {
+      if (!this.enabled)
+        return;
+      signing(event, this.error.bind(this), this.warn.bind(this), this._replyEvents);
+    },
+    publishing: (_event) => {
+      if (!this.enabled)
+        return;
+    },
+    received: (_event, _relay) => {
+      if (!this.enabled)
+        return;
+    },
+    creatingReply: (event) => {
+      if (!this.enabled)
+        return;
+      this._replyEvents.add(event);
+    }
+  };
+  subscription = {
+    created: (_filters, _opts) => {
+      if (!this.enabled)
+        return;
+      this.incrementSubscribeCount();
+    }
+  };
+  relay = {
+    connected: (_relay) => {
+      if (!this.enabled)
+        return;
+    }
+  };
+};
+function processFilters(filters, mode = "validate", debug9, ndk) {
+  if (mode === "ignore") {
+    return filters;
+  }
+  const issues = [];
+  const processedFilters = filters.map((filter, index) => {
+    if (ndk?.aiGuardrails.isEnabled()) {
+      runAIGuardrailsForFilter(filter, index, ndk);
+    }
+    const result = processFilter(filter, mode, index, issues, debug9);
+    return result;
+  });
+  if (mode === "validate" && issues.length > 0) {
+    throw new Error(`Invalid filter(s) detected:
+${issues.join(`
+`)}`);
+  }
+  return processedFilters;
+}
+function processFilter(filter, mode, filterIndex, issues, debug9) {
+  const isValidating = mode === "validate";
+  const cleanedFilter = isValidating ? filter : { ...filter };
+  if (filter.ids) {
+    const validIds = [];
+    filter.ids.forEach((id, idx) => {
+      if (id === undefined) {
+        if (isValidating) {
+          issues.push(`Filter[${filterIndex}].ids[${idx}] is undefined`);
+        } else {
+          debug9?.(`Fixed: Removed undefined value at ids[${idx}]`);
+        }
+      } else if (typeof id !== "string") {
+        if (isValidating) {
+          issues.push(`Filter[${filterIndex}].ids[${idx}] is not a string (got ${typeof id})`);
+        } else {
+          debug9?.(`Fixed: Removed non-string value at ids[${idx}] (was ${typeof id})`);
+        }
+      } else if (!isValidHex64(id)) {
+        if (isValidating) {
+          issues.push(`Filter[${filterIndex}].ids[${idx}] is not a valid 64-char hex string: "${id}"`);
+        } else {
+          debug9?.(`Fixed: Removed invalid hex string at ids[${idx}]`);
+        }
+      } else {
+        validIds.push(id);
+      }
+    });
+    if (!isValidating) {
+      cleanedFilter.ids = validIds.length > 0 ? validIds : undefined;
+    }
+  }
+  if (filter.authors) {
+    const validAuthors = [];
+    filter.authors.forEach((author, idx) => {
+      if (author === undefined) {
+        if (isValidating) {
+          issues.push(`Filter[${filterIndex}].authors[${idx}] is undefined`);
+        } else {
+          debug9?.(`Fixed: Removed undefined value at authors[${idx}]`);
+        }
+      } else if (typeof author !== "string") {
+        if (isValidating) {
+          issues.push(`Filter[${filterIndex}].authors[${idx}] is not a string (got ${typeof author})`);
+        } else {
+          debug9?.(`Fixed: Removed non-string value at authors[${idx}] (was ${typeof author})`);
+        }
+      } else if (!isValidHex64(author)) {
+        if (isValidating) {
+          issues.push(`Filter[${filterIndex}].authors[${idx}] is not a valid 64-char hex pubkey: "${author}"`);
+        } else {
+          debug9?.(`Fixed: Removed invalid hex pubkey at authors[${idx}]`);
+        }
+      } else {
+        validAuthors.push(author);
+      }
+    });
+    if (!isValidating) {
+      cleanedFilter.authors = validAuthors.length > 0 ? validAuthors : undefined;
+    }
+  }
+  if (filter.kinds) {
+    const validKinds = [];
+    filter.kinds.forEach((kind, idx) => {
+      if (kind === undefined) {
+        if (isValidating) {
+          issues.push(`Filter[${filterIndex}].kinds[${idx}] is undefined`);
+        } else {
+          debug9?.(`Fixed: Removed undefined value at kinds[${idx}]`);
+        }
+      } else if (typeof kind !== "number") {
+        if (isValidating) {
+          issues.push(`Filter[${filterIndex}].kinds[${idx}] is not a number (got ${typeof kind})`);
+        } else {
+          debug9?.(`Fixed: Removed non-number value at kinds[${idx}] (was ${typeof kind})`);
+        }
+      } else if (!Number.isInteger(kind)) {
+        if (isValidating) {
+          issues.push(`Filter[${filterIndex}].kinds[${idx}] is not an integer: ${kind}`);
+        } else {
+          debug9?.(`Fixed: Removed non-integer value at kinds[${idx}]: ${kind}`);
+        }
+      } else if (kind < 0 || kind > 65535) {
+        if (isValidating) {
+          issues.push(`Filter[${filterIndex}].kinds[${idx}] is out of valid range (0-65535): ${kind}`);
+        } else {
+          debug9?.(`Fixed: Removed out-of-range kind at kinds[${idx}]: ${kind}`);
+        }
+      } else {
+        validKinds.push(kind);
+      }
+    });
+    if (!isValidating) {
+      cleanedFilter.kinds = validKinds.length > 0 ? validKinds : undefined;
+    }
+  }
+  for (const key in filter) {
+    if (key.startsWith("#") && key.length === 2) {
+      const tagValues = filter[key];
+      if (Array.isArray(tagValues)) {
+        const validValues = [];
+        tagValues.forEach((value, idx) => {
+          if (value === undefined) {
+            if (isValidating) {
+              issues.push(`Filter[${filterIndex}].${key}[${idx}] is undefined`);
+            } else {
+              debug9?.(`Fixed: Removed undefined value at ${key}[${idx}]`);
+            }
+          } else if (typeof value !== "string") {
+            if (isValidating) {
+              issues.push(`Filter[${filterIndex}].${key}[${idx}] is not a string (got ${typeof value})`);
+            } else {
+              debug9?.(`Fixed: Removed non-string value at ${key}[${idx}] (was ${typeof value})`);
+            }
+          } else {
+            if ((key === "#e" || key === "#p") && !isValidHex64(value)) {
+              if (isValidating) {
+                issues.push(`Filter[${filterIndex}].${key}[${idx}] is not a valid 64-char hex string: "${value}"`);
+              } else {
+                debug9?.(`Fixed: Removed invalid hex string at ${key}[${idx}]`);
+              }
+            } else {
+              validValues.push(value);
+            }
+          }
+        });
+        if (!isValidating) {
+          cleanedFilter[key] = validValues.length > 0 ? validValues : undefined;
+        }
+      }
+    }
+  }
+  if (!isValidating) {
+    Object.keys(cleanedFilter).forEach((key) => {
+      if (cleanedFilter[key] === undefined) {
+        delete cleanedFilter[key];
+      }
+    });
+  }
+  return cleanedFilter;
+}
+function runAIGuardrailsForFilter(filter, filterIndex, ndk) {
+  const guards = ndk.aiGuardrails;
+  const filterPreview = JSON.stringify(filter, null, 2);
+  if (Object.keys(filter).length === 1 && filter.limit !== undefined) {
+    guards.error(GuardrailCheckId.FILTER_ONLY_LIMIT, `Filter[${filterIndex}] contains only 'limit' without any filtering criteria.
+
+\uD83D\uDCE6 Your filter:
+${filterPreview}
+
+⚠️  This will fetch random events from relays without any criteria.`, `Add filtering criteria:
+   ✅ { kinds: [1], limit: 10 }
+   ✅ { authors: [pubkey], limit: 10 }
+   ❌ { limit: 10 }`);
+  }
+  if (Object.keys(filter).length === 0) {
+    guards.error(GuardrailCheckId.FILTER_EMPTY, `Filter[${filterIndex}] is empty.
+
+\uD83D\uDCE6 Your filter:
+${filterPreview}
+
+⚠️  This will request ALL events from relays, which is never what you want.`, `Add filtering criteria like 'kinds', 'authors', or tags.`, false);
+  }
+  if (filter.since !== undefined && filter.until !== undefined && filter.since > filter.until) {
+    const sinceDate = new Date(filter.since * 1000).toISOString();
+    const untilDate = new Date(filter.until * 1000).toISOString();
+    guards.error(GuardrailCheckId.FILTER_SINCE_AFTER_UNTIL, `Filter[${filterIndex}] has 'since' AFTER 'until'.
+
+\uD83D\uDCE6 Your filter:
+${filterPreview}
+
+❌ since: ${filter.since} (${sinceDate})
+❌ until: ${filter.until} (${untilDate})
+
+No events can match this time range!`, `'since' must be BEFORE 'until'. Both are Unix timestamps in seconds.`, false);
+  }
+  const bech32Regex = /^n(addr|event|ote|pub|profile)1/;
+  if (filter.ids) {
+    filter.ids.forEach((id, idx) => {
+      if (typeof id === "string") {
+        if (bech32Regex.test(id)) {
+          guards.error(GuardrailCheckId.FILTER_BECH32_IN_ARRAY, `Filter[${filterIndex}].ids[${idx}] contains bech32: "${id}". IDs must be hex, not bech32.`, `Use filterFromId() to decode bech32 first: import { filterFromId } from "@nostr-dev-kit/ndk"`, false);
+        } else if (!isValidHex64(id)) {
+          guards.error(GuardrailCheckId.FILTER_INVALID_HEX, `Filter[${filterIndex}].ids[${idx}] is not a valid 64-char hex string: "${id}"`, `Event IDs must be 64-character hexadecimal strings. Invalid IDs often come from corrupted data in user-generated lists. Always validate hex strings before using them in filters:
+
+   const validIds = ids.filter(id => /^[0-9a-f]{64}$/i.test(id));`, false);
+        }
+      }
+    });
+  }
+  if (filter.authors) {
+    filter.authors.forEach((author, idx) => {
+      if (typeof author === "string") {
+        if (bech32Regex.test(author)) {
+          guards.error(GuardrailCheckId.FILTER_BECH32_IN_ARRAY, `Filter[${filterIndex}].authors[${idx}] contains bech32: "${author}". Authors must be hex pubkeys, not npub.`, `Use ndkUser.pubkey instead. Example: { authors: [ndkUser.pubkey] }`, false);
+        } else if (!isValidHex64(author)) {
+          guards.error(GuardrailCheckId.FILTER_INVALID_HEX, `Filter[${filterIndex}].authors[${idx}] is not a valid 64-char hex pubkey: "${author}"`, `Kind:3 follow lists can contain invalid entries like labels ("Follow List"), partial strings ("highlig"), or other corrupted data. You MUST validate all pubkeys before using them in filters.
+
+   Example:
+   const validPubkeys = pubkeys.filter(p => /^[0-9a-f]{64}$/i.test(p));
+   ndk.subscribe({ authors: validPubkeys, kinds: [1] });`, false);
+        }
+      }
+    });
+  }
+  for (const key in filter) {
+    if (key.startsWith("#") && key.length === 2) {
+      const tagValues = filter[key];
+      if (Array.isArray(tagValues)) {
+        tagValues.forEach((value, idx) => {
+          if (typeof value === "string") {
+            if (key === "#e" || key === "#p") {
+              if (bech32Regex.test(value)) {
+                guards.error(GuardrailCheckId.FILTER_BECH32_IN_ARRAY, `Filter[${filterIndex}].${key}[${idx}] contains bech32: "${value}". Tag values must be decoded.`, `Use filterFromId() or nip19.decode() to get the hex value first.`, false);
+              } else if (!isValidHex64(value)) {
+                guards.error(GuardrailCheckId.FILTER_INVALID_HEX, `Filter[${filterIndex}].${key}[${idx}] is not a valid 64-char hex string: "${value}"`, `${key === "#e" ? "Event IDs" : "Public keys"} in tag filters must be 64-character hexadecimal strings. Kind:3 follow lists and other user-generated content can contain invalid data. Always filter before using:
+
+   const validValues = values.filter(v => /^[0-9a-f]{64}$/i.test(v));`, false);
+              }
+            }
+          }
+        });
+      }
+    }
+  }
+  if (filter["#a"]) {
+    const aTags = filter["#a"];
+    aTags?.forEach((aTag, idx) => {
+      if (typeof aTag === "string") {
+        if (!/^\d+:[0-9a-f]{64}:.*$/.test(aTag)) {
+          guards.error(GuardrailCheckId.FILTER_INVALID_A_TAG, `Filter[${filterIndex}].#a[${idx}] has invalid format: "${aTag}". Must be "kind:pubkey:d-tag".`, `Example: "30023:fa984bd7dbb282f07e16e7ae87b26a2a7b9b90b7246a44771f0cf5ae58018f52:my-article"`, false);
+        } else {
+          const kind = Number.parseInt(aTag.split(":")[0], 10);
+          if (kind < 30000 || kind > 39999) {
+            guards.error(GuardrailCheckId.FILTER_INVALID_A_TAG, `Filter[${filterIndex}].#a[${idx}] uses non-addressable kind ${kind}: "${aTag}". #a filters are only for addressable events (kinds 30000-39999).`, `Addressable events include:
+   • 30000-30039: Parameterized Replaceable Events (profiles, settings, etc.)
+   • 30040-39999: Other addressable events
+
+For regular events (kind ${kind}), use:
+   • #e filter for specific event IDs
+   • kinds + authors filters for event queries`, false);
+          }
+        }
+      }
+    });
+  }
+  if (filter["#t"]) {
+    const tTags = filter["#t"];
+    tTags?.forEach((tag, idx) => {
+      if (typeof tag === "string" && tag.startsWith("#")) {
+        guards.error(GuardrailCheckId.FILTER_HASHTAG_WITH_PREFIX, `Filter[${filterIndex}].#t[${idx}] contains hashtag with # prefix: "${tag}". Hashtag values should NOT include the # symbol.`, `Remove the # prefix from hashtag filters:
+   ✅ { "#t": ["nostr"] }
+   ❌ { "#t": ["#nostr"] }`, false);
+      }
+    });
+  }
+}
 function queryFullyFilled(subscription) {
   if (filterIncludesIds(subscription.filter)) {
     if (resultHasAllRequestedIds(subscription)) {
@@ -39468,6 +39484,9 @@ var NDK = class extends import_tseep5.EventEmitter {
     if (this.outboxPool) {
       connections.push(this.outboxPool.connect(timeoutMs));
     }
+    if (this.cacheAdapter?.initializeAsync) {
+      connections.push(this.cacheAdapter.initializeAsync(this));
+    }
     return Promise.allSettled(connections).then(() => {});
   }
   reportInvalidSignature(event, relay) {
@@ -39508,10 +39527,9 @@ var NDK = class extends import_tseep5.EventEmitter {
     return NDKUser.fromNip05(nip05, this, skipCache);
   }
   async fetchUser(input, skipCache = false) {
-    if (input.includes("@") || input.includes(".") && !input.startsWith("n")) {
+    if (isValidNip05(input)) {
       return NDKUser.fromNip05(input, this, skipCache);
-    }
-    if (input.startsWith("npub1")) {
+    } else if (input.startsWith("npub1")) {
       const { type, data } = nip19_exports.decode(input);
       if (type !== "npub")
         throw new Error(`Invalid npub: ${input}`);
@@ -39570,7 +39588,10 @@ var NDK = class extends import_tseep5.EventEmitter {
       this.outboxTracker?.trackUsers(authors);
     }
     if (autoStart) {
-      setTimeout(() => {
+      setTimeout(async () => {
+        if (this.cacheAdapter?.initializeAsync && !this.cacheAdapter.ready) {
+          await this.cacheAdapter.initializeAsync(this);
+        }
         const cachedEvents = subscription.start(!eventsHandler);
         if (cachedEvents && cachedEvents.length > 0 && !!eventsHandler)
           eventsHandler(cachedEvents);

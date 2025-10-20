@@ -27,6 +27,9 @@ interface AppSettings {
   zap: {
     defaultAmount: number;
   };
+  wallet: {
+    npubCashEnabled: boolean;
+  };
 }
 
 const DEFAULT_RELAYS: Relay[] = [
@@ -54,6 +57,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   },
   zap: {
     defaultAmount: 21,
+  },
+  wallet: {
+    npubCashEnabled: false,
   },
 };
 
@@ -123,6 +129,10 @@ class SettingsStore {
 
   get zap() {
     return this.state.zap;
+  }
+
+  get wallet() {
+    return this.state.wallet;
   }
 
   addRelay(relay: Relay) {
@@ -199,6 +209,15 @@ class SettingsStore {
 
   updateZap(settings: Partial<AppSettings['zap']>) {
     this.state.zap = { ...this.state.zap, ...settings };
+    saveSettings(this.state);
+  }
+
+  updateWallet(settings: Partial<AppSettings['wallet']>) {
+    this.state.wallet = { ...this.state.wallet, ...settings };
+    saveSettings(this.state);
+  }
+
+  save() {
     saveSettings(this.state);
   }
 

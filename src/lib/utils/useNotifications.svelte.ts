@@ -53,7 +53,7 @@ export type NotificationGroup =
   | RepostNotification
   | ZapNotification;
 
-export type NotificationFilter = 'all' | 'replies' | 'mentions' | 'quotes' | 'reactions' | 'reposts' | 'zaps';
+export type NotificationFilter = 'all' | 'reply' | 'mention' | 'quote' | 'reaction' | 'repost' | 'zap';
 
 /**
  * Creates a notifications manager that aggregates and groups notifications
@@ -193,7 +193,11 @@ export function createNotificationsManager(ndk: NDKSvelte) {
       // Check if this is a reaction to user's event
       if (!userEventIds.has(targetId)) return;
 
-      const emoji = reaction.content || '👍';
+      // Normalize emoji: "+" means like/heart
+      let emoji = reaction.content || '👍';
+      if (emoji === '+') {
+        emoji = '❤️';
+      }
       const key = `${targetId}-${emoji}`;
 
       if (!reactionGroups.has(key)) {
@@ -353,12 +357,12 @@ export function createNotificationsManager(ndk: NDKSvelte) {
   const counts = $derived.by(() => {
     const result = {
       all: notificationGroups.length,
-      replies: 0,
-      mentions: 0,
-      quotes: 0,
-      reactions: 0,
-      reposts: 0,
-      zaps: 0,
+      reply: 0,
+      mention: 0,
+      quote: 0,
+      reaction: 0,
+      repost: 0,
+      zap: 0,
     };
 
     notificationGroups.forEach((group) => {
@@ -377,9 +381,6 @@ export function createNotificationsManager(ndk: NDKSvelte) {
     },
     get counts() {
       return counts;
-    },
-    get isLoading() {
-      return !notificationsSubscription.eosed || !userEventsSubscription.eosed;
     },
     get targetEventsCache() {
       return targetEventsCache;

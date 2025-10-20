@@ -17,17 +17,9 @@
   const neventId = $derived($page.params.nevent);
 
   // Fetch the main event
-  let mainEvent = $state<NDKEvent | null>(null);
+  const mainEvent = ndk.$fetchEvent(() => neventId);
   const currentUser = ndk.$currentUser;
   const mainProfile = ndk.$fetchProfile(() => mainEvent?.pubkey);
-
-  $effect(() => {
-    if (!neventId) return;
-
-    ndk.fetchEvent(neventId).then(event => {
-      mainEvent = event;
-    });
-  });
 
   // Get the root event ID from the main event's tags
   const rootEventId = $derived.by(() => {
@@ -161,9 +153,8 @@
   let isSubmitting = $state(false);
 
   function handleEventNavigation(event: NDKEvent) {
-    mainEvent = event;
     const nevent = event.encode();
-    history.replaceState({}, '', `/e/${nevent}`);
+    window.location.href = `/e/${nevent}`;
   }
 
   async function handleReply() {

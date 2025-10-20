@@ -111,7 +111,7 @@
           <!-- Message content -->
           <div
             class="px-4 py-2 rounded-2xl {message.sender.pubkey === ndk.activeUser?.pubkey
-              ? 'bg-orange-500 text-white rounded-tr-sm'
+              ? 'bg-primary text-primary-foreground rounded-tr-sm'
               : 'bg-neutral-900 text-white rounded-tl-sm'}"
           >
             <div class="whitespace-pre-wrap break-words line-clamp-[20] hover:line-clamp-none transition-all">
@@ -140,7 +140,7 @@
       shouldAutoScroll = true;
       scrollToBottom();
     }}
-    class="fixed bottom-24 right-8 p-3 bg-orange-500 hover:bg-orange-500/90 text-white rounded-full shadow-lg transition-colors"
+    class="fixed bottom-24 right-8 p-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg transition-colors"
   >
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />

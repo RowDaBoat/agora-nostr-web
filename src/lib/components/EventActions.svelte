@@ -138,6 +138,7 @@
 {#if variant === 'tiktok'}
   <div class="flex flex-col items-center gap-6 text-white">
     <button
+      type="button"
       onclick={(e) => { e.stopPropagation(); showReplyDialog = true; }}
       class="flex flex-col items-center gap-1 hover:scale-110 transition-transform group"
     >
@@ -151,6 +152,7 @@
 
     <div class="relative">
       <button
+        type="button"
         onclick={(e) => { e.stopPropagation(); showRepostMenu = !showRepostMenu; }}
         class="flex flex-col items-center gap-1 hover:scale-110 transition-transform group"
       >
@@ -197,6 +199,7 @@
     </div>
 
     <button
+      type="button"
       onclick={(e) => { e.stopPropagation(); handleReact('❤️'); }}
       class="flex flex-col items-center gap-1 hover:scale-110 transition-transform group"
     >
@@ -236,6 +239,7 @@
 {:else}
   <div class="flex items-center gap-3 sm:gap-6 {variant === 'thread-main' ? 'border-t border-border pt-3' : ''} text-muted-foreground">
     <button
+      type="button"
       onclick={(e) => { e.stopPropagation(); showReplyDialog = true; }}
       class="flex items-center gap-2 hover:text-primary transition-colors group"
     >
@@ -247,6 +251,7 @@
 
   <div class="relative">
     <button
+      type="button"
       onclick={(e) => { e.stopPropagation(); showRepostMenu = !showRepostMenu; }}
       class="flex items-center gap-2 hover:text-green-400 transition-colors group"
     >
@@ -291,6 +296,7 @@
   </div>
 
   <button
+    type="button"
     onclick={(e) => { e.stopPropagation(); handleReact('❤️'); }}
     class="flex items-center gap-2 hover:text-red-400 transition-colors group"
   >

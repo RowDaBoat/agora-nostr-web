@@ -136,7 +136,7 @@
             bind:value={searchQuery}
             type="text"
             placeholder="Search by name or paste npub..."
-            class="w-full px-4 py-3 pl-12 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            class="w-full px-4 py-3 pl-12 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
           <svg
             class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500"
@@ -153,7 +153,7 @@
       <div class="max-h-96 overflow-y-auto">
         {#if searching}
           <div class="flex items-center justify-center py-12">
-            <svg class="w-8 h-8 text-orange-500 animate-spin" fill="none" viewBox="0 0 24 24">
+            <svg class="w-8 h-8 text-primary animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
@@ -183,8 +183,8 @@
                     class="w-12 h-12 rounded-full object-cover flex-shrink-0"
                   />
                 {:else}
-                  <div class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500/20 to-orange-600/20 flex items-center justify-center flex-shrink-0">
-                    <span class="text-orange-500 font-semibold text-lg">
+                  <div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <span class="text-primary font-semibold text-lg">
                       {profile?.name?.[0]?.toUpperCase() || '?'}
                     </span>
                   </div>

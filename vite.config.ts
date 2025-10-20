@@ -13,7 +13,7 @@ export default defineConfig({
     format: 'es'
   },
   server: {
-    port: 5173,
+    port: 5001,
     host: true,
     headers: {
       'Cross-Origin-Embedder-Policy': 'credentialless',

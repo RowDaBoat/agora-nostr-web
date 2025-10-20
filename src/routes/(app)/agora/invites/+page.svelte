@@ -31,6 +31,7 @@
 			filters: [{ kinds: [1], '#t': ['introduction'], limit: 20 }],
 			relayUrls: [selectedRelay],
 			cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY,
+			exclusiveRelay: true,
 			closeOnEose: true
 		}));
 	});

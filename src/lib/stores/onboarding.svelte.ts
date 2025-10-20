@@ -4,6 +4,7 @@ import { NDKCashuWallet } from '@nostr-dev-kit/wallet';
 import { settings } from './settings.svelte';
 import { getAgoraLanguage, WALLET_DEFAULT_RELAYS } from '$lib/utils/relayUtils';
 import { locale } from 'svelte-i18n';
+import { npubCash } from './npubcash.svelte';
 
 export interface InviteData {
   welcomeMessage?: string;
@@ -310,6 +311,12 @@ class OnboardingStore {
 
     try {
       console.log('[Store] Creating kind:0 profile event...');
+
+      // Enable npub.cash and get Lightning address
+      npubCash.setEnabled(true);
+      const lud16 = npubCash.getLightningAddress();
+      console.log('[Store] Set npub.cash Lightning address:', lud16);
+
       const profileEvent = new NDKEvent(ndk);
       profileEvent.kind = 0;
       profileEvent.content = JSON.stringify({
@@ -317,7 +324,8 @@ class OnboardingStore {
         about: profile.bio,
         ...(profile.location && { location: profile.location }),
         ...(profile.picture && { picture: profile.picture }),
-        ...(profile.nip05 && { nip05: profile.nip05 })
+        ...(profile.nip05 && { nip05: profile.nip05 }),
+        ...(lud16 && { lud16 })
       });
 
       // Publish to default relays

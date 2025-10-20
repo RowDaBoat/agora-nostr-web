@@ -20,7 +20,6 @@ class MessagesStore {
 
       // Listen for new messages
       this.messenger.on('message', (message: NDKMessage) => {
-        console.log('New message received:', message);
         // Refresh conversations when a message arrives
         this.refreshConversations();
       });
