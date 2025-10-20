@@ -335,8 +335,9 @@ class OnboardingStore {
       return;
     }
 
+    // Capture these values ONCE at the start to avoid reactive dependencies
     const invite = this.state.invite;
-    const profile = this.state.profileData;
+    const profile = { ...this.state.profileData };
 
     try {
       console.log('[Store] Starting invite setup sequence...');

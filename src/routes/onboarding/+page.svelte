@@ -39,46 +39,8 @@
       })();
   });
 
-  // Publish invite confirmation and copy contacts when user is ready
-  $effect(() => {
-    console.log('[Onboarding] Invite effect triggered:', {
-      hasCurrentUser: !!ndk.$currentUser,
-      hasInviteData: !!inviteData,
-      hasCompletedInviteSetup,
-      inviteData: inviteData ? {
-        inviter: inviteData.inviter,
-        inviteRelay: inviteData.inviteRelay,
-        inviteCode: inviteData.inviteCode,
-        inviteEventId: inviteData.inviteEventId
-      } : null
-    });
-
-    if (hasCompletedInviteSetup) {
-      console.log('[Onboarding] ⊘ Invite setup already completed, skipping');
-      return;
-    }
-
-    if (!ndk.$currentUser) {
-      console.log('[Onboarding] Waiting for currentUser...');
-      return;
-    }
-
-    if (!inviteData) {
-      console.log('[Onboarding] No invite data, skipping invite setup');
-      return;
-    }
-
-    console.log('[Onboarding] Starting invite setup...');
-
-    (async () => {
-      try {
-        await onboardingStore.completeInviteSetup(signer);
-        console.log('[Onboarding] ✓ Invite setup complete');
-      } catch (err) {
-        console.error('[Onboarding] ✗ Failed to complete invite setup:', err);
-      }
-    })();
-  });
+  // NOTE: completeInviteSetup is now called explicitly in handleStep4Next for invite flow
+  // Removed from reactive effect to prevent it from running on every profile data change
 
   function goToStep(step: number) {
     onboardingStore.setStep(step);
@@ -108,26 +70,28 @@
 
   async function handleStep4Next() {
     console.log('[Onboarding] handleStep4Next called');
+    if (!signer) {
+      console.error('[Onboarding] ✗ No signer available');
+      return;
+    }
     try {
-      await onboardingStore.publishProfile();
-      console.log('[Onboarding] ✓ Profile published');
+      // Check if this is an invite flow or regular onboarding
+      if (inviteData && !hasCompletedInviteSetup) {
+        console.log('[Onboarding] Invite flow: calling completeInviteSetup');
+        await onboardingStore.completeInviteSetup(signer);
+        console.log('[Onboarding] ✓ Invite setup complete');
+      } else {
+        console.log('[Onboarding] Regular flow: calling publishProfileAndSetup');
+        await onboardingStore.publishProfileAndSetup(signer);
+        console.log('[Onboarding] ✓ Profile published and setup complete');
+      }
     } catch (err) {
-      console.error('[Onboarding] ✗ Error publishing profile:', err);
+      console.error('[Onboarding] ✗ Error during onboarding:', err);
     }
     goToStep(5);
   }
 
   async function completeOnboarding() {
-    // Create wallet for users without invite
-    if (!inviteData) {
-      try {
-        console.log('[Onboarding] Creating default wallet for non-invited user');
-        await onboardingStore.createDefaultWallet();
-      } catch (err) {
-        console.error('[Onboarding] ✗ Failed to create wallet:', err);
-      }
-    }
-
     onboardingStore.clear();
     goto('/');
   }
