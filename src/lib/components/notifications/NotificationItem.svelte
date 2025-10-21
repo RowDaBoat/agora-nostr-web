@@ -47,5 +47,5 @@
 {:else if notification.type === 'zap'}
   <ZapNotification zaps={notification.zaps} {targetEvent} timestamp={notification.timestamp} />
 {:else if notification.type === 'invite_acceptance'}
-  <InviteAcceptanceNotification event={notification.event} />
+  <InviteAcceptanceNotification notification={notification} />
 {/if}

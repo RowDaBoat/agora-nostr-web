@@ -19,11 +19,19 @@
 
   let isLoading = $state(false);
 
-  async function handleToggleFollow() {
+  async function handleToggleFollow(event: MouseEvent) {
     if (!ndk.$currentUser || isLoading) return;
 
     isLoading = true;
     const wasFollowing = isFollowing;
+
+    // Dispatch loading event
+    event.currentTarget?.dispatchEvent(
+      new CustomEvent('followloading', {
+        detail: { pubkey, wasFollowing },
+        bubbles: true,
+      })
+    );
 
     try {
       const userToToggle = await ndk.fetchUser(pubkey);
@@ -35,9 +43,26 @@
         await ndk.$currentUser.follow(userToToggle);
         toast.success($t('profile.followed'));
       }
+
+      // Dispatch success event
+      event.currentTarget?.dispatchEvent(
+        new CustomEvent('followsuccess', {
+          detail: { pubkey, isFollowing: !wasFollowing },
+          bubbles: true,
+        })
+      );
     } catch (error) {
       console.error('Error toggling follow:', error);
       toast.error($t('profile.follow_error'));
+
+      // Dispatch error event
+      event.currentTarget?.dispatchEvent(
+        new CustomEvent('followerror', {
+          detail: { pubkey, error, wasFollowing },
+          bubbles: true,
+        })
+      );
+
       // Note: NDK's follow/unfollow methods update the follows set immediately,
       // but if there's an error, the state will remain changed. This is acceptable
       // as the follow list publish might have partially succeeded.
@@ -48,6 +73,7 @@
 </script>
 {#if !isOwnProfile && ndk.$currentUser}
   <button
+    data-testid="follow-button"
     type="button"
     onclick={handleToggleFollow}
     disabled={isLoading}
