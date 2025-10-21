@@ -13,6 +13,7 @@
     { value: 'reaction', label: 'Reactions' },
     { value: 'repost', label: 'Reposts' },
     { value: 'zap', label: 'Zaps' },
+    { value: 'invite', label: 'Invites' },
   ];
 
   function handleFilterChange(filter: NotificationFilter) {

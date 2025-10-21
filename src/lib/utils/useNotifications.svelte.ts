@@ -45,15 +45,22 @@ export type ZapNotification = BaseNotification & {
   zaps: Array<{ event: NDKEvent; amount: number; sender: string }>;
 };
 
+export type InviteAcceptanceNotification = BaseNotification & {
+  type: 'invite_acceptance';
+  event: NDKEvent;
+  inviteeEventId: string;
+};
+
 export type NotificationGroup =
   | ReplyNotification
   | MentionNotification
   | QuoteNotification
   | ReactionNotification
   | RepostNotification
-  | ZapNotification;
+  | ZapNotification
+  | InviteAcceptanceNotification;
 
-export type NotificationFilter = 'all' | 'reply' | 'mention' | 'quote' | 'reaction' | 'repost' | 'zap';
+export type NotificationFilter = 'all' | 'reply' | 'mention' | 'quote' | 'reaction' | 'repost' | 'zap' | 'invite';
 
 /**
  * Creates a notifications manager that aggregates and groups notifications
@@ -68,7 +75,7 @@ export function createNotificationsManager(ndk: NDKSvelte) {
     return {
       filters: [
         {
-          kinds: [1, 1111, 6, 16, 7, 9735], // text, reply, repost, generic-repost, reaction, zap
+          kinds: [1, 1111, 6, 16, 7, 9735, 514], // text, reply, repost, generic-repost, reaction, zap, invite acceptance
           '#p': [currentUser.pubkey],
           since: Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 30, // last 30 days
           limit: 500,
@@ -122,6 +129,7 @@ export function createNotificationsManager(ndk: NDKSvelte) {
     const reposts: NDKEvent[] = [];
     const reactions: NDKEvent[] = [];
     const zaps: NDKEvent[] = [];
+    const inviteAcceptances: NDKEvent[] = [];
 
     events.forEach((event) => {
       if (event.kind === 7) {
@@ -130,6 +138,8 @@ export function createNotificationsManager(ndk: NDKSvelte) {
         reposts.push(event);
       } else if (event.kind === 9735) {
         zaps.push(event);
+      } else if (event.kind === 514) {
+        inviteAcceptances.push(event);
       } else if (event.kind === 1 || event.kind === 1111) {
         // Check if it's a quote
         const qTag = event.tags.find((t) => t[0] === 'q');
@@ -314,6 +324,20 @@ export function createNotificationsManager(ndk: NDKSvelte) {
       });
     });
 
+    // Process invite acceptances (kind 514)
+    inviteAcceptances.forEach((event) => {
+      // The 514 event is published by the invitee, tagging the inviter (us) with 'p' tag
+      // and the invite event with 'e' tag
+      const inviteEventId = event.tags.find((t) => t[0] === 'e')?.[1] || '';
+      groups.push({
+        id: `invite-${event.id}`,
+        type: 'invite_acceptance',
+        timestamp: event.created_at || 0,
+        event,
+        inviteeEventId: inviteEventId,
+      });
+    });
+
     // Sort by timestamp (most recent first)
     return groups.sort((a, b) => b.timestamp - a.timestamp);
   });
@@ -350,6 +374,9 @@ export function createNotificationsManager(ndk: NDKSvelte) {
   // Filtered notifications
   const filteredNotifications = $derived.by(() => {
     if (currentFilter === 'all') return notificationGroups;
+    if (currentFilter === 'invite') {
+      return notificationGroups.filter((group) => group.type === 'invite_acceptance');
+    }
     return notificationGroups.filter((group) => group.type === currentFilter);
   });
 
@@ -363,10 +390,15 @@ export function createNotificationsManager(ndk: NDKSvelte) {
       reaction: 0,
       repost: 0,
       zap: 0,
+      invite: 0,
     };
 
     notificationGroups.forEach((group) => {
-      result[group.type]++;
+      if (group.type === 'invite_acceptance') {
+        result.invite++;
+      } else {
+        result[group.type]++;
+      }
     });
 
     return result;
