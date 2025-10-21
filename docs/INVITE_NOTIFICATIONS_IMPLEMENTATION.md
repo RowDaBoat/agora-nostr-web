@@ -4,12 +4,44 @@
 
 This document provides detailed technical information about the kind 514 invite acceptance notification implementation.
 
+**Latest Updates (Refactoring)**:
+- Eliminated magic numbers with `KIND_INVITE_ACCEPTANCE` constant
+- Implemented strategy pattern for notification processing
+- Simplified component props with proper type boundaries
+- Added custom event dispatching for better error propagation
+- Enhanced testability with data-testid attributes
+
+## Architecture
+
+### Constants and Configuration
+
+**File**: `src/lib/constants/nostr.ts`
+**Lines**: 1-14
+
+```typescript
+export const KIND_TEXT_NOTE = 1;
+export const KIND_REPLY = 1111;
+export const KIND_REPOST = 6;
+export const KIND_GENERIC_REPOST = 16;
+export const KIND_REACTION = 7;
+export const KIND_ZAP = 9735;
+export const KIND_INVITE_ACCEPTANCE = 514;
+
+export const NOTIFICATION_KINDS = [
+  KIND_TEXT_NOTE, KIND_REPLY, KIND_REPOST,
+  KIND_GENERIC_REPOST, KIND_REACTION, KIND_ZAP,
+  KIND_INVITE_ACCEPTANCE
+] as const;
+```
+
+All Nostr event kinds are now centralized in constants to eliminate magic numbers throughout the codebase.
+
 ## Tag Detection Implementation
 
 ### Subscription Filter
 
 **File**: `src/lib/utils/useNotifications.svelte.ts`
-**Lines**: 72-86
+**Lines**: 287-290
 
 ```typescript
 const notificationsSubscription = ndk.$subscribe(() => {
@@ -18,7 +50,7 @@ const notificationsSubscription = ndk.$subscribe(() => {
   return {
     filters: [
       {
-        kinds: [1, 1111, 6, 16, 7, 9735, 514], // Added 514 for invite acceptance
+        kinds: NOTIFICATION_KINDS,  // ← Uses constant array
         '#p': [currentUser.pubkey],  // ← RELAY-LEVEL FILTERING
         since: Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 30,
         limit: 500,
@@ -42,19 +74,113 @@ const notificationsSubscription = ndk.$subscribe(() => {
 - **No global 514 events**: We never receive kind 514 events that don't tag us
 - **Automatic context**: The filter automatically uses whoever is logged in, including the project owner
 
-## Follow Button Implementation
+## Notification Processing Architecture
 
-### Follow API Integration
+### Strategy Pattern Implementation
 
-**File**: `src/lib/components/FollowButton.svelte`
-**Lines**: 22-47
+**File**: `src/lib/utils/useNotifications.svelte.ts`
+**Lines**: 108-171
+
+The notification processing uses a strategy pattern to eliminate complex if/else chains and make it easy to add new notification types:
 
 ```typescript
-async function handleToggleFollow() {
+// Step 1: Categorize event by type
+function categorizeEvent(event: NDKEvent): NotificationCategory {
+  const kind = event.kind;
+
+  if (kind === KIND_INVITE_ACCEPTANCE) {
+    return 'invite_acceptance';
+  }
+  // ... other categorizations
+}
+
+// Step 2: Process by category using strategy object
+const notificationProcessors = {
+  invite_acceptance: (events: NDKEvent[]): InviteAcceptanceNotification[] => {
+    return events.map((event) => ({
+      id: `invite-${event.id}`,
+      type: 'invite_acceptance' as const,
+      timestamp: event.created_at || 0,
+      event,
+      inviteeEventId: event.tags.find((t) => t[0] === 'e')?.[1] || '',
+      inviteePubkey: event.pubkey,  // ← Primary actor who accepted
+    }));
+  },
+  // ... other processors
+};
+```
+
+**Benefits**:
+- Each notification type has a dedicated processor function
+- Easy to add new notification types without modifying existing code
+- Clear separation of concerns
+- Type-safe with TypeScript discrimination
+- Eliminates long if/else or switch statements
+
+### Notification Type Structure
+
+**File**: `src/lib/utils/useNotifications.svelte.ts`
+**Lines**: 42-48
+
+```typescript
+export type InviteAcceptanceNotification = BaseNotification & {
+  type: 'invite_acceptance';
+  event: NDKEvent;
+  inviteeEventId: string;
+  inviteePubkey: string;  // ← Primary actor extracted for easy access
+};
+```
+
+The processor extracts the invitee's pubkey directly, so components don't need to parse the event structure.
+
+## Component Architecture
+
+### InviteAcceptanceNotification Component
+
+**File**: `src/lib/components/notifications/InviteAcceptanceNotification.svelte`
+
+**Props** (Lines 9-11):
+```typescript
+interface Props {
+  notification: InviteAcceptanceNotification;  // ← Single, typed notification prop
+}
+```
+
+**Key Features**:
+- Accepts fully processed notification object (not raw NDKEvent)
+- Uses `notification.inviteePubkey` for all user references
+- Uses `notification.timestamp` for time display
+- Has `data-testid="invite-acceptance-notification"` for testing
+- Defensive display name fallback: shows first 8 chars of pubkey if no profile
+
+**Usage** (in NotificationItem.svelte):
+```typescript
+{:else if notification.type === 'invite_acceptance'}
+  <InviteAcceptanceNotification notification={notification} />
+```
+
+### FollowButton Component
+
+**File**: `src/lib/components/FollowButton.svelte`
+
+#### Follow API Integration
+
+**Lines**: 22-72
+
+```typescript
+async function handleToggleFollow(event: MouseEvent) {
   if (!ndk.$currentUser || isLoading) return;
 
   isLoading = true;
   const wasFollowing = isFollowing;
+
+  // Dispatch loading event
+  event.currentTarget?.dispatchEvent(
+    new CustomEvent('followloading', {
+      detail: { pubkey, wasFollowing },
+      bubbles: true,
+    })
+  );
 
   try {
     const userToToggle = await ndk.fetchUser(pubkey);
@@ -66,14 +192,45 @@ async function handleToggleFollow() {
       await ndk.$currentUser.follow(userToToggle);     // ← NDK API
       toast.success($t('profile.followed'));
     }
+
+    // Dispatch success event
+    event.currentTarget?.dispatchEvent(
+      new CustomEvent('followsuccess', {
+        detail: { pubkey, isFollowing: !wasFollowing },
+        bubbles: true,
+      })
+    );
   } catch (error) {
     console.error('Error toggling follow:', error);
     toast.error($t('profile.follow_error'));
+
+    // Dispatch error event
+    event.currentTarget?.dispatchEvent(
+      new CustomEvent('followerror', {
+        detail: { pubkey, error, wasFollowing },
+        bubbles: true,
+      })
+    );
   } finally {
     isLoading = false;
   }
 }
 ```
+
+#### Custom Events
+
+The FollowButton dispatches three custom events for better error propagation and state tracking:
+
+1. **`followloading`**: Dispatched when follow action starts
+   - Detail: `{ pubkey: string, wasFollowing: boolean }`
+
+2. **`followsuccess`**: Dispatched when follow action succeeds
+   - Detail: `{ pubkey: string, isFollowing: boolean }`
+
+3. **`followerror`**: Dispatched when follow action fails
+   - Detail: `{ pubkey: string, error: unknown, wasFollowing: boolean }`
+
+All events bubble, allowing parent components to react to state changes.
 
 ### State Management
 
@@ -355,6 +512,61 @@ export type NotificationFilter = 'all' | 'reply' | 'mention' | 'quote' | 'reacti
 - **Login required**: `ndk.$currentUser` must exist
 - **Authorization**: Users can only follow/unfollow as themselves
 - **No impersonation**: Current user context is session-based
+
+## Testability
+
+### Data Test IDs
+
+Both components include `data-testid` attributes for reliable E2E testing:
+
+**InviteAcceptanceNotification** (Line 35):
+```svelte
+<div data-testid="invite-acceptance-notification" ...>
+```
+
+**FollowButton** (Line 76):
+```svelte
+<button data-testid="follow-button" ...>
+```
+
+### Testing Strategy
+
+**File**: `tests/invite-acceptance-notifications.spec.ts`
+
+Tests use data-testid selectors instead of fragile CSS selectors:
+
+```typescript
+// Find notification component
+const inviteNotifications = page.getByTestId('invite-acceptance-notification');
+
+// Find Follow button
+const followButtons = page.getByTestId('follow-button');
+```
+
+**Benefits**:
+- Resistant to styling changes
+- Clear test intent
+- Better test isolation
+- Easier debugging
+
+### Custom Event Testing
+
+Tests can listen for custom events dispatched by FollowButton:
+
+```typescript
+const loadingEventPromise = page.evaluate(() => {
+  return new Promise((resolve) => {
+    document.addEventListener('followloading', (e) => resolve(e), { once: true });
+  });
+});
+
+await button.click();
+```
+
+This enables testing of:
+- Loading state transitions
+- Success/error handling
+- State propagation to parent components
 
 ## Future Enhancements
 
