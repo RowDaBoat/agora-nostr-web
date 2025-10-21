@@ -22,14 +22,14 @@
 
   // Initialize pending state from wallet
   $effect(() => {
-    if (!hasPendingChanges) {
+    if (!hasPendingChanges && wallet) {
       pendingMints = wallet.mints.map(m => typeof m === 'string' ? m : m.url);
       pendingRelays = wallet.relays;
     }
   });
 
-  const mints = $derived(pendingMints);
-  const relays = $derived(pendingRelays);
+  const mints = $derived(hasPendingChanges ? pendingMints : (wallet?.mints.map(m => typeof m === 'string' ? m : m.url) || []));
+  const relays = $derived(hasPendingChanges ? pendingRelays : (wallet?.relays || []));
   const mintBalances = $derived.by(() => {
     const balances = new Map<string, number>();
     mints.forEach(mint => {

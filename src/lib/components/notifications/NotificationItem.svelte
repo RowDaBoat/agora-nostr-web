@@ -7,6 +7,7 @@
   import ReactionNotification from './ReactionNotification.svelte';
   import RepostNotification from './RepostNotification.svelte';
   import ZapNotification from './ZapNotification.svelte';
+  import InviteAcceptanceNotification from './InviteAcceptanceNotification.svelte';
 
   interface Props {
     notification: NotificationGroup;
@@ -45,4 +46,6 @@
   <RepostNotification reposts={notification.reposts} {targetEvent} timestamp={notification.timestamp} />
 {:else if notification.type === 'zap'}
   <ZapNotification zaps={notification.zaps} {targetEvent} timestamp={notification.timestamp} />
+{:else if notification.type === 'invite_acceptance'}
+  <InviteAcceptanceNotification event={notification.event} />
 {/if}

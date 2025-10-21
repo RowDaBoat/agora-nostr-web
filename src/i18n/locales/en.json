@@ -245,6 +245,9 @@
     "editProfile": "Edit Profile",
     "follow": "Follow",
     "unfollow": "Unfollow",
+    "followed": "Now following",
+    "unfollowed": "Unfollowed",
+    "follow_error": "Failed to update follow status",
     "tabs": {
       "notes": "Notes",
       "replies": "Replies",
@@ -300,11 +303,46 @@
     "copy": "Copy",
     "copied": "Copied!",
     "share": "Share",
-    "soon": "Soon"
+    "soon": "Soon",
+    "optional": "(optional)"
   },
   "userDropdown": {
     "mute": "Mute",
     "unmute": "Unmute"
+  },
+  "noteDropdown": {
+    "copyAuthor": "Copy author (nprofile)",
+    "copyEventId": "Copy ID (nevent)",
+    "copyRawEvent": "Copy raw event",
+    "viewRawEvent": "View raw event",
+    "report": "Report",
+    "seenOnRelays": "Seen on {count} relay",
+    "seenOnRelays_plural": "Seen on {count} relays"
+  },
+  "report": {
+    "title": "Report Content",
+    "description": "Help keep the community safe by reporting content that violates community standards.",
+    "selectReason": "Select a reason for reporting",
+    "additionalInfo": "Additional information",
+    "additionalInfoPlaceholder": "Provide any additional context that might be helpful...",
+    "warning": "Reports are public on Nostr. False reports may damage your reputation.",
+    "submit": "Submit Report",
+    "submitting": "Submitting...",
+    "success": "Report submitted successfully",
+    "types": {
+      "nudity": "Nudity or sexual content",
+      "malware": "Malware or viruses",
+      "profanity": "Profanity or offensive language",
+      "illegal": "Illegal activities",
+      "spam": "Spam or misleading content",
+      "impersonation": "Impersonation",
+      "other": "Other"
+    },
+    "errors": {
+      "selectType": "Please select a report type",
+      "notLoggedIn": "You must be logged in to submit a report",
+      "failed": "Failed to submit report. Please try again."
+    }
   },
   "onboarding": {
     "step3Features": {
@@ -388,9 +426,28 @@
         "description": "Trade, share, and build with people who understand your journey."
       },
       "startJourney": "Start Your Journey",
+      "acceptInvite": "Accept Invite",
       "alreadyHaveAccount": "Already have a Nostr account?",
       "signInHere": "Sign in here",
       "trustSignals": "Built on Nostr protocol • No personal data required • Leave anytime with your content"
+    },
+    "step8Welcome": {
+      "title": "Welcome to Agora, {name}!",
+      "friend": "Friend",
+      "subtitle": "Your voice matters. Your community is here.",
+      "stats": {
+        "peopleFollowing": "People Following",
+        "followPacks": "Follow Packs",
+        "postPublished": "Post Published"
+      },
+      "whatsNext": {
+        "title": "What's Next?",
+        "feedReady": "Your feed is ready with content from {count} community voices",
+        "marketplace": "You can start buying and selling in the marketplace",
+        "p2pTrades": "Join P2P trades with verified community members",
+        "earnSats": "Share your stories and earn sats for valuable content"
+      },
+      "enterAgora": "Enter Agora"
     }
   }
 }
