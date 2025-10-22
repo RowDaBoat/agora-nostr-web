@@ -1,12 +1,10 @@
 <script lang="ts">
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
-  import { zap } from '@nostr-dev-kit/svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { settings } from '$lib/stores/settings.svelte';
   import { clickOutside } from '$lib/utils/clickOutside';
   import ComposeDialog from './ComposeDialog.svelte';
-  import ZapAmountModal from './ZapAmountModal.svelte';
+  import ZapButton from './ZapButton.svelte';
 
   interface Props {
     event: NDKEvent;
@@ -18,10 +16,6 @@
   let showReplyDialog = $state(false);
   let showQuoteDialog = $state(false);
   let showRepostMenu = $state(false);
-  let showZapModal = $state(false);
-  let isZapping = $state(false);
-  let zapSuccess = $state(false);
-  let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
   const interactions = ndk.$subscribe(() => ({
     filters: [{
@@ -73,66 +67,6 @@
     }
   }
 
-  async function handleQuickZap(e: MouseEvent) {
-    e.stopPropagation();
-    if (isZapping || !ndk.signer) return;
-
-    await performZap(settings.zap.defaultAmount);
-  }
-
-  async function performZap(amount: number) {
-    if (!ndk.signer) {
-      toast.error('Please login to zap');
-      return;
-    }
-
-    isZapping = true;
-
-    try {
-      await zap(ndk, event, amount * 1000);
-      zapSuccess = true;
-      setTimeout(() => zapSuccess = false, 2000);
-      toast.success(`Zapped ${amount} sats!`);
-    } catch (err) {
-      console.error('Failed to zap:', err);
-      toast.error('Failed to send zap');
-    } finally {
-      isZapping = false;
-    }
-  }
-
-  function handleZapModalZap(amount: number) {
-    showZapModal = false;
-    performZap(amount);
-  }
-
-  function handleZapLongPressStart(e: MouseEvent | TouchEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    longPressTimer = setTimeout(() => {
-      showZapModal = true;
-      longPressTimer = null;
-    }, 500);
-  }
-
-  function handleZapLongPressEnd(e: MouseEvent | TouchEvent) {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-
-      if (e.type === 'mouseup' || e.type === 'touchend') {
-        handleQuickZap(e as MouseEvent);
-      }
-    }
-  }
-
-  function handleZapLongPressCancel() {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-    }
-  }
 </script>
 
 {#if variant === 'tiktok'}
@@ -211,30 +145,7 @@
       <span class="text-xs font-semibold">{reactionCount}</span>
     </button>
 
-    <button
-      onmousedown={handleZapLongPressStart}
-      onmouseup={handleZapLongPressEnd}
-      onmouseleave={handleZapLongPressCancel}
-      ontouchstart={handleZapLongPressStart}
-      ontouchend={handleZapLongPressEnd}
-      ontouchcancel={handleZapLongPressCancel}
-      disabled={isZapping}
-      class="flex flex-col items-center gap-1 hover:scale-110 transition-transform group {isZapping ? 'opacity-50 cursor-wait' : ''}"
-      type="button"
-    >
-      <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center {zapSuccess ? 'bg-yellow-400/30' : ''}">
-        {#if isZapping}
-          <svg class="w-6 h-6 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        {:else}
-          <svg class="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-        {/if}
-      </div>
-      <span class="text-xs font-semibold">{isZapping ? '...' : 'Zap'}</span>
-    </button>
+    <ZapButton {event} variant="tiktok" />
   </div>
 {:else}
   <div class="flex items-center gap-3 sm:gap-6 {variant === 'thread-main' ? 'border-t border-border pt-3' : ''} text-muted-foreground">
@@ -306,48 +217,9 @@
     <span class="text-sm group-hover:underline">{reactionCount}</span>
   </button>
 
-  <button
-    onmousedown={handleZapLongPressStart}
-    onmouseup={handleZapLongPressEnd}
-    onmouseleave={handleZapLongPressCancel}
-    ontouchstart={handleZapLongPressStart}
-    ontouchend={handleZapLongPressEnd}
-    ontouchcancel={handleZapLongPressCancel}
-    disabled={isZapping}
-    class="relative flex items-center gap-2 transition-colors group {zapSuccess ? 'text-yellow-400' : 'hover:text-yellow-400'} {isZapping ? 'opacity-50 cursor-wait' : ''}"
-    type="button"
-  >
-    {#if isZapping}
-      <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-      </svg>
-    {:else if zapSuccess}
-      <svg class="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
-    {:else}
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
-    {/if}
-    <span class="text-sm group-hover:underline">
-      {#if zapSuccess}
-        Zapped!
-      {:else if isZapping}
-        Zapping...
-      {:else}
-        Zap
-      {/if}
-    </span>
-  </button>
+  <ZapButton {event} />
   </div>
 {/if}
 
 <ComposeDialog bind:open={showReplyDialog} replyTo={event} />
 <ComposeDialog bind:open={showQuoteDialog} quotedEvent={event} />
-<ZapAmountModal
-  bind:open={showZapModal}
-  {event}
-  onZap={handleZapModalZap}
-  onCancel={() => showZapModal = false}
-/>

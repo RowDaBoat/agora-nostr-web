@@ -123,7 +123,7 @@
 </script>
 
 <div class="min-h-screen bg-background flex justify-center overflow-x-hidden">
-  <div class="flex w-full max-w-[1400px] relative">
+  <div class="flex w-full max-w-full lg:max-w-[1400px] relative">
     <!-- Left Sidebar - Navigation -->
     <aside class="hidden lg:flex {sidebarCollapsed ? 'w-20' : 'w-64'} flex-col border-r border-border p-4 fixed left-0 top-0 bottom-0 overflow-y-auto overflow-x-visible transition-all duration-300 ease-in-out bg-background">
       <!-- Header: Logo and Toggle -->

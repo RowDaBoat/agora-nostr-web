@@ -469,6 +469,7 @@
     border-bottom: 1px solid var(--color-border);
     background: var(--color-background);
     position: sticky;
+    width: 100%;
     top: 0;
     z-index: 10;
   }

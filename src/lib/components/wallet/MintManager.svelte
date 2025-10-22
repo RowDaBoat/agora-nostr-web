@@ -33,7 +33,7 @@
       const currentMints = mints;
       const updatedMints = [...currentMints, newMintUrl.trim()];
 
-      await wallet.updateWallet({
+      await wallet?.save({
         mints: updatedMints,
         relays: wallet.relays
       });
@@ -52,7 +52,7 @@
         const currentMints = mints;
         const updatedMints = currentMints.filter(m => m !== mint);
 
-        await wallet.updateWallet({
+        await wallet.save({
           mints: updatedMints,
           relays: wallet.relays
         });

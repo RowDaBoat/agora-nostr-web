@@ -29,7 +29,7 @@ export const ndk = new NDKSvelte({
   signatureVerificationWorker: sigVerifyWorker,
   initialValidationRatio: 1.0,
   lowestValidationRatio: 0.1,
-  aiGuardrails: true,
+  aiGuardrails: false,
   session: browser ? {
     storage: new LocalStorage(),
     autoSave: true,

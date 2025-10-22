@@ -17,7 +17,7 @@
   }: Props = $props();
 
   const user = $derived(ndk ? ndk.$fetchUser(() => bech32) : null);
-  const profile = $derived(ndk && user ? ndk.$fetchProfile(() => user.pubkey) : null);
+  const profile = $derived(ndk && user && user.ready ? ndk.$fetchProfile(() => user.pubkey) : null);
 
   const displayName = $derived.by(() => {
     if (profile?.displayName) return profile.displayName.slice(0, 48);
@@ -34,7 +34,7 @@
   }
 </script>
 
-{#if !user?.pubkey}
+{#if !user || !user.ready}
   <span class="inline-flex items-center gap-1 text-primary font-medium {className}">
     {bech32.slice(0, 12)}
   </span>
@@ -44,7 +44,7 @@
     class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 hover:bg-primary/15 text-primary font-medium transition-colors no-underline {className}"
     onclick={handleClick}
   >
-    <Avatar {ndk} pubkey={user?.pubkey} size={16} class="flex-shrink-0" />
+    <Avatar {ndk} pubkey={user.pubkey} size={16} class="flex-shrink-0" />
     <span class="text-sm">{displayName}</span>
   </a>
 {/if}

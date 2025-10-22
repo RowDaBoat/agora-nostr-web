@@ -67,7 +67,7 @@
     isSaving = true;
 
     try {
-      await wallet.updateWallet({
+      await wallet.save({
         mints: pendingMints,
         relays: pendingRelays.length > 0 ? pendingRelays : undefined
       });

@@ -30,6 +30,9 @@ interface AppSettings {
   wallet: {
     npubCashEnabled: boolean;
   };
+  relayAuth: {
+    mode: 'always' | 'ask';
+  };
 }
 
 const DEFAULT_RELAYS: Relay[] = [
@@ -60,6 +63,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   },
   wallet: {
     npubCashEnabled: false,
+  },
+  relayAuth: {
+    mode: 'always',
   },
 };
 
@@ -133,6 +139,10 @@ class SettingsStore {
 
   get wallet() {
     return this.state.wallet;
+  }
+
+  get relayAuth() {
+    return this.state.relayAuth;
   }
 
   addRelay(relay: Relay) {
@@ -214,6 +224,11 @@ class SettingsStore {
 
   updateWallet(settings: Partial<AppSettings['wallet']>) {
     this.state.wallet = { ...this.state.wallet, ...settings };
+    saveSettings(this.state);
+  }
+
+  updateRelayAuth(settings: Partial<AppSettings['relayAuth']>) {
+    this.state.relayAuth = { ...this.state.relayAuth, ...settings };
     saveSettings(this.state);
   }
 

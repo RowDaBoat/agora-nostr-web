@@ -2,7 +2,7 @@
   import { ndk } from '$lib/ndk.svelte';
   import { NDKEvent, NDKRelaySet } from '@nostr-dev-kit/ndk';
   import { NDKBlossom } from '@nostr-dev-kit/blossom';
-  import { useBlossomUpload } from '@nostr-dev-kit/svelte';
+  import { createBlossomUpload } from '@nostr-dev-kit/svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
   import { Button } from '$lib/components/ui/button';
@@ -56,7 +56,7 @@
   let isProtected = $state(false);
 
   const blossom = new NDKBlossom(ndk);
-  const upload = useBlossomUpload(blossom);
+  const upload = createBlossomUpload(blossom);
 
   const currentUser = ndk.$currentUser;
   const isMobile = $derived(browser && window.innerWidth < 768);

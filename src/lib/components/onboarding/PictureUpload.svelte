@@ -1,6 +1,6 @@
 <script lang="ts">
   import { NDKBlossom } from '@nostr-dev-kit/blossom';
-  import { useBlossomUpload } from '@nostr-dev-kit/svelte';
+  import { createBlossomUpload } from '@nostr-dev-kit/svelte';
   import type { NDK } from '@nostr-dev-kit/ndk';
 
   interface Props {
@@ -13,7 +13,7 @@
   let { ndk, onUploadComplete, currentImageUrl, fallbackInitials }: Props = $props();
 
   const blossom = new NDKBlossom(ndk);
-  const upload = useBlossomUpload(blossom);
+  const upload = createBlossomUpload(blossom);
 
   let fileInput: HTMLInputElement;
   let previewUrl = $state<string | null>(currentImageUrl || null);

@@ -24,7 +24,7 @@
 	});
 </script>
 
-<div class="flex items-start gap-3 p-4 bg-card rounded-lg border border-border hover:border-primary/30 transition-colors">
+<div class="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
 	<Avatar {ndk} pubkey={memberPubkey} class="w-12 h-12 rounded-full" />
 
 	<div class="flex-1 min-w-0">

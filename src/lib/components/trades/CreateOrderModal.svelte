@@ -1,11 +1,15 @@
 <script lang="ts">
   import { NDKEvent } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
+  import { settings } from '$lib/stores/settings.svelte';
+  import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';
+  import { clickOutside } from '$lib/utils/clickOutside';
   import { toast } from '$lib/stores/toast.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
+  import RelayPublishDropdownContent from '$lib/components/RelayPublishDropdownContent.svelte';
 
   interface Props {
     open: boolean;
@@ -86,6 +90,22 @@
   let premium = $state('0');
   let expirationHours = $state('24');
   let creating = $state(false);
+  let selectedRelayUrls = $state<string[]>([]);
+  let isProtected = $state(false);
+  let isRelayDropdownOpen = $state(false);
+
+  const allRelays = $derived(settings.relays.filter(r => r.enabled));
+
+  // Initialize selected relays from current relay filter or use all write relays
+  $effect(() => {
+    if (open) {
+      if (settings.selectedRelay) {
+        selectedRelayUrls = [settings.selectedRelay];
+      } else if (selectedRelayUrls.length === 0) {
+        selectedRelayUrls = allRelays.filter(r => r.write).map(r => r.url);
+      }
+    }
+  });
 
   const showLocationPicker = $derived(
     paymentMethods.find(m => m.id === paymentMethod)?.requiresLocation || false
@@ -117,6 +137,23 @@
     } else {
       toast.error('Geolocation is not supported by your browser');
     }
+  }
+
+  function toggleRelay(url: string) {
+    if (selectedRelayUrls.includes(url)) {
+      selectedRelayUrls = selectedRelayUrls.filter(u => u !== url);
+    } else {
+      selectedRelayUrls = [...selectedRelayUrls, url];
+    }
+  }
+
+  function selectOnlyRelay(url: string) {
+    selectedRelayUrls = [url];
+    isRelayDropdownOpen = false;
+  }
+
+  function handleRelayDropdownClickOutside() {
+    isRelayDropdownOpen = false;
   }
 
   async function handleCreate() {
@@ -160,10 +197,20 @@
         tags.push(['g', geohash]);
       }
 
+      // Add protected flag if enabled (NIP-70)
+      if (isProtected) {
+        tags.push(['-']);
+      }
+
       event.tags = tags;
       event.content = '';
 
-      await event.publish();
+      // Publish to selected relays
+      const relaySet = selectedRelayUrls.length > 0
+        ? ndk.ndk.pool.getRelayset(selectedRelayUrls)
+        : undefined;
+
+      await event.publish(relaySet);
 
       toast.success('Order created successfully');
       open = false;
@@ -361,16 +408,72 @@
       </div>
     </div>
 
-    <Dialog.Footer class="mt-6">
-      <Button variant="outline" onclick={() => { open = false; onClose(); }}>
-        Cancel
-      </Button>
-      <Button
-        onclick={handleCreate}
-        disabled={creating || !satsAmount || !fiatAmount}
-      >
-        {creating ? 'Creating...' : 'Create Order'}
-      </Button>
+    <Dialog.Footer class="mt-6 flex items-center justify-between gap-4">
+      <div class="relative">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onclick={() => isRelayDropdownOpen = !isRelayDropdownOpen}
+          disabled={creating}
+          class="h-10 w-10"
+          title="Select relays"
+        >
+          {#if selectedRelayUrls.length <= 2 && selectedRelayUrls.length > 0}
+            <div class="flex items-center -space-x-1">
+              {#each selectedRelayUrls as relayUrl}
+                {@const relay = allRelays.find(r => r.url === relayUrl)}
+                {@const relayInfo = relay ? useRelayInfoCached(relay.url) : null}
+                {#if relayInfo?.info?.icon}
+                  <img src={relayInfo.info.icon} alt="" class="w-5 h-5 rounded border border-background" />
+                {:else}
+                  <div class="w-5 h-5 rounded bg-muted flex items-center justify-center border border-background">
+                    <svg class="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                    </svg>
+                  </div>
+                {/if}
+              {/each}
+            </div>
+          {:else}
+            <div class="relative">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+              </svg>
+              {#if selectedRelayUrls.length > 2}
+                <span class="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-medium rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5">
+                  {selectedRelayUrls.length}
+                </span>
+              {/if}
+            </div>
+          {/if}
+        </Button>
+
+        {#if isRelayDropdownOpen}
+          <div
+            use:clickOutside={handleRelayDropdownClickOutside}
+            class="absolute bottom-full left-0 mb-2 bg-popover border border-border rounded-lg shadow-xl z-50 w-80 max-h-[400px] overflow-y-auto"
+          >
+            <RelayPublishDropdownContent
+              {selectedRelayUrls}
+              bind:isProtected
+              onToggleRelay={toggleRelay}
+              onSelectOnly={selectOnlyRelay}
+            />
+          </div>
+        {/if}
+      </div>
+      <div class="flex gap-2">
+        <Button variant="outline" onclick={() => { open = false; onClose(); }}>
+          Cancel
+        </Button>
+        <Button
+          onclick={handleCreate}
+          disabled={creating || !satsAmount || !fiatAmount}
+        >
+          {creating ? 'Creating...' : 'Create Order'}
+        </Button>
+      </div>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>

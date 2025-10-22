@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { ndk } from '$lib/ndk.svelte';
-  import type { NDKEvent } from '@nostr-dev-kit/ndk';
+  import { NDKEvent } from '@nostr-dev-kit/ndk';
   import { Avatar } from '@nostr-dev-kit/svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import NoteCard from '$lib/components/NoteCard.svelte';
@@ -19,11 +19,13 @@
   // Fetch the main event
   const mainEvent = ndk.$fetchEvent(() => neventId);
   const currentUser = ndk.$currentUser;
-  const mainProfile = ndk.$fetchProfile(() => mainEvent?.pubkey);
+  const mainProfile = ndk.$fetchProfile(() => mainEvent.ready ? mainEvent.pubkey : undefined);
+
+  $inspect('mainEvent', mainEvent, neventId);
 
   // Get the root event ID from the main event's tags
   const rootEventId = $derived.by(() => {
-    if (!mainEvent) return null;
+    if (!mainEvent.ready) return null;
 
     // Find root tag
     const rootTag = mainEvent.tags.find(tag => tag[0] === 'e' && tag[3] === 'root');
@@ -61,7 +63,7 @@
 
   // Fetch replies to the main event
   const replies = ndk.$subscribe(() => {
-    if (!mainEvent) return undefined;
+    if (!mainEvent.ready) return undefined;
     return {
       filters: [
         { kinds: [1, 9802], '#e': [mainEvent.id] },
@@ -73,7 +75,7 @@
 
   // Build the parent chain (with missing event tracking)
   const parentChain = $derived.by((): ThreadItem[] => {
-    if (!mainEvent || !threadEvents || threadEvents.events.length === 0) return [];
+    if (!mainEvent.ready || !threadEvents || threadEvents.events.length === 0) return [];
 
     const parents: ThreadItem[] = [];
     const eventMap = new Map(threadEvents.events.map(e => [e.id, e]));
@@ -127,7 +129,7 @@
 
   // Filter direct replies
   const directReplies = $derived.by(() => {
-    if (!replies || !mainEvent) return [];
+    if (!replies || !mainEvent.ready) return [];
 
     const repliesArray = replies.events;
 
@@ -158,7 +160,7 @@
   }
 
   async function handleReply() {
-    if (!ndk.signer || !replyContent || !mainEvent) return;
+    if (!ndk.signer || !replyContent || !mainEvent.ready) return;
 
     isSubmitting = true;
 
@@ -204,7 +206,7 @@
     </div>
   </header>
 
-  {#if !mainEvent}
+  {#if !mainEvent.ready}
     <div class="flex flex-col items-center justify-center mt-20">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       <p class="mt-4 text-neutral-400">Loading note...</p>
@@ -220,7 +222,7 @@
             showThreadLine={index < parentChain.length - 1}
             onEventFound={(event) => {
               // Refresh the thread when the missing event is found
-              if (mainEvent) {
+              if (mainEvent.ready) {
                 const nevent = mainEvent.encode();
                 window.location.href = `/e/${nevent}`;
               }
@@ -228,21 +230,21 @@
           />
         {:else if item.event.kind === 9802}
           <HighlightCard event={item.event} variant="default" />
-        {:else}
-          <NoteCard
+        {:else if item.event instanceof NDKEvent}
+          <!-- <NoteCard
             event={item.event}
             variant="thread-parent"
             showThreadLine={index < parentChain.length - 1}
             onNavigate={() => handleEventNavigation(item.event)}
-          />
+          /> -->
         {/if}
       {/each}
 
       <!-- Main Note - Highlighted with larger text -->
-      {#if mainEvent}
+      {#if mainEvent.ready}
         {#if mainEvent.kind === 9802}
           <HighlightCard event={mainEvent} variant="default" />
-        {:else}
+        {:else if mainEvent instanceof NDKEvent}
           <NoteCard
             event={mainEvent}
             variant="thread-main"
@@ -260,7 +262,7 @@
               <div class="p-3 bg-background border border-border rounded-lg">
                 <ContentComposer
                   bind:value={replyContent}
-                  placeholder={`Reply to ${mainProfile?.name || 'this note'}...`}
+                  placeholder={`Reply to ${mainProfile.ready ? mainProfile.name : 'this note'}...`}
                   disabled={isSubmitting}
                 />
               </div>

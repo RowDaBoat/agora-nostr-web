@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Agora App</string>
+    <string name="title_activity_main">Agora App</string>
+    <string name="package_name">com.agora.app</string>
+    <string name="custom_url_scheme">com.agora.app</string>
+</resources>

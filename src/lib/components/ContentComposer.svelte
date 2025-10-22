@@ -1,6 +1,6 @@
 <script lang="ts">
   import { NDKBlossom } from '@nostr-dev-kit/blossom';
-  import { useBlossomUpload } from '@nostr-dev-kit/svelte';
+  import { createBlossomUpload } from '@nostr-dev-kit/svelte';
   import { ndk } from '$lib/ndk.svelte';
   import { Button } from '$lib/components/ui/button';
   import { toast } from '$lib/stores/toast.svelte';
@@ -31,7 +31,7 @@
   }: Props = $props();
 
   const blossom = new NDKBlossom(ndk);
-  const upload = useBlossomUpload(blossom);
+  const upload = createBlossomUpload(blossom);
 
   let textareaElement: HTMLTextAreaElement;
   let fileInput: HTMLInputElement;

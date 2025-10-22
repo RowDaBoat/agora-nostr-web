@@ -363,7 +363,7 @@
     {/if}
 
     {#if activeTab === 'media'}
-      <div class="p-4">
+      <div class="sm:p-4">
         <MediaGrid events={allMediaEvents} />
       </div>
       <LoadMoreTrigger

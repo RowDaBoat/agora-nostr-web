@@ -16,6 +16,7 @@
     rating?: number;
     platform?: string;
     geohash?: string;
+    source?: string;
     createdAt: number;
     event: NDKEvent;
   }
@@ -59,6 +60,7 @@
       const rating = parseFloat(tags.find((t: string[]) => t[0] === 'rating')?.[1] || '0');
       const platform = tags.find((t: string[]) => t[0] === 'y')?.[1];
       const geohash = tags.find((t: string[]) => t[0] === 'g')?.[1];
+      const source = tags.find((t: string[]) => t[0] === 'source')?.[1];
       const dTag = tags.find((t: string[]) => t[0] === 'd')?.[1];
 
       // Only include active orders
@@ -76,6 +78,7 @@
           rating,
           platform,
           geohash,
+          source,
           createdAt: event.created_at || Date.now() / 1000,
           event
         });

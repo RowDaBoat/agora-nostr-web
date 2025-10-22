@@ -4,6 +4,7 @@ import type NDK from '@nostr-dev-kit/ndk';
 import createDebug from 'debug';
 import { relayAuthModal } from './stores/relayAuthModal.svelte';
 import { isAgoraRelay } from './utils/relayUtils';
+import { settings } from './stores/settings.svelte';
 
 const debug = createDebug('agora:relay:auth');
 
@@ -79,6 +80,55 @@ function getStoredDecision(relayUrl: string): boolean | undefined {
   return authDecisionsCache.get(relayUrl);
 }
 
+// Helper function to create and sign auth event
+async function createAndSignAuthEvent(
+  ndk: NDK | undefined,
+  relay: NDKRelay,
+  challenge: string
+): Promise<boolean | NDKEvent> {
+  const event = new NDKEvent(ndk);
+  event.kind = NDKKind.ClientAuth;
+  event.tags = [
+    ['relay', relay.url],
+    ['challenge', challenge]
+  ];
+
+  const signer = ndk?.signer || ndk?.activeUser?.signer;
+  if (signer) {
+    try {
+      await event.sign(signer);
+      debug(`Successfully signed auth event for ${relay.url}`);
+      return event;
+    } catch (e) {
+      debug('Failed to sign auth event:', e);
+      return false;
+    }
+  } else {
+    debug(`No signer available for ${relay.url}, waiting for signer...`);
+    // Wait for signer to be ready with a timeout
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        debug(`Signer timeout for ${relay.url}, authentication failed`);
+        resolve(false);
+      }, 5000); // 5 second timeout
+
+      const handleSignerReady = async (readySigner: any) => {
+        clearTimeout(timeout);
+        try {
+          await event.sign(readySigner);
+          debug(`Successfully signed auth event for ${relay.url} after waiting`);
+          resolve(event);
+        } catch (e) {
+          debug('Failed to sign auth event after waiting:', e);
+          resolve(false);
+        }
+      };
+
+      ndk?.once('signer:ready', handleSignerReady);
+    });
+  }
+}
+
 /**
  * Authentication policy that asks the user for confirmation before authenticating.
  * Stores user decisions so they don't get asked again for the same relay.
@@ -89,54 +139,19 @@ export function createAuthPolicyWithConfirmation({ ndk }: { ndk?: NDK } = {}): N
   return async (relay: NDKRelay, challenge: string): Promise<boolean | NDKEvent> => {
     debug(`Relay ${relay.url} requested authentication`);
 
-    // Auto-authenticate to Agora relays without prompting
+    // Check authentication mode setting
+    const authMode = settings.relayAuth.mode;
+
+    // If mode is 'always', auto-authenticate to all relays
+    if (authMode === 'always') {
+      debug(`Auto-authenticating to ${relay.url} (mode: always)`);
+      return createAndSignAuthEvent(ndk, relay, challenge);
+    }
+
+    // If mode is 'ask', check if it's an Agora relay first
     if (isAgoraRelay(relay.url)) {
-      return true;
-      debug(`Auto-authenticating to agorawlc.com relay: ${relay.url}`);
-
-      // Create and sign auth event
-      const event = new NDKEvent(ndk);
-      event.kind = NDKKind.ClientAuth;
-      event.tags = [
-        ['relay', relay.url],
-        ['challenge', challenge]
-      ];
-
-      // Try to get signer from ndk
-      const signer = ndk?.signer;
-      if (signer) {
-        try {
-          await event.sign(signer);
-          debug(`Successfully signed auth event for ${relay.url}`);
-          return event;
-        } catch (e) {
-          debug('Failed to sign auth event:', e);
-          return false;
-        }
-      } else {
-        debug(`No signer available for auto-auth to ${relay.url}, waiting for signer...`);
-        // Wait for signer to be ready with a timeout
-        return new Promise((resolve) => {
-          const timeout = setTimeout(() => {
-            debug(`Signer timeout for ${relay.url}, authentication failed`);
-            resolve(false);
-          }, 5000); // 5 second timeout
-
-          const handleSignerReady = async (readySigner: any) => {
-            clearTimeout(timeout);
-            try {
-              await event.sign(readySigner);
-              debug(`Successfully signed auth event for ${relay.url} after waiting`);
-              resolve(event);
-            } catch (e) {
-              debug('Failed to sign auth event after waiting:', e);
-              resolve(false);
-            }
-          };
-
-          ndk?.once('signer:ready', handleSignerReady);
-        });
-      }
+      debug(`Auto-authenticating to Agora relay: ${relay.url}`);
+      return createAndSignAuthEvent(ndk, relay, challenge);
     }
 
     // Check if we already have a decision for this relay
@@ -151,45 +166,7 @@ export function createAuthPolicyWithConfirmation({ ndk }: { ndk?: NDK } = {}): N
       }
 
       // User previously accepted, create auth event
-      const event = new NDKEvent(ndk);
-      event.kind = NDKKind.ClientAuth;
-      event.tags = [
-        ['relay', relay.url],
-        ['challenge', challenge]
-      ];
-
-      // Sign the event - try to get signer from ndk or activeUser
-      const signer = ndk?.signer || ndk?.activeUser?.signer;
-      if (signer) {
-        try {
-          await event.sign(signer);
-          return event;
-        } catch (e) {
-          debug('Failed to sign auth event:', e);
-          return false;
-        }
-      } else {
-        // Wait for signer to be ready with timeout
-        return new Promise((resolve) => {
-          const timeout = setTimeout(() => {
-            debug(`Signer timeout for ${relay.url}, authentication failed`);
-            resolve(false);
-          }, 5000);
-
-          const handleSignerReady = async (readySigner: any) => {
-            clearTimeout(timeout);
-            try {
-              await event.sign(readySigner);
-              resolve(event);
-            } catch (e) {
-              debug('Failed to sign auth event after waiting:', e);
-              resolve(false);
-            }
-          };
-
-          ndk?.once('signer:ready', handleSignerReady);
-        });
-      }
+      return createAndSignAuthEvent(ndk, relay, challenge);
     }
 
     // No stored decision, ask the user
@@ -202,47 +179,7 @@ export function createAuthPolicyWithConfirmation({ ndk }: { ndk?: NDK } = {}): N
     }
 
     debug(`User accepted authentication for ${relay.url}`);
-
-    // Create and sign auth event
-    const event = new NDKEvent(ndk);
-    event.kind = NDKKind.ClientAuth;
-    event.tags = [
-      ['relay', relay.url],
-      ['challenge', challenge]
-    ];
-
-    // Try to get signer from ndk or activeUser
-    const signer = ndk?.signer || ndk?.activeUser?.signer;
-    if (signer) {
-      try {
-        await event.sign(signer);
-        return event;
-      } catch (e) {
-        debug('Failed to sign auth event:', e);
-        return false;
-      }
-    } else {
-      // Wait for signer to be ready with timeout
-      return new Promise((resolve) => {
-        const timeout = setTimeout(() => {
-          debug(`Signer timeout for ${relay.url}, authentication failed`);
-          resolve(false);
-        }, 5000);
-
-        const handleSignerReady = async (readySigner: any) => {
-          clearTimeout(timeout);
-          try {
-            await event.sign(readySigner);
-            resolve(event);
-          } catch (e) {
-            debug('Failed to sign auth event after waiting:', e);
-            resolve(false);
-          }
-        };
-
-        ndk?.once('signer:ready', handleSignerReady);
-      });
-    }
+    return createAndSignAuthEvent(ndk, relay, challenge);
   };
 }
 

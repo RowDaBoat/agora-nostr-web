@@ -55,6 +55,59 @@
     </p>
   </div>
 
+  <!-- Relay Authentication Mode -->
+  <div class="bg-card border rounded-lg p-4">
+    <div class="flex items-start gap-3">
+      <svg class="w-5 h-5 text-primary flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+      <div class="flex-1">
+        <h3 class="font-medium text-foreground mb-1">Relay Authentication</h3>
+        <p class="text-sm text-muted-foreground mb-3">
+          Control how to handle relays that require authentication
+        </p>
+        <div class="space-y-2">
+          <label class="flex items-start gap-3 cursor-pointer group">
+            <input
+              type="radio"
+              name="authMode"
+              value="always"
+              checked={settings.relayAuth.mode === 'always'}
+              onchange={() => settings.updateRelayAuth({ mode: 'always' })}
+              class="w-4 h-4 text-primary mt-0.5 focus:ring-2 focus:ring-primary"
+            />
+            <div class="flex-1">
+              <span class="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                Always authenticate
+              </span>
+              <p class="text-xs text-muted-foreground mt-0.5">
+                Automatically authenticate to any relay that requests it
+              </p>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 cursor-pointer group">
+            <input
+              type="radio"
+              name="authMode"
+              value="ask"
+              checked={settings.relayAuth.mode === 'ask'}
+              onchange={() => settings.updateRelayAuth({ mode: 'ask' })}
+              class="w-4 h-4 text-primary mt-0.5 focus:ring-2 focus:ring-primary"
+            />
+            <div class="flex-1">
+              <span class="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                Ask each time
+              </span>
+              <p class="text-xs text-muted-foreground mt-0.5">
+                Show a confirmation dialog before authenticating to relays
+              </p>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Stats -->
   <div class="grid grid-cols-3 gap-2 md:gap-4">
     <div class="bg-neutral-50 dark:bg-background rounded-lg p-3 md:p-4">

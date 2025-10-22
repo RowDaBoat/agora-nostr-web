@@ -328,7 +328,7 @@
 <div class="max-w-full mx-auto">
   <!-- Header -->
   <div bind:this={headerElement} class="sticky top-0 z-10 bg-background/90 backdrop-blur-xl border-b border-border">
-    <div class="px-4 py-4 max-sm:w-screen">
+    <div class="py-2 pl-2 sm:p-4 max-sm:w-screen">
       <div class="flex items-center gap-2">
         <!-- Relay/Following selector icon (always visible) -->
         <div class="flex-shrink-0 relative z-20">
@@ -422,7 +422,7 @@
         {:else}
           <!-- Featured Articles Section -->
           {#if featuredArticles.length > 0}
-            <div class="py-6 border-b border-border">
+            <div class="py-6 border-b border-border max-w-screen">
               <h2 class="text-lg font-bold text-foreground mb-4 flex items-center gap-2 px-4">
                 <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -497,7 +497,7 @@
         <TikTokVideoFeed events={mediaEvents} />
       {/if}
     {:else if selectedFilter === 'images'}
-      <div class="p-4">
+      <div class="sm:p-4">
         {#if mediaEvents.length === 0 && mediaFeed.eosed}
           <div class="p-8 text-center text-muted-foreground">
             No images found

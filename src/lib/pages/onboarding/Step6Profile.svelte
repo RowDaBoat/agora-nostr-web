@@ -5,7 +5,7 @@
   import { extractDomainFromRelay, checkNip05Availability, formatNip05 } from '$lib/utils/nip05';
   import { t } from 'svelte-i18n';
   import { NDKBlossom } from '@nostr-dev-kit/blossom';
-  import { useBlossomUpload } from '@nostr-dev-kit/svelte';
+  import { createBlossomUpload } from '@nostr-dev-kit/svelte';
   import { NDKEvent } from '@nostr-dev-kit/ndk';
 
   interface Props {
@@ -78,7 +78,7 @@
 
   const bannerUpload = $derived.by(() => {
     if (!blossom) return null;
-    return useBlossomUpload(blossom);
+    return createBlossomUpload(blossom);
   });
 
   let bannerInput: HTMLInputElement;

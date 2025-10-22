@@ -4,6 +4,7 @@
   import { EventContent } from '@nostr-dev-kit/svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
   import UserDropdown from '$lib/components/UserDropdown.svelte';
+  import InvitedByBadge from '$lib/components/InvitedByBadge.svelte';
   import { generateBannerGradient } from '$lib/utils/bannerGradient';
   import { t } from 'svelte-i18n';
   import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
@@ -84,6 +85,9 @@
                 </svg>
               </button>
             {/if}
+          </div>
+          <div class="mt-2">
+            <InvitedByBadge {pubkey} />
           </div>
         </div>
         <div class="flex items-center gap-2">

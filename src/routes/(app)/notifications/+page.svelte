@@ -21,7 +21,7 @@
   }
 </script>
 
-<div class="max-w-2xl mx-auto">
+<div class="w-full">
   <div class="sticky top-0 z-10 bg-background/90 backdrop-blur-xl border-b border-border">
     <div class="px-4 py-4">
       <h1 class="text-xl font-bold text-foreground mb-3">Notifications</h1>

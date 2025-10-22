@@ -1,5 +1,5 @@
 import { NDKBlossom } from '@nostr-dev-kit/blossom';
-import { useBlossomUpload } from '@nostr-dev-kit/svelte';
+import { createBlossomUpload } from '@nostr-dev-kit/svelte';
 import { toast } from '$lib/stores/toast.svelte';
 import type NDK from '@nostr-dev-kit/ndk';
 
@@ -17,7 +17,7 @@ export interface UseImageUploadOptions {
 
 export function useImageUpload(ndk: NDK, options: UseImageUploadOptions = {}) {
   const blossom = new NDKBlossom(ndk);
-  const upload = useBlossomUpload(blossom);
+  const upload = createBlossomUpload(blossom);
 
   let uploadedImages = $state<UploadedImage[]>([]);
   let currentImageIndex = $state(0);

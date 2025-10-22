@@ -28,7 +28,7 @@
 	const inviterProfile = $derived(inviterPubkey ? ndk.$fetchProfile(() => inviterPubkey) : null);
 	const user = $derived.by(() => {
 		const u = ndk.getUser({ pubkey });
-		if (profile) {
+		if (profile.ready) {
 			u.profile = profile;
 		}
 		return u;

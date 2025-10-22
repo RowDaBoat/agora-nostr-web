@@ -99,7 +99,21 @@
         "relayExists": "This relay already exists",
         "connected": "Connected",
         "disconnected": "Disconnected",
-        "connecting": "Connecting..."
+        "connecting": "Connecting...",
+        "authentication": {
+          "title": "Relay Authentication",
+          "description": "Control how to handle relays that require authentication",
+          "modes": {
+            "always": {
+              "title": "Always authenticate",
+              "description": "Automatically authenticate to any relay that requests it"
+            },
+            "ask": {
+              "title": "Ask each time",
+              "description": "Show a confirmation dialog before authenticating to relays"
+            }
+          }
+        }
       },
       "appearance": {
         "title": "Appearance",
@@ -248,6 +262,7 @@
     "followed": "Now following",
     "unfollowed": "Unfollowed",
     "follow_error": "Failed to update follow status",
+    "invitedBy": "Invited by",
     "tabs": {
       "notes": "Notes",
       "replies": "Replies",

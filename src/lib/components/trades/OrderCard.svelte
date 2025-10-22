@@ -3,6 +3,7 @@
   import { ndk } from '$lib/ndk.svelte';
   import TakeOrderModal from './TakeOrderModal.svelte';
   import TimeAgo from '../TimeAgo.svelte';
+  import EventOptionsMenu from '../EventOptionsMenu.svelte';
 
   interface Props {
     order: {
@@ -18,6 +19,7 @@
       rating?: number;
       platform?: string;
       geohash?: string;
+      source?: string;
       createdAt: number;
       event: NDKEvent;
     };
@@ -123,6 +125,8 @@
       }`}>
         {order.type === 'buy' ? 'Buying' : 'Selling'}
       </div>
+
+      <EventOptionsMenu event={order.event} />
     </div>
   </div>
 
@@ -181,16 +185,32 @@
   </div>
 
   <div class="flex items-center gap-2">
-    <button
-      onclick={() => showTakeModal = true}
-      class="flex-1 flex items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-primary text-foreground rounded-lg hover:bg-primary-700 transition-colors text-sm md:text-base"
-    >
-      <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-      </svg>
-      <span class="hidden md:inline">{order.type === 'buy' ? 'Sell to User' : 'Buy from User'}</span>
-      <span class="md:hidden">{order.type === 'buy' ? 'Sell' : 'Buy'}</span>
-    </button>
+    {#if order.source}
+      <a
+        href={order.source}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex-1 flex items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-primary text-foreground rounded-lg hover:bg-primary-700 transition-colors text-sm md:text-base"
+        title="View on {order.platform || 'external site'}"
+      >
+        <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+        <span class="hidden md:inline">View on {order.platform || 'Site'}</span>
+        <span class="md:hidden">View</span>
+      </a>
+    {:else}
+      <button
+        onclick={() => showTakeModal = true}
+        class="flex-1 flex items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-primary text-foreground rounded-lg hover:bg-primary-700 transition-colors text-sm md:text-base"
+      >
+        <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+        </svg>
+        <span class="hidden md:inline">{order.type === 'buy' ? 'Sell to User' : 'Buy from User'}</span>
+        <span class="md:hidden">{order.type === 'buy' ? 'Sell' : 'Buy'}</span>
+      </button>
+    {/if}
     <button class="p-1.5 md:p-2 border border rounded-lg hover:bg-accent transition-colors">
       <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>

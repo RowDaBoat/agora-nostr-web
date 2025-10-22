@@ -8,6 +8,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { Textarea } from '$lib/components/ui/textarea';
+  import { useImageUpload } from '$lib/composables/useImageUpload.svelte';
 
   interface Props {
     open?: boolean;
@@ -27,11 +28,16 @@
   let priceCurrency = $state('USD');
   let priceFrequency = $state<string | undefined>(undefined);
   let categories = $state<string[]>([]);
-  let images = $state<string[]>([]);
   let newCategory = $state('');
-  let newImageUrl = $state('');
 
   const currentUser = ndk.$currentUser;
+
+  // Image upload using blossom
+  const imageUpload = useImageUpload(ndk, {
+    fallbackServer: 'https://blossom.primal.net'
+  });
+
+  let fileInput: HTMLInputElement;
 
   const COMMON_CATEGORIES = [
     'electronics',
@@ -57,17 +63,6 @@
 
   function removeCategory(category: string) {
     categories = categories.filter(c => c !== category);
-  }
-
-  function addImage() {
-    if (newImageUrl && !images.includes(newImageUrl)) {
-      images = [...images, newImageUrl];
-      newImageUrl = '';
-    }
-  }
-
-  function removeImage(image: string) {
-    images = images.filter(i => i !== image);
   }
 
   async function publishListing() {
@@ -108,9 +103,9 @@
         listing.tags.push(['t', category]);
       });
 
-      // Add images
-      images.forEach(image => {
-        listing.tags.push(['image', image]);
+      // Add images from blossom uploads
+      imageUpload.uploadedImages.forEach(image => {
+        listing.tags.push(['image', image.url]);
       });
 
       await listing.sign();
@@ -150,9 +145,8 @@
     priceCurrency = 'USD';
     priceFrequency = undefined;
     categories = [];
-    images = [];
     newCategory = '';
-    newImageUrl = '';
+    imageUpload.reset();
   }
 
   function handleClose() {
@@ -354,42 +348,53 @@
         <div class="bg-muted/30 rounded-lg p-5 border border-border">
           <h3 class="text-lg font-semibold text-foreground mb-4">Images</h3>
           <div class="space-y-4">
-            <div class="flex gap-2">
-              <Input
-                type="url"
-                bind:value={newImageUrl}
-                placeholder="Image URL"
-                class="flex-1"
-                onkeydown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addImage();
-                  }
-                }}
-              />
-              <Button
-                type="button"
-                onclick={addImage}
-                size="icon"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- File input -->
+            <input
+              bind:this={fileInput}
+              type="file"
+              accept="image/*"
+              multiple
+              onchange={imageUpload.handleFileInputChange}
+              class="hidden"
+            />
+
+            <!-- Upload area -->
+            <button
+              type="button"
+              onclick={() => fileInput?.click()}
+              ondragover={imageUpload.handleDragOver}
+              ondragleave={imageUpload.handleDragLeave}
+              ondrop={imageUpload.handleDrop}
+              disabled={imageUpload.uploadStatus === 'uploading'}
+              class={`w-full h-32 rounded-lg border-2 border-dashed transition-colors flex flex-col items-center justify-center gap-2 ${imageUpload.isDragging ? 'border-primary bg-muted/40' : 'border-border hover:border-primary bg-muted/20 hover:bg-muted/40'}`}
+            >
+              {#if imageUpload.uploadStatus === 'uploading'}
+                <div class="flex flex-col items-center gap-2">
+                  <div class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  <span class="text-sm text-muted-foreground">{imageUpload.uploadProgress?.percentage || 0}%</span>
+                </div>
+              {:else}
+                <svg class="w-10 h-10 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-              </Button>
-            </div>
+                <span class="text-sm text-muted-foreground">Click to upload or drag and drop</span>
+                <span class="text-xs text-muted-foreground">Multiple images supported</span>
+              {/if}
+            </button>
 
-            {#if images.length > 0}
+            <!-- Uploaded images grid -->
+            {#if imageUpload.uploadedImages.length > 0}
               <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {#each images as image, index}
+                {#each imageUpload.uploadedImages as image, index}
                   <div class="relative group">
                     <img
-                      src={image}
+                      src={image.url}
                       alt={`Listing image ${index + 1}`}
                       class="w-full h-32 object-cover rounded-lg border border-border"
                     />
                     <button
                       type="button"
-                      onclick={() => removeImage(image)}
+                      onclick={() => imageUpload.removeImage(index)}
                       class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

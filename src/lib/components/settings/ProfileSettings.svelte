@@ -2,7 +2,7 @@
   import { ndk } from '$lib/ndk.svelte';
   import { NDKEvent, NDKRelaySet } from '@nostr-dev-kit/ndk';
   import { NDKBlossom } from '@nostr-dev-kit/blossom';
-  import { useBlossomUpload } from '@nostr-dev-kit/svelte';
+  import { createBlossomUpload } from '@nostr-dev-kit/svelte';
     import { AGORA_RELAYS } from '$lib/utils/relayUtils';
 
   let user = $derived(ndk.$currentUser);
@@ -26,12 +26,12 @@
 
   let pictureUpload = $derived.by(() => {
     if (!blossom) return null;
-    return useBlossomUpload(blossom);
+    return createBlossomUpload(blossom);
   });
 
   let bannerUpload = $derived.by(() => {
     if (!blossom) return null;
-    return useBlossomUpload(blossom);
+    return createBlossomUpload(blossom);
   });
 
   // Form state
@@ -49,7 +49,7 @@
 
   // Update form when profile loads
   $effect(() => {
-    if (profile) {
+    if (profile.ready) {
       // Extract hashtags from profile event
       const hashtags = profileEvent?.tags
         ?.filter(tag => tag[0] === 't')
