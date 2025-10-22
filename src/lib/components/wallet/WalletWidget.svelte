@@ -1,23 +1,32 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
+  import { headerStore } from '$lib/stores/header.svelte';
   import BalanceCard from './BalanceCard.svelte';
   import SendView from './SendView.svelte';
   import ReceiveView from './ReceiveView.svelte';
 
   type TabView = 'wallet' | 'send' | 'receive' | 'scan';
   let currentTab = $state<TabView>('wallet');
+
+  // Set up back navigation for non-wallet tabs
+  $effect(() => {
+    if (currentTab !== 'wallet') {
+      headerStore.backNav = {
+        onclick: () => currentTab = 'wallet'
+      };
+    } else {
+      headerStore.backNav = null;
+    }
+
+    return () => {
+      headerStore.backNav = null;
+    };
+  });
 </script>
 
 <div class="wallet-container">
   <!-- Header -->
   <div class="wallet-header">
-    {#if currentTab !== 'wallet'}
-      <button class="back-btn" onclick={() => currentTab = 'wallet'}>
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
-    {/if}
     <h1>
       {#if currentTab === 'wallet'}
         Wallet
@@ -86,28 +95,6 @@
     position: sticky;
     top: 0;
     z-index: 10;
-  }
-
-  .back-btn {
-    padding: 0.5rem;
-    background: transparent;
-    border: none;
-    color: var(--color-foreground);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    border-radius: 8px;
-  }
-
-  .back-btn:hover {
-    background: var(--color-muted);
-  }
-
-  .back-btn svg {
-    width: 1.5rem;
-    height: 1.5rem;
   }
 
   h1 {
