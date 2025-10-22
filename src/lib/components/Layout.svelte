@@ -397,8 +397,59 @@
       <div class={`w-full lg:flex-1 ${hideRightSidebar ? 'lg:max-w-[900px]' : 'lg:max-w-[600px]'} min-w-0 flex flex-col h-full border-x border-border`}>
         <!-- Page content -->
         <main class="flex-1 pb-20 md:pb-0 bg-background">
-          <!-- Back Navigation - shown only when no custom header provided -->
-          {#if !headerStore.header && headerStore.backNav}
+          <!-- Structured Header Config - rendered by Layout for consistency -->
+          {#if headerStore.headerConfig}
+            <div class="border-b border-border bg-background">
+              <div class="px-4 sm:px-6 lg:px-8 py-3">
+                <div class="flex items-center gap-3">
+                  <!-- Back Button -->
+                  {#if headerStore.headerConfig.backNav}
+                    {@const backNav = headerStore.headerConfig.backNav}
+                    {#if backNav.href}
+                      <a
+                        href={backNav.href}
+                        class="inline-flex items-center justify-center p-2 rounded-lg hover:bg-muted transition-colors text-foreground"
+                      >
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </a>
+                    {:else if backNav.onclick}
+                      <button
+                        onclick={backNav.onclick}
+                        class="inline-flex items-center justify-center p-2 rounded-lg hover:bg-muted transition-colors text-foreground"
+                      >
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                    {/if}
+                  {/if}
+
+                  <!-- Title and Subtitle -->
+                  <div class="flex-1">
+                    <h1 class="text-2xl font-bold text-foreground">
+                      {headerStore.headerConfig.title}
+                    </h1>
+                    {#if headerStore.headerConfig.subtitle}
+                      <p class="text-sm text-muted-foreground mt-1">
+                        {headerStore.headerConfig.subtitle}
+                      </p>
+                    {/if}
+                  </div>
+
+                  <!-- Actions -->
+                  {#if headerStore.headerConfig.actions}
+                    {@render headerStore.headerConfig.actions()}
+                  {/if}
+                </div>
+              </div>
+            </div>
+          {:else if headerStore.header}
+            <!-- Custom Header Snippet - for full control -->
+            {@render headerStore.header()}
+          {:else if headerStore.backNav}
+            <!-- Standalone Back Navigation - shown only when no header provided -->
             <div class="border-b border-border bg-background">
               <div class="px-4 sm:px-6 lg:px-8 py-3">
                 {#if headerStore.backNav.href}
@@ -428,11 +479,6 @@
                 {/if}
               </div>
             </div>
-          {/if}
-
-          <!-- Page Header - shown at top when provided -->
-          {#if headerStore.header}
-            {@render headerStore.header()}
           {/if}
 
           <!-- Mobile Sidebar Content - shown before main content on mobile when enabled -->

@@ -6,8 +6,16 @@ export interface BackNavigation {
   onclick?: () => void;
 }
 
+export interface HeaderConfig {
+  title: string;
+  subtitle?: string;
+  actions?: Snippet;
+  backNav?: BackNavigation;
+}
+
 class HeaderStore {
   private _header = $state<Snippet | null>(null);
+  private _headerConfig = $state<HeaderConfig | null>(null);
   private _backNav = $state<BackNavigation | null>(null);
 
   get header() {
@@ -16,6 +24,16 @@ class HeaderStore {
 
   set header(header: Snippet | null) {
     this._header = header;
+    this._headerConfig = null; // Clear config when using snippet
+  }
+
+  get headerConfig() {
+    return this._headerConfig;
+  }
+
+  set headerConfig(config: HeaderConfig | null) {
+    this._headerConfig = config;
+    this._header = null; // Clear snippet when using config
   }
 
   get backNav() {
@@ -28,6 +46,7 @@ class HeaderStore {
 
   clear() {
     this._header = null;
+    this._headerConfig = null;
     this._backNav = null;
   }
 }
