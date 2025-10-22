@@ -44,7 +44,7 @@
 
 {#snippet pageHeader()}
   <div class="border-b border-border sticky top-0 z-20 bg-background">
-    <div class="px-4 sm:px-6 lg:px-8 py-4">
+    <div class="px-4 sm:px-6 lg:px-8 py-3">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-bold text-foreground">P2P Trading</h1>

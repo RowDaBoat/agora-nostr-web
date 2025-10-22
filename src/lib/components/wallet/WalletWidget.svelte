@@ -4,9 +4,45 @@
   import BalanceCard from './BalanceCard.svelte';
   import SendView from './SendView.svelte';
   import ReceiveView from './ReceiveView.svelte';
+  import QRScanner from './QRScanner.svelte';
+  import InvoiceDetails from './InvoiceDetails.svelte';
 
-  type TabView = 'wallet' | 'send' | 'receive' | 'scan';
+  type TabView = 'wallet' | 'send' | 'receive' | 'scan' | 'invoice';
   let currentTab = $state<TabView>('wallet');
+  let scannedInvoice = $state<string>('');
+
+  function handleScan(data: string) {
+    scannedInvoice = data;
+    currentTab = 'invoice';
+  }
+
+  function handleCancelScan() {
+    currentTab = 'wallet';
+    scannedInvoice = '';
+  }
+
+  async function handlePayInvoice(invoice: string) {
+    try {
+      // Use NDK wallet to pay the invoice
+      await ndk.$wallet.pay({
+        invoice,
+        unit: 'sat',
+      });
+
+      // Success - go back to wallet view
+      currentTab = 'wallet';
+      scannedInvoice = '';
+    } catch (e) {
+      console.error('Payment failed:', e);
+      // Error will be shown by the wallet
+      throw e;
+    }
+  }
+
+  function handleCancelInvoice() {
+    currentTab = 'wallet';
+    scannedInvoice = '';
+  }
 
   // Set up header for all tabs
   $effect(() => {
@@ -20,7 +56,7 @@
 
 {#snippet walletHeader()}
   <div class="border-b border-border bg-background">
-    <div class="px-4 sm:px-6 lg:px-8 py-4">
+    <div class="px-4 sm:px-6 lg:px-8 py-3">
       <div class="flex items-center gap-3">
         {#if currentTab !== 'wallet'}
           <button
@@ -38,6 +74,8 @@
             Wallet
           {:else if currentTab === 'send' || currentTab === 'scan'}
             Send
+          {:else if currentTab === 'invoice'}
+            Payment Details
           {:else if currentTab === 'receive'}
             Receive
           {/if}
@@ -87,8 +125,12 @@
           <span class="action-label">Receive</span>
         </button>
       </div>
-    {:else if currentTab === 'send' || currentTab === 'scan'}
+    {:else if currentTab === 'send'}
       <SendView />
+    {:else if currentTab === 'scan'}
+      <QRScanner onScan={handleScan} onCancel={handleCancelScan} />
+    {:else if currentTab === 'invoice'}
+      <InvoiceDetails invoice={scannedInvoice} onPay={handlePayInvoice} onCancel={handleCancelInvoice} />
     {:else if currentTab === 'receive'}
       <ReceiveView />
     {/if}

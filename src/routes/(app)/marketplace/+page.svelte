@@ -114,7 +114,7 @@
 </script>
 
 {#snippet pageHeader()}
-  <div class="container mx-auto px-4 py-4 max-w-7xl">
+  <div class="container mx-auto px-4 py-3 max-w-7xl">
     <div class="mb-6">
       <div class="flex items-center justify-between mb-4">
         <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
