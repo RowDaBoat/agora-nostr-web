@@ -10,7 +10,7 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "lint": "eslint .",
     "postinstall": "bun run copy-workers",
-    "copy-workers": "cp node_modules/@nostr-dev-kit/cache-sqlite-wasm/dist/worker.js static/worker.js"
+    "copy-workers": "node scripts/copy-worker.js"
   },
   "dependencies": {
     "@capacitor/barcode-scanner": "^2.2.0",
@@ -23,16 +23,17 @@
     "@nostr-dev-kit/svelte": "file:../NDK-nhlteu/svelte",
     "@nostr-dev-kit/wallet": "file:../NDK-nhlteu/wallet",
     "blossom-client-sdk": "^4.1.0",
-    "bolt11": "^1.4.1",
     "bun": "^1.3.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "light-bolt11-decoder": "^3.2.0",
     "marked": "^16.4.1",
     "nostr-tools": "^2.17.0",
     "qrcode": "^1.5.3",
     "shamirs-secret-sharing-ts": "^1.0.2",
     "svelte-i18n": "^4.0.1",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "vaul-svelte": "1.0.0-next.7"
   },
   "devDependencies": {
     "@capacitor/android": "^7.4.3",

@@ -1,8 +1,7 @@
 <script lang="ts">
   import type { NDKArticle } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
-  import { Avatar } from '@nostr-dev-kit/svelte';
-  import { navigateToProfile } from '$lib/utils/navigation';
+  import User from './User.svelte';
 
   interface Props {
     article: NDKArticle;
@@ -22,10 +21,6 @@
     return Math.ceil(words / wordsPerMinute);
   });
 
-  const authorName = $derived(authorProfile?.name || authorProfile?.displayName || 'Anonymous');
-  const authorBio = $derived(authorProfile?.about);
-  const isOwnArticle = $derived(currentUser?.pubkey === article.pubkey);
-
   const firstParagraph = $derived.by(() => {
     if (!article.content) return '';
     const paragraphs = article.content.trim().split(/\n\n+/);
@@ -38,10 +33,6 @@
     const normalizedFirstParagraph = firstParagraph.toLowerCase();
     return normalizedSummary !== normalizedFirstParagraph;
   });
-
-  function handleProfileClick() {
-    navigateToProfile(article.pubkey);
-  }
 </script>
 
 <div class="mb-12">
@@ -55,25 +46,14 @@
     </p>
   {/if}
 
-  <div class="flex items-start sm:items-center gap-4 mb-8">
-    <button type="button" onclick={handleProfileClick} class="flex-shrink-0">
-      <Avatar {ndk} pubkey={article.pubkey} class="w-12 h-12 sm:w-14 sm:h-14 ring-2 ring-white dark:ring-black hover:ring-4 transition-all" />
-    </button>
-
-    <div class="flex-1">
-      <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-        <button type="button" onclick={handleProfileClick} class="group text-left">
-          <div class="font-semibold text-lg text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-            {authorName}
-          </div>
-          {#if authorBio}
-            <p class="text-sm text-muted-foreground line-clamp-1 max-w-md">
-              {authorBio}
-            </p>
-          {/if}
-        </button>
-      </div>
-    </div>
+  <div class="mb-8">
+    <User
+      pubkey={article.pubkey}
+      variant="avatar-name-bio"
+      avatarSize="w-12 h-12 sm:w-14 sm:h-14"
+      nameSize="text-lg font-semibold"
+      bioSize="text-sm text-muted-foreground line-clamp-1 max-w-md"
+    />
   </div>
 
   <div class="flex items-center gap-2 text-sm text-muted-foreground">

@@ -1,20 +1,7 @@
 <script lang="ts">
-	import type { HTMLButtonAttributes } from "svelte/elements";
+	import { Dialog as DialogPrimitive } from "bits-ui";
 
-	let {
-		ref = $bindable(null),
-		onclick,
-		...restProps
-	}: HTMLButtonAttributes & {
-		ref?: HTMLButtonElement | null;
-		onclick?: (e: MouseEvent) => void;
-	} = $props();
+	let { ref = $bindable(null), ...restProps }: DialogPrimitive.CloseProps = $props();
 </script>
 
-<button
-	bind:this={ref}
-	type="button"
-	data-slot="dialog-close"
-	{onclick}
-	{...restProps}
-></button>
+<DialogPrimitive.Close bind:ref data-slot="dialog-close" {...restProps} />

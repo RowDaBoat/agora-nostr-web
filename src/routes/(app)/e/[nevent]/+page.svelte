@@ -19,13 +19,13 @@
   // Fetch the main event
   const mainEvent = ndk.$fetchEvent(() => neventId);
   const currentUser = ndk.$currentUser;
-  const mainProfile = ndk.$fetchProfile(() => mainEvent.ready ? mainEvent.pubkey : undefined);
+  const mainProfile = ndk.$fetchProfile(() => mainEvent.pubkey ? mainEvent.pubkey : undefined);
 
   $inspect('mainEvent', mainEvent, neventId);
 
   // Get the root event ID from the main event's tags
   const rootEventId = $derived.by(() => {
-    if (!mainEvent.ready) return null;
+    if (!mainEvent.id) return null;
 
     // Find root tag
     const rootTag = mainEvent.tags.find(tag => tag[0] === 'e' && tag[3] === 'root');
@@ -63,7 +63,7 @@
 
   // Fetch replies to the main event
   const replies = ndk.$subscribe(() => {
-    if (!mainEvent.ready) return undefined;
+    if (!mainEvent.id) return undefined;
     return {
       filters: [
         { kinds: [1, 9802], '#e': [mainEvent.id] },
@@ -75,7 +75,7 @@
 
   // Build the parent chain (with missing event tracking)
   const parentChain = $derived.by((): ThreadItem[] => {
-    if (!mainEvent.ready || !threadEvents || threadEvents.events.length === 0) return [];
+    if (!mainEvent.id || !threadEvents || threadEvents.events.length === 0) return [];
 
     const parents: ThreadItem[] = [];
     const eventMap = new Map(threadEvents.events.map(e => [e.id, e]));
@@ -129,7 +129,7 @@
 
   // Filter direct replies
   const directReplies = $derived.by(() => {
-    if (!replies || !mainEvent.ready) return [];
+    if (!replies || !mainEvent.id) return [];
 
     const repliesArray = replies.events;
 
@@ -160,7 +160,7 @@
   }
 
   async function handleReply() {
-    if (!ndk.signer || !replyContent || !mainEvent.ready) return;
+    if (!ndk.signer || !replyContent || !mainEvent.id) return;
 
     isSubmitting = true;
 
@@ -206,7 +206,7 @@
     </div>
   </header>
 
-  {#if !mainEvent.ready}
+  {#if !mainEvent.id}
     <div class="flex flex-col items-center justify-center mt-20">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       <p class="mt-4 text-neutral-400">Loading note...</p>
@@ -222,7 +222,7 @@
             showThreadLine={index < parentChain.length - 1}
             onEventFound={(event) => {
               // Refresh the thread when the missing event is found
-              if (mainEvent.ready) {
+              if (mainEvent.id) {
                 const nevent = mainEvent.encode();
                 window.location.href = `/e/${nevent}`;
               }
@@ -230,21 +230,21 @@
           />
         {:else if item.event.kind === 9802}
           <HighlightCard event={item.event} variant="default" />
-        {:else if item.event instanceof NDKEvent}
-          <!-- <NoteCard
+        {:else if item.event}
+          <NoteCard
             event={item.event}
             variant="thread-parent"
             showThreadLine={index < parentChain.length - 1}
             onNavigate={() => handleEventNavigation(item.event)}
-          /> -->
+          />
         {/if}
       {/each}
 
       <!-- Main Note - Highlighted with larger text -->
-      {#if mainEvent.ready}
+      {#if mainEvent.id}
         {#if mainEvent.kind === 9802}
           <HighlightCard event={mainEvent} variant="default" />
-        {:else if mainEvent instanceof NDKEvent}
+        {:else if mainEvent}
           <NoteCard
             event={mainEvent}
             variant="thread-main"

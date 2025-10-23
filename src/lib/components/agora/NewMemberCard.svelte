@@ -1,7 +1,6 @@
 <script lang="ts">
-	import type { NDKUser } from '@nostr-dev-kit/ndk';
 	import { ndk } from '$lib/ndk.svelte';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import User from '../User.svelte';
 	import FollowButton from '../FollowButton.svelte';
 	import { formatTimeAgo } from '$lib/utils/formatTime';
 
@@ -13,35 +12,22 @@
 
 	let { memberPubkey, inviterPubkey, joinedAt }: Props = $props();
 
-	const memberProfile = ndk.$fetchProfile(() => memberPubkey);
 	const inviterProfile = $derived(inviterPubkey ? ndk.$fetchProfile(() => inviterPubkey) : null);
-	const memberUser = $derived.by(() => {
-		const user = ndk.getUser({ pubkey: memberPubkey });
-		if (memberProfile) {
-			user.profile = memberProfile;
-		}
-		return user;
-	});
 </script>
 
-<div class="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-	<Avatar {ndk} pubkey={memberPubkey} class="w-12 h-12 rounded-full" />
+<div class="p-3 rounded-lg hover:bg-muted/50 transition-colors">
+	<User
+		pubkey={memberPubkey}
+		variant="avatar-name-handle"
+		avatarSize="w-12 h-12"
+		nameSize="text-base font-semibold"
+		handleSize="text-sm text-muted-foreground"
+	/>
 
-	<div class="flex-1 min-w-0">
-		<a href="/p/{memberUser.npub}" class="block group">
-			<h4 class="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-				{memberProfile?.displayName || memberProfile?.name || 'Anon'}
-			</h4>
-			{#if memberProfile?.nip05}
-				<p class="text-sm text-muted-foreground truncate">
-					{memberProfile.nip05}
-				</p>
-			{/if}
-		</a>
-
-		<div class="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1 text-xs text-muted-foreground">
+	<div class="ml-[60px]">
+		<div class="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2 text-xs text-muted-foreground">
 			<span>Joined {formatTimeAgo(joinedAt)}</span>
-			{#if inviterPubkey && inviterProfile}
+			{#if inviterPubkey && inviterProfile && inviterProfile.ready}
 				<span>•</span>
 				<span>
 					Invited by
@@ -51,12 +37,6 @@
 				</span>
 			{/if}
 		</div>
-
-		{#if memberProfile?.about}
-			<p class="mt-2 text-sm text-foreground/80 line-clamp-2">
-				{memberProfile.about}
-			</p>
-		{/if}
 
 		<div class="mt-2">
 			<FollowButton pubkey={memberPubkey} />

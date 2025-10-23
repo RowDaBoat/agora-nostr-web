@@ -1,31 +1,23 @@
-import type { NDKArticle, NDKEvent } from '@nostr-dev-kit/ndk';
+import type { NDKArticle } from '@nostr-dev-kit/ndk';
 import type { NDKSvelte } from '@nostr-dev-kit/svelte';
 
 /**
  * Composable for managing article highlights
  */
-export function createHighlightsManager(ndk: NDKSvelte) {
-  let highlights = $state<NDKEvent[]>([]);
+export function createHighlightsManager(ndk: NDKSvelte, article: NDKArticle | null) {
   let showHighlightToolbar = $state(false);
   let selectedText = $state('');
   let selectedRange = $state<Range | null>(null);
   let toolbarPosition = $state({ x: 0, y: 0 });
 
-  async function fetchHighlights(article: NDKArticle) {
-    if (!article) return;
-
-    try {
-      const articleTag = article.tagId();
-      const highlightEvents = await ndk.fetchEvents({
-        kinds: [9802], // NIP-84 Highlight kind
-        '#a': [articleTag],
-      });
-
-      highlights = Array.from(highlightEvents);
-    } catch (err) {
-      console.error('Failed to fetch highlights:', err);
-    }
-  }
+  const highlights = ndk.$fetchEvents(() => {
+    if (!article) return undefined;
+    const articleTag = article.tagId();
+    return {
+      kinds: [9802], // NIP-84 Highlight kind
+      '#a': [articleTag],
+    };
+  });
 
   function handleTextSelected(text: string, range: Range) {
     selectedText = text;
@@ -59,9 +51,7 @@ export function createHighlightsManager(ndk: NDKSvelte) {
   }
 
   return {
-    get highlights() {
-      return highlights;
-    },
+    highlights,
     get showHighlightToolbar() {
       return showHighlightToolbar;
     },
@@ -71,7 +61,6 @@ export function createHighlightsManager(ndk: NDKSvelte) {
     get toolbarPosition() {
       return toolbarPosition;
     },
-    fetchHighlights,
     handleTextSelected,
     handleHighlightCreated,
     handleCancelHighlight

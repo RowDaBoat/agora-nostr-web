@@ -1,9 +1,13 @@
 <script lang="ts">
+  import { MediaQuery } from 'svelte/reactivity';
   import { ndk } from '$lib/ndk.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
+  import * as Drawer from '$lib/components/ui/drawer';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
+
+  const isDesktop = new MediaQuery('(min-width: 768px)');
 
   let { isOpen = $bindable(false) } = $props();
 
@@ -52,75 +56,152 @@
   }
 </script>
 
-<Dialog.Root open={isOpen} onOpenChange={(newOpen) => {
-    isOpen = newOpen;
-    if (!newOpen) close();
-  }}>
-  <Dialog.Content class="max-w-md">
-    <Dialog.Header>
-      <Dialog.Title>Send Payment</Dialog.Title>
-    </Dialog.Header>
+{#if isDesktop.current}
+  <Dialog.Root open={isOpen} onOpenChange={(newOpen) => {
+      isOpen = newOpen;
+      if (!newOpen) close();
+    }}>
+    <Dialog.Content class="max-w-md">
+      <Dialog.Header>
+        <Dialog.Title>Send Payment</Dialog.Title>
+      </Dialog.Header>
 
-    {#if success}
-      <div class="p-4 bg-green-900/20 border border-green-800 rounded-lg text-green-400 text-center">
-        ✓ Payment sent successfully!
-      </div>
-    {/if}
-
-    <div class="space-y-4">
-      <div>
-        <Label for="amount">Amount (sats)</Label>
-        <Input
-          id="amount"
-          type="number"
-          bind:value={amount}
-          min="1"
-          step="100"
-          class="mt-2"
-        />
-      </div>
-
-      <div>
-        <Label for="recipient">Recipient (optional)</Label>
-        <Input
-          id="recipient"
-          type="text"
-          bind:value={recipient}
-          placeholder="npub... or lightning address"
-          class="mt-2"
-        />
-      </div>
-
-      <div>
-        <Label for="comment">Comment (optional)</Label>
-        <Input
-          id="comment"
-          type="text"
-          bind:value={comment}
-          placeholder="What's this payment for?"
-          class="mt-2"
-        />
-      </div>
-
-      <Button
-        onclick={handleSend}
-        disabled={isSending || amount < 1 || success}
-        class="w-full"
-      >
-        {isSending ? 'Sending...' : success ? 'Sent!' : `Send ${amount} sats`}
-      </Button>
-
-      {#if error}
-        <div class="p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">
-          {error}
+      {#if success}
+        <div class="p-4 bg-green-900/20 border border-green-800 rounded-lg text-green-400 text-center">
+          ✓ Payment sent successfully!
         </div>
       {/if}
-    </div>
 
-    <Dialog.Footer>
-      <Button variant="ghost" onclick={close} class="w-full">
-        Close
-      </Button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+      <div class="space-y-4">
+        <div>
+          <Label for="amount">Amount (sats)</Label>
+          <Input
+            id="amount"
+            type="number"
+            bind:value={amount}
+            min="1"
+            step="100"
+            class="mt-2"
+          />
+        </div>
+
+        <div>
+          <Label for="recipient">Recipient (optional)</Label>
+          <Input
+            id="recipient"
+            type="text"
+            bind:value={recipient}
+            placeholder="npub... or lightning address"
+            class="mt-2"
+          />
+        </div>
+
+        <div>
+          <Label for="comment">Comment (optional)</Label>
+          <Input
+            id="comment"
+            type="text"
+            bind:value={comment}
+            placeholder="What's this payment for?"
+            class="mt-2"
+          />
+        </div>
+
+        <Button
+          onclick={handleSend}
+          disabled={isSending || amount < 1 || success}
+          class="w-full"
+        >
+          {isSending ? 'Sending...' : success ? 'Sent!' : `Send ${amount} sats`}
+        </Button>
+
+        {#if error}
+          <div class="p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">
+            {error}
+          </div>
+        {/if}
+      </div>
+
+      <Dialog.Footer>
+        <Button variant="ghost" onclick={close} class="w-full">
+          Close
+        </Button>
+      </Dialog.Footer>
+    </Dialog.Content>
+  </Dialog.Root>
+{:else}
+  <Drawer.Root open={isOpen} onOpenChange={(newOpen) => {
+      isOpen = newOpen;
+      if (!newOpen) close();
+    }}>
+    <Drawer.Content>
+      <Drawer.Header class="text-left">
+        <Drawer.Title>Send Payment</Drawer.Title>
+      </Drawer.Header>
+
+      {#if success}
+        <div class="px-4 mb-4">
+          <div class="p-4 bg-green-900/20 border border-green-800 rounded-lg text-green-400 text-center">
+            ✓ Payment sent successfully!
+          </div>
+        </div>
+      {/if}
+
+      <div class="px-4 space-y-4">
+        <div>
+          <Label for="amount-mobile">Amount (sats)</Label>
+          <Input
+            id="amount-mobile"
+            type="number"
+            bind:value={amount}
+            min="1"
+            step="100"
+            class="mt-2"
+          />
+        </div>
+
+        <div>
+          <Label for="recipient-mobile">Recipient (optional)</Label>
+          <Input
+            id="recipient-mobile"
+            type="text"
+            bind:value={recipient}
+            placeholder="npub... or lightning address"
+            class="mt-2"
+          />
+        </div>
+
+        <div>
+          <Label for="comment-mobile">Comment (optional)</Label>
+          <Input
+            id="comment-mobile"
+            type="text"
+            bind:value={comment}
+            placeholder="What's this payment for?"
+            class="mt-2"
+          />
+        </div>
+
+        <Button
+          onclick={handleSend}
+          disabled={isSending || amount < 1 || success}
+          class="w-full"
+        >
+          {isSending ? 'Sending...' : success ? 'Sent!' : `Send ${amount} sats`}
+        </Button>
+
+        {#if error}
+          <div class="p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">
+            {error}
+          </div>
+        {/if}
+      </div>
+
+      <Drawer.Footer class="pt-2">
+        <Button variant="ghost" onclick={close} class="w-full">
+          Close
+        </Button>
+      </Drawer.Footer>
+    </Drawer.Content>
+  </Drawer.Root>
+{/if}

@@ -323,7 +323,8 @@
   },
   "userDropdown": {
     "mute": "Mute",
-    "unmute": "Unmute"
+    "unmute": "Unmute",
+    "report": "Report"
   },
   "noteDropdown": {
     "copyAuthor": "Copy author (nprofile)",

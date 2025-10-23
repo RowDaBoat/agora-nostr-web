@@ -40,7 +40,7 @@
 
 	<!-- Footer -->
 	<div class="flex items-center justify-between text-sm">
-		{#if invitedBy && inviterProfile}
+		{#if invitedBy && inviterProfile && inviterProfile.ready}
 			<div class="text-muted-foreground">
 				Invited by <span class="font-medium text-primary">@{inviterProfile.name || 'anonymous'}</span>
 			</div>

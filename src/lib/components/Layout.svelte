@@ -68,7 +68,7 @@
         filters: [{ kinds: [NDKKind.Article], limit: 5 }],
         bufferMs: 500,
         relayUrls: sidebarRelaysToUse.length > 0 ? sidebarRelaysToUse : undefined,
-        cacheUsage: sidebarRelaysToUse.length > 0 ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.PARALLEL,
+        cacheUsage: sidebarRelaysToUse.length > 0 ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.CACHE_FIRST,
         closeOnEose: true,
       }));
     }
@@ -122,7 +122,7 @@
   }
 </script>
 
-<div class="min-h-screen bg-background flex justify-center overflow-x-hidden">
+<div class="h-screen bg-background flex justify-center overflow-hidden">
   <div class="flex w-full max-w-full lg:max-w-[1400px] relative">
     <!-- Left Sidebar - Navigation -->
     <aside class="hidden lg:flex {sidebarCollapsed ? 'w-20' : 'w-64'} flex-col border-r border-border p-4 fixed left-0 top-0 bottom-0 overflow-y-auto overflow-x-visible transition-all duration-300 ease-in-out bg-background">
@@ -392,11 +392,11 @@
     </aside>
 
     <!-- Main Content Container -->
-    <div class="flex-1 flex {sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} transition-all duration-300 ease-in-out min-h-screen">
+    <div class="flex-1 flex {sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} transition-all duration-300 ease-in-out h-full">
       <!-- Center column - Main content -->
       <div class={`w-full lg:flex-1 ${hideRightSidebar ? 'lg:max-w-[900px]' : 'lg:max-w-[600px]'} min-w-0 flex flex-col h-full border-x border-border`}>
         <!-- Page content -->
-        <main class="flex-1 pb-20 md:pb-0 bg-background">
+        <main class="flex-1 pb-20 md:pb-0 bg-background max-w-screen overflow-y-auto">
           <!-- Structured Header Config - rendered by Layout for consistency -->
           {#if headerStore.headerConfig}
             <div class="border-b border-border bg-background">

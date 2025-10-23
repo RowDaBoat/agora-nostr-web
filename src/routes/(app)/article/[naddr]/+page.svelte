@@ -9,20 +9,17 @@
   import CommentSection from '$lib/components/CommentSection.svelte';
   import TextHighlightToolbar from '$lib/components/TextHighlightToolbar.svelte';
   import HighlightCard from '$lib/components/HighlightCard.svelte';
-  import type { NDKArticle } from '@nostr-dev-kit/ndk';
+  import User from '$lib/components/User.svelte';
+  import { NDKArticle } from '@nostr-dev-kit/ndk';
   import { NDKKind, NDKList, NDKEvent } from '@nostr-dev-kit/ndk';
   import { nip19 } from 'nostr-tools';
   import { extractArticleImage } from '$lib/utils/extractArticleImage';
-  import { Avatar } from '@nostr-dev-kit/svelte';
 
-  let article = $state<NDKArticle | null>(null);
-  let isLoading = $state(true);
   let error = $state<string | null>(null);
   let isBookmarked = $state(false);
   let showShareMenu = $state(false);
   let copied = $state(false);
   let userError = $state<string | null>(null);
-  let highlights = $state<NDKEvent[]>([]);
   let showHighlightToolbar = $state(false);
   let selectedText = $state('');
   let selectedRange = $state<Range | null>(null);
@@ -30,40 +27,22 @@
   let selectedHighlight = $state<NDKEvent | null>(null);
 
   const naddr = $derived($page.params.naddr);
-  const currentUser = ndk.$currentUser;
+  const articleEvent = ndk.$fetchEvent(() => naddr);
+  const article = $derived.by(() => articleEvent ? NDKArticle.from(articleEvent) : null);
+  const highlights = ndk.$fetchEvents(() => article ? { kinds: [NDKKind.Highlight], ...article.filter() } : undefined);
 
   const heroImage = $derived(article ? extractArticleImage(article) : null);
   const authorProfile = $derived(article ? ndk.$fetchProfile(() => article.pubkey) : undefined);
   const authorName = $derived(authorProfile?.name || authorProfile?.displayName || 'Anonymous');
   const publishedAt = $derived(article?.published_at);
 
-  async function loadArticle() {
-    if (!naddr) {
-      error = 'No article identifier provided';
-      isLoading = false;
-      return;
-    }
-
-    isLoading = true;
-    error = null;
-
-    try {
-      article = await fetchArticleByNaddr(ndk, naddr);
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to load article';
-      console.error('Failed to load article:', err);
-    } finally {
-      isLoading = false;
-    }
-  }
-
   async function checkBookmark() {
-    if (!currentUser || !article) return;
+    if (!ndk.$currentPubkey || !article) return;
 
     try {
       const bookmarksNaddr = nip19.naddrEncode({
-        kind: NDKKind.CurationSet,
-        pubkey: currentUser.pubkey,
+        kind: NDKKind.ArticleCurationSet,
+        pubkey: ndk.$currentPubkey,
         identifier: 'bookmarks'
       });
 
@@ -81,21 +60,6 @@
     }
   }
 
-  async function fetchHighlights() {
-    if (!article) return;
-
-    try {
-      const articleTag = article.tagId();
-      const highlightEvents = await ndk.fetchEvents({
-        kinds: [9802], // NIP-84 Highlight kind
-        '#a': [articleTag],
-      });
-
-      highlights = Array.from(highlightEvents);
-    } catch (err) {
-      console.error('Failed to fetch highlights:', err);
-    }
-  }
 
   function handleTextSelected(text: string, range: Range) {
     selectedText = text;
@@ -117,9 +81,6 @@
 
     // Clear the text selection
     window.getSelection()?.removeAllRanges();
-
-    // Refresh highlights
-    fetchHighlights();
   }
 
   function handleCancelHighlight() {
@@ -140,12 +101,12 @@
   }
 
   async function handleBookmark() {
-    if (!currentUser || !article) return;
+    if (!ndk.$currentUser || !article) return;
 
     try {
       const bookmarksNaddr = nip19.naddrEncode({
         kind: NDKKind.ArticleCurationSet,
-        pubkey: currentUser.pubkey,
+        pubkey: ndk.$currentPubkey,
         identifier: 'bookmarks'
       });
 
@@ -213,13 +174,8 @@
   $effect(() => {
     layoutMode.setArticleMode();
 
-    if (naddr) {
-      loadArticle().then(() => {
-        if (article) {
-          checkBookmark();
-          fetchHighlights();
-        }
-      });
+    if (article) {
+      checkBookmark();
     }
 
     return () => {
@@ -228,7 +184,7 @@
   });
 </script>
 
-{#if isLoading}
+{#if !articleEvent.id}
   <div class="flex flex-col items-center justify-center min-h-screen bg-card">
     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-foreground"></div>
     <p class="mt-4 text-muted-foreground">Loading article...</p>
@@ -259,9 +215,9 @@
         <button
           type="button"
           onclick={handleBookmark}
-          disabled={!currentUser}
+          disabled={!ndk.$currentUser}
           class="action-btn {isBookmarked ? 'bookmarked' : ''}"
-          title={currentUser ? (isBookmarked ? 'Remove bookmark' : 'Add bookmark') : 'Login to bookmark'}
+          title={ndk.$currentUser ? (isBookmarked ? 'Remove bookmark' : 'Add bookmark') : 'Login to bookmark'}
         >
           <svg class={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
@@ -342,25 +298,15 @@
             </h2>
 
             <div class="hero-author">
-              <button
-                type="button"
-                onclick={() => window.location.href = `/p/${nip19.npubEncode(article.pubkey)}`}
-                class="author-avatar"
+              <User
+                pubkey={article.pubkey}
+                variant="avatar-name-meta"
+                avatarSize="w-10 h-10 sm:w-12 sm:h-12"
+                nameSize="text-base sm:text-lg font-semibold"
               >
-                <Avatar {ndk} pubkey={article.pubkey} class="w-10 h-10 sm:w-12 sm:h-12 rounded-full" />
-              </button>
-
-              <div class="author-info">
-                <button
-                  type="button"
-                  onclick={() => window.location.href = `/p/${nip19.npubEncode(article.pubkey)}`}
-                  class="author-name"
-                >
-                  {authorName}
-                </button>
-                <div class="author-date">
+                {#snippet meta()}
                   {#if publishedAt}
-                    <time datetime={new Date(publishedAt * 1000).toISOString()}>
+                    <time datetime={new Date(publishedAt * 1000).toISOString()} class="text-sm sm:text-base opacity-90">
                       {new Date(publishedAt * 1000).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'long',
@@ -368,8 +314,8 @@
                       })}
                     </time>
                   {/if}
-                </div>
-              </div>
+                {/snippet}
+              </User>
             </div>
           </div>
         </div>
@@ -618,49 +564,16 @@
   }
 
   .hero-author {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .author-avatar {
-    flex-shrink: 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    padding: 0;
-    transition: opacity 0.2s;
-  }
-
-  .author-avatar:hover {
-    opacity: 0.8;
-  }
-
-  .author-info {
     color: white;
   }
 
-  .author-name {
-    font-weight: 600;
-    display: block;
-    background: transparent;
-    border: none;
-    color: white;
-    cursor: pointer;
-    padding: 0;
-    font-size: 1rem;
-    transition: opacity 0.2s;
-    text-align: left;
+  .hero-author :global(button) {
+    color: white !important;
   }
 
-  .author-name:hover {
-    opacity: 0.8;
-  }
-
-  .author-date {
-    font-size: 0.875rem;
-    opacity: 0.9;
-    margin-top: 0.25rem;
+  .hero-author :global(p),
+  .hero-author :global(time) {
+    color: white !important;
   }
 
   .article-main {

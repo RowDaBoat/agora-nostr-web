@@ -2,7 +2,7 @@
   import { ndk } from '$lib/ndk.svelte';
   import { settings } from '$lib/stores/settings.svelte';
   import { NDKKind, NDKSubscriptionCacheUsage } from '@nostr-dev-kit/ndk';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import User from './User.svelte';
   import { getRelaysToUse } from '$lib/utils/relayUtils';
 
   // Get relays to use based on selected relay
@@ -18,7 +18,7 @@
     filters: [{ kinds: [NDKKind.Article], limit: 50 }],
     bufferMs: 500,
     relayUrls: relaysToUse.length > 0 ? relaysToUse : undefined,
-    cacheUsage: relaysToUse.length > 0 ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.PARALLEL,
+    cacheUsage: relaysToUse.length > 0 ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.CACHE_FIRST,
     closeOnEose: true,
   }));
 
@@ -40,21 +40,19 @@
   });
 
   const currentUser = ndk.$currentUser;
-  const follows = $derived(ndk.$sessions?.follows || new Set());
 
   function isFollowing(pubkey: string): boolean {
-    return follows.has(pubkey);
+    return ndk.$follows.includes(pubkey);
   }
 
   async function toggleFollow(pubkey: string) {
     if (!currentUser) return;
 
     try {
-      const user = ndk.$fetchUser(() => pubkey);
       if (isFollowing(pubkey)) {
-        await ndk.$follows?.removeContact(user);
+        await ndk.$follows.remove(pubkey);
       } else {
-        await ndk.$follows?.addContact(user);
+        await ndk.$follows.add(pubkey);
       }
     } catch (err) {
       console.error('Failed to toggle follow:', err);
@@ -76,21 +74,20 @@
       </div>
     {:else}
       {#each journalists as journalist (journalist.pubkey)}
-        {@const profile = ndk.$fetchProfile(() => journalist.pubkey)}
-        {@const user = ndk.getUser({ pubkey: journalist.pubkey })}
         {@const isFollowed = isFollowing(journalist.pubkey)}
         <div class="flex items-center gap-3">
-          <a href="/p/{user.npub}" class="flex-shrink-0">
-            <Avatar {ndk} pubkey={journalist.pubkey} class="w-10 h-10 rounded-full" />
-          </a>
-          <a href="/p/{user.npub}" class="flex-1 min-w-0 group">
-            <p class="text-sm font-medium text-card-foreground truncate group-hover:text-primary transition-colors">
-              {profile?.displayName || profile?.name || 'Anonymous'}
-            </p>
-            <p class="text-xs text-muted-foreground">
-              {journalist.articleCount} {journalist.articleCount === 1 ? 'article' : 'articles'}
-            </p>
-          </a>
+          <User
+            pubkey={journalist.pubkey}
+            variant="avatar-name-meta"
+            avatarSize="w-10 h-10"
+            nameSize="text-sm font-medium"
+          >
+            {#snippet meta()}
+              <p class="text-xs text-muted-foreground">
+                {journalist.articleCount} {journalist.articleCount === 1 ? 'article' : 'articles'}
+              </p>
+            {/snippet}
+          </User>
           {#if currentUser && journalist.pubkey !== currentUser.pubkey}
             <button
               onclick={() => toggleFollow(journalist.pubkey)}

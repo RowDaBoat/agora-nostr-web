@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
   import { NDKEvent } from '@nostr-dev-kit/ndk';
-  import { fetchIntroductionPosts, type IntroductionPost } from '$lib/utils/introductionPosts.svelte';
+  import { createIntroductionPostsManager } from '$lib/utils/introductionPosts.svelte';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import { locale, t } from 'svelte-i18n';
   import { getIntroductionHashtags } from '$lib/constants/introductions';
@@ -23,7 +23,6 @@
 
   let introText = $state('');
   let publishing = $state(false);
-  let introductionPosts = $state<IntroductionPost[]>([]);
   let mentionInviter = $state(!!inviterPubkey);
 
   const hasValidIntro = $derived(introText.length > 10);
@@ -33,11 +32,7 @@
 
   const inviterName = $derived(inviterProfile?.displayName || inviterProfile?.name || 'your inviter');
 
-  $effect(() => {
-    fetchIntroductionPosts(ndk, inviteRelay).then(posts => {
-      introductionPosts = posts;
-    });
-  });
+  const { introductionPosts } = createIntroductionPostsManager(ndk, inviteRelay);
 
   async function publishIntroduction() {
     if (!hasValidIntro) return;

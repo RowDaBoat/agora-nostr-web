@@ -13,6 +13,8 @@
   import CreateFollowPackDialog from '$lib/components/CreateFollowPackDialog.svelte';
   import ProfileSettings from '$lib/components/settings/ProfileSettings.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
+  import { MediaQuery } from 'svelte/reactivity';
+  import * as Drawer from '$lib/components/ui/drawer';
   import { createLazyFeed } from '$lib/utils/lazyFeed.svelte';
   import { layoutMode } from '$lib/stores/layoutMode.svelte';
   import { t } from 'svelte-i18n';
@@ -21,8 +23,8 @@
   const user = ndk.$fetchUser(() => identifier);
   const profile = ndk.$fetchProfile(() => user?.pubkey);
   const pubkey = $derived(user?.pubkey || '');
-  const currentUser = ndk.$currentUser;
-  const isOwnProfile = $derived(currentUser?.pubkey === pubkey);
+  const isOwnProfile = $derived.by(() => ndk.$currentPubkey === pubkey);
+  const isDesktop = new MediaQuery('(min-width: 768px)');
 
   let activeTab = $state<'notes' | 'replies' | 'media' | 'articles' | 'highlights' | 'packs'>('notes');
   let isShareModalOpen = $state(false);
@@ -227,9 +229,8 @@
   <!-- Profile header -->
   <ProfileHeader
     {pubkey}
-    {profile}
     {isOwnProfile}
-    notesCount={notes.length}
+    notesCount={allTextEventsFeed.allEvents.length}
     {followingCount}
     onEditProfile={() => isEditProfileModalOpen = true}
     onShareProfile={() => isShareModalOpen = true}
@@ -472,18 +473,32 @@
     initialPubkey={pubkey}
   />
 
-  <Dialog.Root bind:open={isEditProfileModalOpen}>
-    <Dialog.Content
-      class="max-w-2xl max-h-[90vh] overflow-y-auto"
-      onClose={() => isEditProfileModalOpen = false}
-    >
-      <Dialog.Header>
-        <Dialog.Title>Edit Profile</Dialog.Title>
-        <Dialog.Description>Update your profile information and settings</Dialog.Description>
-      </Dialog.Header>
-      <div class="py-4">
-        <ProfileSettings />
-      </div>
-    </Dialog.Content>
-  </Dialog.Root>
+  {#if isDesktop.current}
+    <Dialog.Root bind:open={isEditProfileModalOpen}>
+      <Dialog.Content
+        class="max-w-2xl max-h-[90vh] overflow-y-auto"
+        onClose={() => isEditProfileModalOpen = false}
+      >
+        <Dialog.Header>
+          <Dialog.Title>Edit Profile</Dialog.Title>
+          <Dialog.Description>Update your profile information and settings</Dialog.Description>
+        </Dialog.Header>
+        <div class="py-4">
+          <ProfileSettings />
+        </div>
+      </Dialog.Content>
+    </Dialog.Root>
+  {:else}
+    <Drawer.Root bind:open={isEditProfileModalOpen}>
+      <Drawer.Content>
+        <Drawer.Header class="text-left">
+          <Drawer.Title>Edit Profile</Drawer.Title>
+          <Drawer.Description>Update your profile information and settings</Drawer.Description>
+        </Drawer.Header>
+        <div class="px-4">
+          <ProfileSettings />
+        </div>
+      </Drawer.Content>
+    </Drawer.Root>
+  {/if}
 </div>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
+	import { headerStore } from '$lib/stores/header.svelte';
 	import { createInviteModal } from '$lib/stores/createInviteModal.svelte';
 	import { isAgoraRelay } from '$lib/utils/relayUtils';
 	import { NDKSubscriptionCacheUsage } from '@nostr-dev-kit/ndk';
@@ -8,6 +9,7 @@
 	import IntroductionCard from '$lib/components/agora/IntroductionCard.svelte';
 	import NewMemberCard from '$lib/components/agora/NewMemberCard.svelte';
 	import CreateInviteModal from '$lib/components/invite/CreateInviteModal.svelte';
+	import PageHeader from '$lib/components/headers/PageHeader.svelte';
 
 	const selectedRelay = $derived(settings.selectedRelay);
 	const isAgora = $derived(selectedRelay ? isAgoraRelay(selectedRelay) : false);
@@ -110,7 +112,27 @@
 			.sort((a, b) => b.joinedAt - a.joinedAt)
 			.slice(0, 20);
 	});
+
+	// Set up header
+	$effect(() => {
+		if (isAgora) {
+			headerStore.header = agoraInvitesHeader;
+		} else {
+			headerStore.clear();
+		}
+
+		return () => {
+			headerStore.clear();
+		};
+	});
 </script>
+
+{#snippet agoraInvitesHeader()}
+	<PageHeader
+		title="🏆 Agora Invites"
+		subtitle="Community growth and new members"
+	/>
+{/snippet}
 
 {#if !isAgora}
 	<div class="min-h-screen flex items-center justify-center p-4">
@@ -123,16 +145,7 @@
 		</div>
 	</div>
 {:else}
-	<div class="min-h-screen bg-background">
-		<!-- Header -->
-		<div class="border-b border-border bg-card sticky top-0 z-10">
-			<div class="px-4 py-4">
-				<h1 class="text-2xl font-bold text-foreground">🏆 Agora Invites</h1>
-				<p class="text-sm text-muted-foreground mt-1">Community growth and new members</p>
-			</div>
-		</div>
-
-		<div class="w-full lg:max-w-4xl mx-auto p-4 space-y-6">
+	<div class="w-full lg:max-w-4xl mx-auto p-4 space-y-6">
 			<!-- Top Inviters Podium -->
 			<TopInvitersPodium stats={inviterStats} />
 
@@ -168,7 +181,6 @@
 						{/each}
 					</div>
 				{/if}
-			</div>
 		</div>
 	</div>
 

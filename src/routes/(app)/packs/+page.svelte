@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
   import { goto } from '$app/navigation';
+  import { headerStore } from '$lib/stores/header.svelte';
   import { createPackModal } from '$lib/stores/createPackModal.svelte';
   import { mockFollowPacks } from '$lib/data/mockFollowPacks';
   import { NDKKind, type NDKEvent } from '@nostr-dev-kit/ndk';
@@ -10,6 +11,7 @@
   import { createLazyFeed } from '$lib/utils/lazyFeed.svelte';
   import { getPackUrl } from '$lib/utils/packUrl';
   import { getProfileUrl } from '$lib/utils/navigation';
+  import PageHeader from '$lib/components/headers/PageHeader.svelte';
 
   let searchQuery = $state('');
 
@@ -144,37 +146,45 @@
     const url = getPackUrl(pack, author);
     goto(url);
   }
+
+  // Set up header
+  $effect(() => {
+    headerStore.header = packsHeader;
+
+    return () => {
+      headerStore.clear();
+    };
+  });
 </script>
 
-<div class="w-full lg:max-w-6xl mx-auto px-4 py-8">
-  <!-- Header -->
-  <div class="mb-8">
-    <div class="flex items-start justify-between gap-4">
-      <div>
-        <h1 class="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
-          <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-          Follow Packs
-        </h1>
-        <p class="text-muted-foreground">
-          Discover curated lists of accounts to follow
-        </p>
-      </div>
-      {#if ndk.$currentUser}
-        <button
-          onclick={() => createPackModal.open()}
-          class="px-4 py-2.5 bg-primary hover:bg-accent-dark text-foreground rounded-lg transition-colors font-medium text-sm flex items-center gap-2 flex-shrink-0"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          New Follow Pack
-        </button>
-      {/if}
-    </div>
-  </div>
+{#snippet packsHeader()}
+  <PageHeader
+    title="Follow Packs"
+    subtitle="Discover curated lists of accounts to follow"
+    icon={packIcon}
+    actions={ndk.$currentUser ? createPackAction : undefined}
+  />
+{/snippet}
 
+{#snippet packIcon()}
+  <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+  </svg>
+{/snippet}
+
+{#snippet createPackAction()}
+  <button
+    onclick={() => createPackModal.open()}
+    class="px-4 py-2.5 bg-primary hover:bg-accent-dark text-foreground rounded-lg transition-colors font-medium text-sm flex items-center gap-2 flex-shrink-0"
+  >
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+    </svg>
+    New Follow Pack
+  </button>
+{/snippet}
+
+<div class="w-full lg:max-w-6xl mx-auto px-4 py-8">
   <!-- Search and Filters -->
   <div class="mb-6">
     <div class="flex gap-3 flex-col sm:flex-row">

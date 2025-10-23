@@ -1,21 +1,30 @@
 <script lang="ts">
-  import type { NDKEvent } from '@nostr-dev-kit/ndk';
+  import type { NDKArticle, NDKEvent } from '@nostr-dev-kit/ndk';
+  import { NDKKind } from '@nostr-dev-kit/ndk';
+  import { ndk } from '$lib/ndk.svelte';
   import NoteCard from './NoteCard.svelte';
 
   interface Props {
-    comments: NDKEvent[];
-    isLoading: boolean;
+    article: NDKArticle;
   }
 
-  let { comments, isLoading }: Props = $props();
+  let { article }: Props = $props();
+
+  const commentsSubscription = ndk.$subscribe(() => ({
+    filters: [{
+      kinds: [NDKKind.Text, NDKKind.GenericReply],
+      '#a': [`${article.kind}:${article.pubkey}:${article.dTag}`]
+    }],
+    bufferMs: 100,
+    subId: 'comments'
+  }));
+
+  const comments = $derived.by(() => {
+    return [...commentsSubscription.events].sort((a, b) => (a.created_at || 0) - (b.created_at || 0));
+  });
 </script>
 
-{#if isLoading}
-  <div class="py-8 text-center">
-    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border"></div>
-    <p class="mt-3 text-muted-foreground">Loading comments...</p>
-  </div>
-{:else if comments.length === 0}
+{#if comments.length === 0}
   <div class="py-12 text-center text-muted-foreground">
     No comments yet. Be the first to share your thoughts!
   </div>

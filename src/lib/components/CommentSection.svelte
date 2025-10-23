@@ -1,7 +1,5 @@
 <script lang="ts">
-  import type { NDKArticle, NDKEvent } from '@nostr-dev-kit/ndk';
-  import NDK, { NDKKind } from '@nostr-dev-kit/ndk';
-  import { ndk } from '$lib/ndk.svelte';
+  import type { NDKArticle } from '@nostr-dev-kit/ndk';
   import CommentForm from './CommentForm.svelte';
   import CommentList from './CommentList.svelte';
 
@@ -11,25 +9,6 @@
   }
 
   let { article, onError }: Props = $props();
-
-  const commentsSubscription = ndk.$subscribe(() => ({
-    filters: [{
-      kinds: [NDKKind.Text, NDKKind.GenericReply],
-      '#a': [`${article.kind}:${article.pubkey}:${article.dTag}`]
-    }],
-    bufferMs: 100
-  }));
-
-  const comments = $derived.by(() => {
-    return [...commentsSubscription.events].sort((a, b) => (a.created_at || 0) - (b.created_at || 0));
-  });
-
-  const isLoading = $derived(!commentsSubscription.eosed);
-
-  function addComment(comment: NDKEvent) {
-    // The subscription will automatically pick up the new comment
-    // No need to manually add it
-  }
 </script>
 
 <div class="border-t border pt-12">
@@ -37,12 +16,9 @@
     <h2 class="text-2xl sm:text-3xl font-bold text-foreground font-serif mb-2">
       Discussion
     </h2>
-    <p class="text-muted-foreground">
-      {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
-    </p>
   </div>
 
-  <CommentForm {article} onCommentPublished={addComment} {onError} />
+  <CommentForm {article} {onError} />
 
-  <CommentList {comments} {isLoading} />
+  <CommentList {article} />
 </div>

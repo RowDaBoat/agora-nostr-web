@@ -28,3 +28,7 @@ dist-ssr
 .vercel
 .svelte-kit
 .playwright-mcp
+
+# Generated worker files (created during postinstall)
+static/worker-*.js
+src/lib/worker-version.ts

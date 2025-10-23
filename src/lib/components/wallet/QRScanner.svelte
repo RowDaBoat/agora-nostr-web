@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
-  import { CapacitorBarcodeScanner } from '@capacitor/barcode-scanner';
-  import type { ScanResult } from '@capacitor/barcode-scanner';
+  import { browser } from '$app/environment';
 
   let { onScan = $bindable<(data: string) => void>(() => {}), onCancel = $bindable<() => void>(() => {}) } = $props();
 
@@ -11,11 +9,16 @@
   let showPasteInput = $state(false);
 
   async function startScan() {
+    if (!browser) return;
+
     try {
       // Hide background to show camera
       document.body.classList.add('scanner-active');
       isScanning = true;
       error = null;
+
+      // Dynamically import the scanner
+      const { CapacitorBarcodeScanner } = await import('@capacitor/barcode-scanner');
 
       // Start scanning - the plugin handles permissions internally
       const result = await CapacitorBarcodeScanner.scanBarcode({
@@ -37,7 +40,9 @@
   }
 
   function stopScan() {
-    document.body.classList.remove('scanner-active');
+    if (browser && document?.body) {
+      document.body.classList.remove('scanner-active');
+    }
     isScanning = false;
   }
 
@@ -76,12 +81,16 @@
     onCancel();
   }
 
-  onMount(() => {
-    startScan();
-  });
+  // Use effect with cleanup instead of onMount/onDestroy
+  $effect(() => {
+    if (browser) {
+      startScan();
+    }
 
-  onDestroy(() => {
-    stopScan();
+    // Cleanup when component unmounts
+    return () => {
+      stopScan();
+    };
   });
 </script>
 

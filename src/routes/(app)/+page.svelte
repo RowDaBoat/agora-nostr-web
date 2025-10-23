@@ -3,7 +3,8 @@
   import { settings } from '$lib/stores/settings.svelte';
   import { hashtagFilter } from '$lib/stores/hashtagFilter.svelte';
   import { layoutMode } from '$lib/stores/layoutMode.svelte';
-  import { NDKKind, type NDKEvent, NDKArticle, NDKSubscriptionCacheUsage } from '@nostr-dev-kit/ndk';
+  import { headerStore } from '$lib/stores/header.svelte';
+  import { NDKKind, type NDKEvent, NDKArticle, type NDKFilter } from '@nostr-dev-kit/ndk';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import ArticlePreviewCard from '$lib/components/ArticlePreviewCard.svelte';
   import FeaturedArticleCard from '$lib/components/FeaturedArticleCard.svelte';
@@ -13,11 +14,10 @@
   import LoadMoreTrigger from '$lib/components/LoadMoreTrigger.svelte';
   import { createLazyFeed } from '$lib/utils/lazyFeed.svelte';
   import { Avatar } from '@nostr-dev-kit/svelte';
-  import RelaySelector from '$lib/components/RelaySelector.svelte';
+  import FeedHeader from '$lib/components/headers/FeedHeader.svelte';
   import { getRelaysToUse, isAgorasSelection } from '$lib/utils/relayUtils';
   import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';
   import { sub } from 'date-fns';
-  import MediaTypeFilters from '$lib/components/MediaTypeFilters.svelte';
   import CreateMediaPostModal from '$lib/components/CreateMediaPostModal.svelte';
   import { createMediaPostModal } from '$lib/stores/createMediaPostModal.svelte';
   import { homePageFilter } from '$lib/stores/homePageFilter.svelte';
@@ -84,10 +84,10 @@
   console.log('[HomePage] Creating subscriptions');
 
   const notesFeed = createLazyFeed(ndk, () => {
-    const filter: any = {
-      kinds: [NDKKind.Text, 9802],
-      limit: 200
-    };
+    const filter: NDKFilter = {
+					kinds: [NDKKind.Text, 9802],
+					limit: 200,
+				};
 
     // Add hashtag filters if any are selected
     if (hashtagFilter.hasFilters) {
@@ -100,14 +100,15 @@
       filter.authors = authorsArray;
     }
 
-    console.log('Using filter:', filter, "relays:", relaysToUse);
+    console.log('relays to use for notes', relaysToUse);
+
     return {
-      filters: [filter],
-      relayUrls: relaysToUse.length > 0 ? relaysToUse : undefined,
-      subId: 'notes',
-      cacheUsage: relaysToUse.length > 0 ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.PARALLEL,
-      exclusiveRelay: relaysToUse.length > 0,
-    };
+					filters: [filter],
+					relayUrls: relaysToUse.length > 0 ? relaysToUse : undefined,
+					subId: "notes",
+					cacheUnconstrainFilter: [],
+					exclusiveRelay: true,
+				};
   }, {
     initialLimit: 20,
     pageSize: 20
@@ -115,8 +116,8 @@
   console.log('[HomePage] Notes subscription created');
 
   const mediaFeed = createLazyFeed(ndk, () => {
-    const filter: any = {
-      kinds: [NDKKind.Text, NDKKind.Image, NDKKind.Video, NDKKind.ShortVideo, 22],
+    const filter: NDKFilter = {
+      kinds: [NDKKind.Text, NDKKind.Image, NDKKind.Video, NDKKind.ShortVideo],
       limit: 300
     };
 
@@ -133,10 +134,7 @@
     return {
 			filters: [filter],
 			relayUrls: relaysToUse.length > 0 ? relaysToUse : undefined,
-			cacheUsage:
-				relaysToUse.length > 0
-					? NDKSubscriptionCacheUsage.ONLY_RELAY
-					: NDKSubscriptionCacheUsage.PARALLEL,
+      cacheUnconstrainFilter: [],
 			subId: "home-media",
 			exclusiveRelay: relaysToUse.length > 0,
 		};
@@ -146,7 +144,7 @@
   });
 
   const articlesFeed = createLazyFeed(ndk, () => {
-    const filter: any = {
+    const filter: NDKFilter = {
       kinds: [NDKKind.Article],
       limit: 100
     };
@@ -163,7 +161,6 @@
     }
     return {
       filters: [filter],
-      cacheUsage: relaysToUse.length > 0 ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.PARALLEL,
       subId: 'articles',
       exclusiveRelay: relaysToUse.length > 0,
       relayUrls: relaysToUse.length > 0 ? relaysToUse : undefined
@@ -174,10 +171,10 @@
   });
 
   const highlightsFeed = createLazyFeed(ndk, () => {
-    const filter: any = {
-      kinds: [9802],
-      limit: 100
-    };
+    const filter: NDKFilter = {
+					kinds: [9802],
+					limit: 100,
+				};
 
     // Add hashtag filters if any are selected
     if (hashtagFilter.hasFilters) {
@@ -191,7 +188,6 @@
     }
     return {
       filters: [filter],
-      cacheUsage: relaysToUse.length > 0 ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.PARALLEL,
       subId: 'highlights',
       exclusiveRelay: relaysToUse.length > 0,
       relayUrls: relaysToUse.length > 0 ? relaysToUse : undefined
@@ -304,109 +300,22 @@
     }
   });
 
-  // Measure header height and set CSS variable
-  let headerElement = $state<HTMLDivElement | null>(null);
-
+  // Set up header
   $effect(() => {
-    if (!headerElement) return;
-
-    const updateHeaderHeight = () => {
-      const height = headerElement.offsetHeight;
-      document.documentElement.style.setProperty('--header-height', `${height}px`);
-    };
-
-    updateHeaderHeight();
-    window.addEventListener('resize', updateHeaderHeight);
+    headerStore.header = feedHeader;
 
     return () => {
-      window.removeEventListener('resize', updateHeaderHeight);
+      headerStore.clear();
     };
   });
 
 </script>
 
+{#snippet feedHeader()}
+  <FeedHeader {headerTitle} {selectedFilter} onFilterChange={(filter) => selectedFilter = filter} />
+{/snippet}
+
 <div class="max-w-full mx-auto">
-  <!-- Header -->
-  <div bind:this={headerElement} class="sticky top-0 z-10 bg-background/90 backdrop-blur-xl border-b border-border">
-    <div class="py-2 pl-2 sm:p-4 w-full">
-      <div class="flex items-center gap-2">
-        <!-- Relay/Following selector icon (always visible) -->
-        <div class="flex-shrink-0 relative z-20">
-          <RelaySelector iconOnly={true} />
-        </div>
-
-        <!-- Hashtags scroll container OR Title -->
-        <div class="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0">
-        {#if hashtagInterests.interests.length > 0}
-          {#each hashtagInterests.interests as hashtag}
-            <button
-              onclick={() => hashtagFilter.toggleHashtag(hashtag)}
-              class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all {
-                hashtagFilter.isSelected(hashtag)
-                  ? 'bg-primary text-foreground border-2 border-primary-400'
-                  : 'bg-muted text-muted-foreground border-2 border-border hover:border'
-              }"
-            >
-              <span class="text-xs">#</span>
-              <span>{hashtag}</span>
-            </button>
-          {/each}
-          {#if hashtagFilter.hasFilters}
-            <button
-              onclick={() => hashtagFilter.clearAll()}
-              class="flex-shrink-0 inline-flex items-center gap-1 px-2 py-1.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
-              title="Clear all filters"
-            >
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          {/if}
-        {:else if headerTitle?.type === 'logo'}
-          <!-- AGORA text (icon is on the left) -->
-          <svg viewBox="0 0 575 250" class="h-8 w-auto" xmlns="http://www.w3.org/2000/svg">
-            <style>
-              .st1{fill:#FFFFFF;}
-            </style>
-            <g>
-              <path class="st1" d="M123.9,165.4v-0.9c3.6-0.3,6.4-1.1,8.4-2.4c2-1.3,3.5-3.2,4.7-5.8l24.2-54.9h3.8l28.5,57.6
-                c0.7,1.4,1.7,2.6,3.2,3.6c1.4,1,3.6,1.6,6.4,1.9v0.9h-27.7v-0.9c2.9-0.3,4.7-0.9,5.4-1.9c0.8-1,0.8-2.2,0.1-3.6l-21.5-44.6
-                L141,156.3c-1.1,2.6-0.9,4.5,0.5,5.8c1.4,1.3,3.9,2.1,7.6,2.4v0.9H123.9z M163.1,87.7h8.8l-7.8,9.2h-3L163.1,87.7z"/>
-              <path class="st1" d="M248.3,135.2c0-1.5-0.6-2.7-1.8-3.7c-1.2-0.9-3.3-1.5-6.1-1.8v-0.9H268v0.9c-2.9,0.3-4.9,0.9-6.1,1.8
-                c-1.2,0.9-1.8,2.1-1.8,3.7v32.9c0,1.5,0.6,2.7,1.8,3.7c1.2,0.9,3.3,1.5,6.1,1.8v0.9h-29v-0.9c3.5-0.3,5.9-0.9,7.2-1.8
-                c1.3-0.9,2-2.1,2-3.7v-11.1c-1.5,2.9-3.7,5.2-6.7,6.7c-2.9,1.6-6.8,2.3-11.5,2.3c-4.5,0-8.7-0.7-12.3-2.2c-3.7-1.5-6.8-3.6-9.4-6.4
-                c-2.6-2.8-4.6-6.2-6-10.2c-1.4-4-2.1-8.6-2.1-13.6c0-5.1,0.7-9.6,2.2-13.7c1.5-4.1,3.7-7.5,6.6-10.4c2.9-2.9,6.5-5.1,10.9-6.7
-                c4.4-1.6,9.4-2.3,15.1-2.3c3.8,0,7.5,0.3,11.2,1c3.7,0.7,7.2,1.7,10.6,3v15.6h-1.3c-1.1-2.5-2.3-4.8-3.7-6.8c-1.4-2-3-3.8-4.7-5.3
-                c-1.8-1.5-3.7-2.6-5.9-3.4c-2.2-0.8-4.6-1.2-7.3-1.2c-3.6,0-6.8,0.7-9.5,2.1c-2.7,1.4-4.9,3.4-6.7,6c-1.8,2.6-3.2,5.7-4,9.3
-                c-0.9,3.6-1.3,7.7-1.3,12.2c0,9.2,1.8,16.2,5.5,20.8c3.7,4.7,8.6,7,14.6,7c4.8,0,8.5-1.6,11.3-4.8c2.7-3.2,4.2-8.5,4.5-15.8V135.2z
-                "/>
-              <path class="st1" d="M370.2,101.4c12.3,0,21.4,1.4,27.3,4.3c5.8,2.9,8.8,6.9,8.8,12.1c0,3.8-1.6,7.1-4.7,9.7
-                c-3.2,2.6-8,4.5-14.7,5.6l19,25.9c0.9,1.3,2.2,2.4,3.8,3.5c1.6,1,3.8,1.7,6.7,2v0.9h-27.7v-0.9c2.9-0.3,4.5-1,4.8-2
-                c0.3-1,0-2.2-0.9-3.5l-17.9-24.8c-0.7,0.1-1.4,0.1-2.1,0.1c-0.8,0-1.5,0-2.3,0h-7.1V159c0,1.5,0.6,2.7,1.8,3.7
-                c1.2,0.9,3.3,1.5,6.1,1.8v0.9h-27.7v-0.9c2.9-0.3,4.9-0.9,6.1-1.8c1.2-0.9,1.8-2.1,1.8-3.7v-51.2c0-1.5-0.6-2.7-1.8-3.7
-                c-1.2-0.9-3.3-1.5-6.1-1.8v-0.9H370.2z M370.2,131.6c8.2,0,14.3-1.2,18.1-3.5c3.8-2.3,5.7-5.7,5.7-10.2c0-4.5-1.9-7.9-5.7-10.2
-                c-3.8-2.3-9.8-3.5-18.1-3.5h-7.1v27.5H370.2z"/>
-              <path class="st1" d="M418.9,165.4v-0.9c3.6-0.3,6.4-1.1,8.4-2.4c2-1.3,3.5-3.2,4.7-5.8l24.2-54.9h3.8l28.5,57.6
-                c0.7,1.4,1.7,2.6,3.2,3.6c1.4,1,3.6,1.6,6.4,1.9v0.9h-27.7v-0.9c2.9-0.3,4.7-0.9,5.4-1.9c0.8-1,0.8-2.2,0.1-3.6l-21.5-44.6
-                L436,156.3c-1.1,2.6-0.9,4.5,0.5,5.8c1.4,1.3,3.9,2.1,7.6,2.4v0.9H418.9z"/>
-              <path class="st1" d="M335.1,120c-1.5-4-3.7-7.5-6.5-10.3c-2.8-2.9-6.2-5.1-10.1-6.6c-4-1.6-8.4-2.3-13.4-2.3
-                c-4.9,0-9.3,0.8-13.3,2.3c-4,1.6-7.4,3.8-10.2,6.6c-2.8,2.9-5,6.3-6.5,10.3c-1.5,4-2.3,8.5-2.3,13.5s0.8,9.4,2.3,13.5
-                c1.5,4,3.7,7.5,6.5,10.3c2.8,2.9,6.2,5.1,10.2,6.6c4,1.6,8.4,2.3,13.3,2.3c5,0,9.4-0.8,13.4-2.3c3.9-1.6,7.3-3.8,10.1-6.6
-                c2.8-2.9,5-6.3,6.5-10.3c1.5-4,2.3-8.5,2.3-13.5S336.6,124,335.1,120z M305,163.4c-12.4,0-20.9-13.4-20.9-30s8.2-30,20.9-30
-                c13,0,20.9,13.4,20.9,30S318,163.4,305,163.4z"/>
-            </g>
-          </svg>
-        {:else if headerTitle}
-          <h1 class="text-xl font-bold text-foreground">{headerTitle.text}</h1>
-        {/if}
-        </div>
-      </div>
-    </div>
-
-    <!-- Media Type Filters -->
-    <MediaTypeFilters {selectedFilter} onFilterChange={(filter) => selectedFilter = filter} />
-  </div>
-
   <!-- Feed -->
   <div class="divide-y divide-neutral-800/50">
     {#if selectedFilter === 'articles'}

@@ -5,6 +5,8 @@ import { NDKEvent, NDKKind, NDKBlossomList, NDKInterestList } from '@nostr-dev-k
 import { browser } from '$app/environment';
 import { createAuthPolicyWithConfirmation } from './relayAuthPolicy.svelte';
 import { createHashtagInterestsStore } from './stores/hashtagInterests.svelte';
+import { initializeCache } from './utils/clearCache';
+import { CACHE_WORKER_VERSION } from './worker-version';
 
 const DEFAULT_RELAYS = [
   'wss://relay.primal.net',
@@ -15,7 +17,7 @@ const DEFAULT_RELAYS = [
 const cacheAdapter = browser ? new NDKCacheSqliteWasm({
   dbName: "voces-cache",
   useWorker: true,
-  workerUrl: "/worker.js",
+  workerUrl: `/worker-${CACHE_WORKER_VERSION}.js`,
   wasmUrl: "/sql-wasm.wasm",
 }) : undefined;
 
@@ -30,6 +32,7 @@ export const ndk = new NDKSvelte({
   initialValidationRatio: 1.0,
   lowestValidationRatio: 0.1,
   aiGuardrails: false,
+  futureTimestampGrace: 30,
   session: browser ? {
     storage: new LocalStorage(),
     autoSave: true,
@@ -46,6 +49,11 @@ export const ndk = new NDKSvelte({
 // Set the relay authentication policy (browser only)
 if (browser) {
   ndk.relayAuthDefaultPolicy = createAuthPolicyWithConfirmation({ ndk });
+
+  // Initialize cache and clear if version mismatch
+  initializeCache("voces-cache").catch(err => {
+    console.error('Failed to initialize cache:', err);
+  });
 }
 
 // Initialize the cache and connect
@@ -57,11 +65,6 @@ export const ndkReady = (async () => {
     const SigVerifyWorker = (await import('./sig-verify.worker.ts?worker')).default;
     sigVerifyWorker = new SigVerifyWorker();
     ndk.signatureVerificationWorker = sigVerifyWorker;
-
-    // Initialize cache
-    if (cacheAdapter) {
-      await cacheAdapter.initializeAsync(ndk);
-    }
 
     ndk.connect();
   } catch (error) {
@@ -78,5 +81,8 @@ export {
   removeAuthDecision,
   getAuthDecisions
 } from './relayAuthPolicy.svelte';
+
+// Export cache adapter for debugging/monitoring
+export { cacheAdapter };
 
 export default ndk;

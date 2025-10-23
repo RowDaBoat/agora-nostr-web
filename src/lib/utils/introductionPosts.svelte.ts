@@ -1,74 +1,60 @@
-import type NDK from '@nostr-dev-kit/ndk';
-import { NDKEvent, NDKRelaySet, type NDKFilter } from '@nostr-dev-kit/ndk';
+import type { NDKSvelte } from '@nostr-dev-kit/svelte';
 import { isAgoraRelay, AGORA_RELAYS } from './relayUtils';
 
 export interface IntroductionPost {
-  event: NDKEvent;
+  event: import('@nostr-dev-kit/ndk').NDKEvent;
   engagementCount: number;
 }
 
-export async function fetchIntroductionPosts(ndk: NDK, inviteRelay?: string): Promise<IntroductionPost[]> {
-  try {
-    // Determine which relays to use
-    let relayUrls: string[];
+export function createIntroductionPostsManager(ndk: NDKSvelte, inviteRelay?: string) {
+  const relayUrls = (() => {
     if (inviteRelay && isAgoraRelay(inviteRelay)) {
-      // If invited to an agora, fetch only from that relay
-      relayUrls = [inviteRelay];
-    } else {
-      // Otherwise, fetch from all agora relays
-      relayUrls = [...AGORA_RELAYS];
+      return [inviteRelay];
     }
+    return [...AGORA_RELAYS];
+  })();
 
-    // Fetch posts with #introduction hashtag from more than 12 hours ago
-    const twelveHoursAgo = Math.floor(Date.now() / 1000) - (12 * 60 * 60);
+  const twelveHoursAgo = Math.floor(Date.now() / 1000) - (12 * 60 * 60);
 
-    const filter: NDKFilter = {
-      kinds: [1],
-      "#t": ["introduction"],
-      since: twelveHoursAgo,
-    };
+  const introEvents = ndk.$fetchEvents({
+    kinds: [1],
+    "#t": ["introduction"],
+    since: twelveHoursAgo,
+  }, { relayUrls });
 
-    const introEvents = await ndk.fetchEvents(filter, { relayUrls });
+  const eventIds = $derived(introEvents ? Array.from(introEvents).map(e => e.id) : []);
 
-    if (introEvents.size === 0) {
-      return [];
-    }
+  const taggingEvents = ndk.$fetchEvents(() => eventIds.length > 0 ? {
+    "#e": eventIds,
+  } : undefined, { relayUrls });
 
-    // Get all event IDs
-    const eventIds = Array.from(introEvents).map(e => e.id);
+  const introductionPosts = $derived.by(() => {
+    if (!introEvents || introEvents.size === 0) return [];
 
-    // Fetch all events that tag these introduction posts
-    const tagsFilter: NDKFilter = {
-      "#e": eventIds,
-    };
-
-    const taggingEvents = await ndk.fetchEvents(tagsFilter, { relayUrls });
-
-    // Count how many times each introduction post has been tagged
     const engagementMap = new Map<string, number>();
 
-    for (const event of taggingEvents) {
-      const eTags = event.tags.filter(tag => tag[0] === 'e');
-      for (const tag of eTags) {
-        const eventId = tag[1];
-        if (eventIds.includes(eventId)) {
-          engagementMap.set(eventId, (engagementMap.get(eventId) || 0) + 1);
+    if (taggingEvents) {
+      for (const event of taggingEvents) {
+        const eTags = event.tags.filter(tag => tag[0] === 'e');
+        for (const tag of eTags) {
+          const eventId = tag[1];
+          if (eventIds.includes(eventId)) {
+            engagementMap.set(eventId, (engagementMap.get(eventId) || 0) + 1);
+          }
         }
       }
     }
 
-    // Create the introduction posts with engagement metrics
-    const introductionPosts: IntroductionPost[] = Array.from(introEvents)
+    return Array.from(introEvents)
       .map(event => ({
         event,
         engagementCount: engagementMap.get(event.id) || 0
       }))
       .sort((a, b) => b.engagementCount - a.engagementCount)
-      .slice(0, 10); // Get top 10 most engaged posts
+      .slice(0, 10);
+  });
 
-    return introductionPosts;
-  } catch (error) {
-    console.error('Error fetching introduction posts:', error);
-    return [];
-  }
+  return {
+    introductionPosts
+  };
 }

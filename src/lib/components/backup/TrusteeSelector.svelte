@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Trustee } from '$lib/backup/types';
   import { ndk } from '$lib/ndk.svelte';
+  import User from '$lib/components/User.svelte';
+  import { useProfileSearch } from '$lib/composables/useProfileSearch.svelte';
 
   interface Props {
     trustees: Trustee[];
@@ -14,9 +16,17 @@
 
   let followsList = $derived(Array.from(ndk.$sessions.follows));
 
-  let filteredFollows = $derived(
+  // Get available follows (excluding already selected trustees)
+  const availableFollows = $derived.by(() =>
     followsList.filter(pubkey => !trustees.some(t => t.pubkey === pubkey))
   );
+
+  // Use profile search composable for filtering
+  const { filteredPubkeys: filteredFollows } = useProfileSearch({
+    searchQuery: () => searchValue,
+    availablePubkeys: () => availableFollows,
+    limit: 10
+  });
 
   function handleAddTrustee(pubkey: string) {
     if (trustees.length >= maxTrustees) return;
@@ -45,11 +55,7 @@
     <div class="space-y-2">
       {#each trustees as trustee}
         <div class="flex items-center gap-3 p-3 bg-neutral-100 dark:bg-card border border rounded-lg">
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-foreground truncate">
-              {trustee.pubkey.slice(0, 8)}...{trustee.pubkey.slice(-4)}
-            </p>
-          </div>
+          <User pubkey={trustee.pubkey} variant="avatar-name-handle" showHoverCard={false} class="flex-1 min-w-0" />
           <button
             onclick={() => handleRemoveTrustee(trustee.pubkey)}
             class="p-2 hover:bg-neutral-200 dark:hover:bg-muted rounded-lg transition-colors"
@@ -90,16 +96,12 @@
       </div>
     {:else}
       <div class="border border rounded-lg max-h-64 overflow-y-auto">
-        {#each filteredFollows.slice(0, 10) as pubkey}
+        {#each filteredFollows as pubkey}
           <button
             onclick={() => handleAddTrustee(pubkey)}
-            class="w-full flex items-center gap-3 p-3 hover:bg-neutral-100 dark:hover:bg-card transition-colors border-b border last:border-b-0"
+            class="w-full p-3 hover:bg-neutral-100 dark:hover:bg-card transition-colors border-b border last:border-b-0"
           >
-            <div class="flex-1 min-w-0 text-left">
-              <p class="text-sm font-medium text-foreground truncate">
-                {pubkey.slice(0, 8)}...{pubkey.slice(-4)}
-              </p>
-            </div>
+            <User {pubkey} variant="avatar-name-handle" showHoverCard={false} class="w-full" />
           </button>
         {/each}
       </div>

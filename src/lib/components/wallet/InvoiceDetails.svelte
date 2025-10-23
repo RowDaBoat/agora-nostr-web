@@ -1,6 +1,5 @@
 <script lang="ts">
-  import * as bolt11 from 'bolt11';
-  import type { PaymentRequestObject } from 'bolt11';
+  import { decode } from 'light-bolt11-decoder';
 
   let {
     invoice = $bindable<string>(''),
@@ -8,7 +7,7 @@
     onCancel = $bindable<() => void>(() => {})
   } = $props();
 
-  let decoded = $state<PaymentRequestObject | null>(null);
+  let decoded = $state<any>(null);
   let error = $state<string | null>(null);
 
   $effect(() => {
@@ -19,7 +18,7 @@
           ? invoice.trim().substring(10)
           : invoice.trim();
 
-        decoded = bolt11.decode(cleanInvoice);
+        decoded = decode(cleanInvoice);
         error = null;
       } catch (e) {
         error = e instanceof Error ? e.message : 'Invalid lightning invoice';
@@ -28,20 +27,38 @@
     }
   });
 
-  function formatAmount(millisatoshis?: number): string {
-    if (!millisatoshis) return 'No amount specified';
-    const sats = Math.floor(millisatoshis / 1000);
+  function getSection(name: string) {
+    return decoded?.sections?.find((s: any) => s.name === name);
+  }
+
+  function formatAmount(): string {
+    const amountSection = getSection('amount');
+    if (!amountSection?.value) return 'No amount specified';
+
+    // value is in millisatoshis
+    const sats = Math.floor(Number(amountSection.value) / 1000);
     return `${new Intl.NumberFormat('en-US').format(sats)} sats`;
   }
 
-  function formatDate(timestamp?: number): string {
-    if (!timestamp) return 'N/A';
-    return new Date(timestamp * 1000).toLocaleString();
+  function getAmountInSats(): number {
+    const amountSection = getSection('amount');
+    if (!amountSection?.value) return 0;
+    return Math.floor(Number(amountSection.value) / 1000);
   }
 
-  function formatExpiry(expirySeconds?: number, timestamp?: number): string {
-    if (!expirySeconds || !timestamp) return 'N/A';
-    const expiryDate = new Date((timestamp + expirySeconds) * 1000);
+  function formatDate(): string {
+    const timestampSection = getSection('timestamp');
+    if (!timestampSection?.value) return 'N/A';
+    return new Date(timestampSection.value * 1000).toLocaleString();
+  }
+
+  function formatExpiry(): string {
+    const timestampSection = getSection('timestamp');
+    const expirySection = getSection('expiry');
+
+    if (!timestampSection?.value || !expirySection?.value) return 'N/A';
+
+    const expiryDate = new Date((timestampSection.value + expirySection.value) * 1000);
     const now = new Date();
 
     if (expiryDate < now) {
@@ -62,17 +79,13 @@
   }
 
   function getDescription(): string {
-    if (!decoded) return '';
-
-    const descTag = decoded.tags?.find(tag => tag.tagName === 'description');
-    return descTag?.data as string || 'No description';
+    const descSection = getSection('description');
+    return descSection?.value || 'No description';
   }
 
   function getPaymentHash(): string {
-    if (!decoded) return '';
-
-    const hashTag = decoded.tags?.find(tag => tag.tagName === 'payment_hash');
-    return hashTag?.data as string || '';
+    const hashSection = getSection('payment_hash');
+    return hashSection?.value || '';
   }
 
   function handlePay() {
@@ -82,8 +95,13 @@
   }
 
   const isExpired = $derived(() => {
-    if (!decoded?.timeExpireDate) return false;
-    return decoded.timeExpireDate * 1000 < Date.now();
+    const timestampSection = getSection('timestamp');
+    const expirySection = getSection('expiry');
+
+    if (!timestampSection?.value || !expirySection?.value) return false;
+
+    const expiryDate = (timestampSection.value + expirySection.value) * 1000;
+    return expiryDate < Date.now();
   });
 </script>
 
@@ -101,7 +119,7 @@
     <div class="invoice-header">
       <div class="amount-section">
         <div class="amount-label">Amount</div>
-        <div class="amount-value">{formatAmount(decoded.millisatoshis)}</div>
+        <div class="amount-value">{formatAmount()}</div>
       </div>
     </div>
 
@@ -113,22 +131,15 @@
 
       <div class="detail-row">
         <span class="detail-label">Created</span>
-        <span class="detail-value">{formatDate(decoded.timestamp)}</span>
+        <span class="detail-value">{formatDate()}</span>
       </div>
 
       <div class="detail-row">
         <span class="detail-label">Expires in</span>
         <span class="detail-value" class:expired={isExpired()}>
-          {formatExpiry(decoded.timeExpireDate ? decoded.timeExpireDate - (decoded.timestamp || 0) : undefined, decoded.timestamp)}
+          {formatExpiry()}
         </span>
       </div>
-
-      {#if decoded.payeeNodeKey}
-        <div class="detail-row">
-          <span class="detail-label">Payee</span>
-          <span class="detail-value monospace">{decoded.payeeNodeKey.substring(0, 16)}...</span>
-        </div>
-      {/if}
 
       {#if getPaymentHash()}
         <div class="detail-row">
@@ -153,7 +164,7 @@
           Cancel
         </button>
         <button class="button-primary" onclick={handlePay}>
-          Pay {formatAmount(decoded.millisatoshis)}
+          Pay {formatAmount()}
         </button>
       {/if}
     </div>

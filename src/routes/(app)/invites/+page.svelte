@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
+	import { headerStore } from '$lib/stores/header.svelte';
 	import NDK, { NDKEvent, type NDKFilter } from '@nostr-dev-kit/ndk';
 	import { formatTimeAgo } from '$lib/utils/formatTime';
 	import { AGORA_RELAYS } from '$lib/utils/relayUtils';
+	import PageHeader from '$lib/components/headers/PageHeader.svelte';
 
 	let invites = $state<NDKEvent[]>([]);
 	let copiedId = $state<string | null>(null);
@@ -78,19 +80,26 @@
 			alert('Failed to delete invite. Check console for details.');
 		}
 	}
+
+	// Set up header
+	$effect(() => {
+		headerStore.header = invitesHeader;
+
+		return () => {
+			headerStore.clear();
+		};
+	});
 </script>
 
-<div class="min-h-screen bg-neutral-50 dark:bg-background">
-	<div class="w-full lg:max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-		<!-- Header -->
-		<div class="mb-8">
-			<h1 class="text-3xl font-bold text-foreground mb-2">My Invites</h1>
-			<p class="text-muted-foreground">
-				View and manage invites you've sent to join Agora
-			</p>
-		</div>
+{#snippet invitesHeader()}
+	<PageHeader
+		title="My Invites"
+		subtitle="View and manage invites you've sent to join Agora"
+	/>
+{/snippet}
 
-		{#if invites.length === 0}
+<div class="w-full lg:max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+	{#if invites.length === 0}
 			<div class="text-center py-12">
 				<div class="w-16 h-16 bg-neutral-200 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
 					<svg class="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,7 +189,6 @@
 						</div>
 					</div>
 				{/each}
-			</div>
-		{/if}
-	</div>
+		</div>
+	{/if}
 </div>

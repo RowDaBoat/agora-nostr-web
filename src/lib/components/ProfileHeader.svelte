@@ -11,7 +11,6 @@
 
   interface Props {
     pubkey: string;
-    profile?: NDKUserProfile;
     isOwnProfile: boolean;
     notesCount: number;
     followingCount: number;
@@ -22,7 +21,6 @@
 
   let {
     pubkey,
-    profile,
     isOwnProfile,
     notesCount,
     followingCount,
@@ -31,6 +29,7 @@
     onOpenCreatePack
   }: Props = $props();
 
+  const profile = ndk.$fetchProfile(() => pubkey);
   const currentUser = ndk.$currentUser;
   let isUserDropdownOpen = $state(false);
 

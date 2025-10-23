@@ -6,6 +6,16 @@ export default defineConfig({
   define: {
     'global': 'globalThis'
   },
+  resolve: {
+    conditions: ['svelte', 'browser', 'import', 'default'],
+    alias: {
+      'vaul-svelte': '/Users/pablofernandez/tenex/Voces-v53qhx/node_modules/vaul-svelte/dist/index.js'
+    },
+    mainFields: ['svelte', 'browser', 'module', 'jsnext:main', 'jsnext', 'main']
+  },
+  ssr: {
+    noExternal: ['vaul-svelte']
+  },
   optimizeDeps: {
     exclude: ['@nostr-dev-kit/cache-sqlite-wasm']
   },

@@ -1,11 +1,15 @@
 <script lang="ts">
+  import { MediaQuery } from 'svelte/reactivity';
   import { ndk } from '$lib/ndk.svelte';
   import type { NDKCashuDeposit } from '@nostr-dev-kit/wallet';
   import QRCode from './QRCode.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
+  import * as Drawer from '$lib/components/ui/drawer';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
+
+  const isDesktop = new MediaQuery('(min-width: 768px)');
 
   let { isOpen = $bindable(false) } = $props();
 
@@ -59,75 +63,152 @@
   }
 </script>
 
-<Dialog.Root open={isOpen} onOpenChange={(newOpen) => {
-    isOpen = newOpen;
-    if (!newOpen) close();
-  }}>
-  <Dialog.Content class="max-w-md">
-    {#if !invoice}
-      <Dialog.Header>
-        <Dialog.Title>Deposit Funds</Dialog.Title>
-      </Dialog.Header>
+{#if isDesktop.current}
+  <Dialog.Root open={isOpen} onOpenChange={(newOpen) => {
+      isOpen = newOpen;
+      if (!newOpen) close();
+    }}>
+    <Dialog.Content class="max-w-md">
+      {#if !invoice}
+        <Dialog.Header>
+          <Dialog.Title>Deposit Funds</Dialog.Title>
+        </Dialog.Header>
 
-      <div class="space-y-4">
-        <div>
-          <Label for="amount">Amount (sats)</Label>
-          <Input
-            id="amount"
-            type="number"
-            bind:value={amount}
-            min="1"
-            step="100"
-            class="mt-2"
-          />
-        </div>
-
-        <Button
-          onclick={handleDeposit}
-          disabled={isLoading || amount < 1}
-          class="w-full"
-        >
-          {isLoading ? 'Creating Invoice...' : 'Create Invoice'}
-        </Button>
-      </div>
-    {:else}
-      <Dialog.Header>
-        <Dialog.Title>Pay Invoice</Dialog.Title>
-      </Dialog.Header>
-
-      <div class="space-y-4">
-        {#if invoice}
-          <div class="flex justify-center">
-            <QRCode value={invoice} size={256} />
+        <div class="space-y-4">
+          <div>
+            <Label for="amount">Amount (sats)</Label>
+            <Input
+              id="amount"
+              type="number"
+              bind:value={amount}
+              min="1"
+              step="100"
+              class="mt-2"
+            />
           </div>
-        {/if}
 
-        <div class="bg-card border border-border rounded-lg p-3 break-all text-sm text-muted-foreground">
-          {invoice}
+          <Button
+            onclick={handleDeposit}
+            disabled={isLoading || amount < 1}
+            class="w-full"
+          >
+            {isLoading ? 'Creating Invoice...' : 'Create Invoice'}
+          </Button>
         </div>
+      {:else}
+        <Dialog.Header>
+          <Dialog.Title>Pay Invoice</Dialog.Title>
+        </Dialog.Header>
 
-        <Button
-          onclick={() => copyToClipboard(invoice || '')}
-          variant="outline"
-          class="w-full"
-        >
-          Copy Invoice
+        <div class="space-y-4">
+          {#if invoice}
+            <div class="flex justify-center">
+              <QRCode value={invoice} size={256} />
+            </div>
+          {/if}
+
+          <div class="bg-card border border-border rounded-lg p-3 break-all text-sm text-muted-foreground">
+            {invoice}
+          </div>
+
+          <Button
+            onclick={() => copyToClipboard(invoice || '')}
+            variant="outline"
+            class="w-full"
+          >
+            Copy Invoice
+          </Button>
+
+          <p class="text-center text-muted-foreground text-sm">Waiting for payment...</p>
+        </div>
+      {/if}
+
+      {#if error}
+        <div class="mt-4 p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">
+          {error}
+        </div>
+      {/if}
+
+      <Dialog.Footer>
+        <Button variant="ghost" onclick={close} class="w-full">
+          Close
         </Button>
+      </Dialog.Footer>
+    </Dialog.Content>
+  </Dialog.Root>
+{:else}
+  <Drawer.Root open={isOpen} onOpenChange={(newOpen) => {
+      isOpen = newOpen;
+      if (!newOpen) close();
+    }}>
+    <Drawer.Content>
+      {#if !invoice}
+        <Drawer.Header class="text-left">
+          <Drawer.Title>Deposit Funds</Drawer.Title>
+        </Drawer.Header>
 
-        <p class="text-center text-muted-foreground text-sm">Waiting for payment...</p>
-      </div>
-    {/if}
+        <div class="px-4 space-y-4">
+          <div>
+            <Label for="amount-mobile">Amount (sats)</Label>
+            <Input
+              id="amount-mobile"
+              type="number"
+              bind:value={amount}
+              min="1"
+              step="100"
+              class="mt-2"
+            />
+          </div>
 
-    {#if error}
-      <div class="mt-4 p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">
-        {error}
-      </div>
-    {/if}
+          <Button
+            onclick={handleDeposit}
+            disabled={isLoading || amount < 1}
+            class="w-full"
+          >
+            {isLoading ? 'Creating Invoice...' : 'Create Invoice'}
+          </Button>
+        </div>
+      {:else}
+        <Drawer.Header class="text-left">
+          <Drawer.Title>Pay Invoice</Drawer.Title>
+        </Drawer.Header>
 
-    <Dialog.Footer>
-      <Button variant="ghost" onclick={close} class="w-full">
-        Close
-      </Button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+        <div class="px-4 space-y-4">
+          {#if invoice}
+            <div class="flex justify-center">
+              <QRCode value={invoice} size={256} />
+            </div>
+          {/if}
+
+          <div class="bg-card border border-border rounded-lg p-3 break-all text-sm text-muted-foreground">
+            {invoice}
+          </div>
+
+          <Button
+            onclick={() => copyToClipboard(invoice || '')}
+            variant="outline"
+            class="w-full"
+          >
+            Copy Invoice
+          </Button>
+
+          <p class="text-center text-muted-foreground text-sm">Waiting for payment...</p>
+        </div>
+      {/if}
+
+      {#if error}
+        <div class="px-4 mt-4 mb-4">
+          <div class="p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">
+            {error}
+          </div>
+        </div>
+      {/if}
+
+      <Drawer.Footer class="pt-2">
+        <Button variant="ghost" onclick={close} class="w-full">
+          Close
+        </Button>
+      </Drawer.Footer>
+    </Drawer.Content>
+  </Drawer.Root>
+{/if}

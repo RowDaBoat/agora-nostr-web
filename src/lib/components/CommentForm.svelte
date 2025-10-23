@@ -1,31 +1,20 @@
 <script lang="ts">
   import type { NDKArticle, NDKEvent } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
-  import { Avatar } from '@nostr-dev-kit/svelte';
-  import { nip19 } from 'nostr-tools';
+  import User from '$lib/components/User.svelte';
   import ContentComposer from '$lib/components/ContentComposer.svelte';
 
   interface Props {
     article: NDKArticle;
-    onCommentPublished: (comment: NDKEvent) => void;
     onError: (error: string) => void;
   }
 
-  let { article, onCommentPublished, onError }: Props = $props();
+  let { article, onError }: Props = $props();
 
   let replyContent = $state('');
   let isSubmitting = $state(false);
 
   const currentUser = ndk.$currentUser;
-  const profile = ndk.$fetchProfile(() => currentUser?.pubkey);
-  const displayName = $derived(profile?.name || profile?.displayName || 'Anonymous');
-  const npub = $derived(currentUser ? nip19.npubEncode(currentUser.pubkey) : '');
-
-  function navigateToProfile() {
-    if (npub) {
-      window.location.href = `/p/${npub}`;
-    }
-  }
 
   async function handleCommentPublish() {
     if (!currentUser || !replyContent.trim()) return;
@@ -46,7 +35,6 @@
         return;
       }
 
-      onCommentPublished(replyEvent);
       replyContent = '';
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to publish comment';
@@ -60,9 +48,11 @@
 {#if currentUser}
   <div class="mb-8">
     <div class="flex gap-3">
-      <button type="button" onclick={navigateToProfile} class="flex-shrink-0">
-        <Avatar {ndk} pubkey={currentUser.pubkey} class="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity" />
-      </button>
+      <User
+        pubkey={currentUser.pubkey}
+        variant="avatar"
+        avatarSize="w-10 h-10"
+      />
       <div class="flex-1 flex flex-col gap-2">
         <div class="p-3 bg-neutral-50 dark:bg-card border border rounded-lg">
           <ContentComposer
