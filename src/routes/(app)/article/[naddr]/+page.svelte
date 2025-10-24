@@ -3,7 +3,6 @@
   import { goto } from '$app/navigation';
   import { ndk } from '$lib/ndk.svelte';
   import { layoutMode } from '$lib/stores/layoutMode.svelte';
-  import { fetchArticleByNaddr } from '$lib/utils/fetchArticle';
   import ArticleHeader from '$lib/components/ArticleHeader.svelte';
   import ArticleContent from '$lib/components/ArticleContent.svelte';
   import CommentSection from '$lib/components/CommentSection.svelte';
@@ -27,13 +26,23 @@
   let selectedHighlight = $state<NDKEvent | null>(null);
 
   const naddr = $derived($page.params.naddr);
-  const articleEvent = ndk.$fetchEvent(() => naddr);
-  const article = $derived.by(() => articleEvent ? NDKArticle.from(articleEvent) : null);
-  const highlights = ndk.$fetchEvents(() => article ? { kinds: [NDKKind.Highlight], ...article.filter() } : undefined);
+
+  let article = $state<NDKArticle | null>(null);
+
+  $effect(() => {
+    if (!naddr) {
+      article = null;
+      return;
+    }
+    ndk.fetchEvent(naddr).then(event => {
+      article = event ? NDKArticle.from(event) : null;
+    });
+  });
+
+  const highlights = ndk.$subscribe(() => article ? { filters: { kinds: [NDKKind.Highlight], ...article.filter() } } : undefined);
 
   const heroImage = $derived(article ? extractArticleImage(article) : null);
-  const authorProfile = $derived(article ? ndk.$fetchProfile(() => article.pubkey) : undefined);
-  const authorName = $derived(authorProfile?.name || authorProfile?.displayName || 'Anonymous');
+
   const publishedAt = $derived(article?.published_at);
 
   async function checkBookmark() {
@@ -184,7 +193,7 @@
   });
 </script>
 
-{#if !articleEvent.id}
+{#if !article}
   <div class="flex flex-col items-center justify-center min-h-screen bg-card">
     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-foreground"></div>
     <p class="mt-4 text-muted-foreground">Loading article...</p>
@@ -345,7 +354,7 @@
         <ArticleContent
           content={article.content}
           emojiTags={article.tags}
-          {highlights}
+          highlights={highlights.events}
           onTextSelected={handleTextSelected}
           onHighlightClick={handleHighlightClick}
         />

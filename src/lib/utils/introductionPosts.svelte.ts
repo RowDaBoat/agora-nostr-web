@@ -16,17 +16,23 @@ export function createIntroductionPostsManager(ndk: NDKSvelte, inviteRelay?: str
 
   const twelveHoursAgo = Math.floor(Date.now() / 1000) - (12 * 60 * 60);
 
-  const introEvents = ndk.$fetchEvents({
-    kinds: [1],
-    "#t": ["introduction"],
-    since: twelveHoursAgo,
-  }, { relayUrls });
+  const introEvents = ndk.$fetchEvents(() => ({
+    filters: {
+      kinds: [1],
+      "#t": ["introduction"],
+      since: twelveHoursAgo,
+    },
+    relayUrls
+  }));
 
   const eventIds = $derived(introEvents ? Array.from(introEvents).map(e => e.id) : []);
 
   const taggingEvents = ndk.$fetchEvents(() => eventIds.length > 0 ? {
-    "#e": eventIds,
-  } : undefined, { relayUrls });
+    filters: {
+      "#e": eventIds,
+    },
+    relayUrls
+  } : undefined);
 
   const introductionPosts = $derived.by(() => {
     if (!introEvents || introEvents.size === 0) return [];

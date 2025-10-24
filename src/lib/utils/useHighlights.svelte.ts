@@ -14,8 +14,10 @@ export function createHighlightsManager(ndk: NDKSvelte, article: NDKArticle | nu
     if (!article) return undefined;
     const articleTag = article.tagId();
     return {
-      kinds: [9802], // NIP-84 Highlight kind
-      '#a': [articleTag],
+      filters: {
+        kinds: [9802], // NIP-84 Highlight kind
+        '#a': [articleTag],
+      }
     };
   });
 

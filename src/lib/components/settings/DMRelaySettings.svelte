@@ -11,9 +11,11 @@
 
   // Reactively fetch DM relay list
   const dmRelayEvents = ndk.$fetchEvents(() => activeUser ? {
-    kinds: [NDKKind.DirectMessageReceiveRelayList],
-    authors: [activeUser.pubkey],
-    limit: 1
+    filters: {
+      kinds: [NDKKind.DirectMessageReceiveRelayList],
+      authors: [activeUser.pubkey],
+      limit: 1
+    }
   } : undefined);
 
   // Update relays when event loads

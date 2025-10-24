@@ -41,12 +41,13 @@
   const relayUrl = $derived(settings.selectedRelay || settings.relays.find(r => r.enabled && r.read)?.url);
 
   const hashtagEvents = ndk.$fetchEvents(() => open ? {
-    kinds: [1, 20, 21, 22],
-    limit: 500
-  } : undefined, {
+    filters: {
+      kinds: [1, 20, 21, 22],
+      limit: 500
+    },
     cacheUsage: relayUrl ? NDKSubscriptionCacheUsage.ONLY_RELAY : NDKSubscriptionCacheUsage.CACHE_FIRST,
     relayUrls: relayUrl ? [relayUrl] : undefined
-  });
+  } : undefined);
 
   // Process hashtags from events
   $effect(() => {
