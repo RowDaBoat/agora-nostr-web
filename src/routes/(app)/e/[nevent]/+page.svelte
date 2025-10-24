@@ -2,30 +2,30 @@
   import { page } from '$app/stores';
   import { ndk } from '$lib/ndk.svelte';
   import { NDKEvent } from '@nostr-dev-kit/ndk';
-  import { Avatar } from '@nostr-dev-kit/svelte';
-  import { toast } from '$lib/stores/toast.svelte';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import HighlightCard from '$lib/components/HighlightCard.svelte';
-  import ContentComposer from '$lib/components/ContentComposer.svelte';
   import MissingEventCard from '$lib/components/MissingEventCard.svelte';
 
   type ThreadItem =
     | { type: 'event'; event: NDKEvent }
     | { type: 'missing'; eventId: string; relayHint?: string };
-
+  
+  let mainEvent = $state<NDKEvent | null>(null);
+  
   // Decode the nevent parameter
   const neventId = $derived($page.params.nevent);
 
-  // Fetch the main event
-  const mainEvent = ndk.$fetchEvent(() => neventId);
-  const currentUser = ndk.$currentUser;
-  const mainProfile = ndk.$fetchProfile(() => mainEvent.pubkey ? mainEvent.pubkey : undefined);
-
-  $inspect('mainEvent', mainEvent, neventId);
+  $effect(() => {
+      if (!neventId) return;
+      
+			ndk.fetchEvent(neventId).then((event) => {
+				mainEvent = event;
+			});
+		});
 
   // Get the root event ID from the main event's tags
   const rootEventId = $derived.by(() => {
-    if (!mainEvent.id) return null;
+    if (!mainEvent) return null;
 
     // Find root tag
     const rootTag = mainEvent.tags.find(tag => tag[0] === 'e' && tag[3] === 'root');
@@ -63,7 +63,7 @@
 
   // Fetch replies to the main event
   const replies = ndk.$subscribe(() => {
-    if (!mainEvent.id) return undefined;
+    if (!mainEvent?.id) return undefined;
     return {
       filters: [
         { kinds: [1, 9802], '#e': [mainEvent.id] },
@@ -75,7 +75,7 @@
 
   // Build the parent chain (with missing event tracking)
   const parentChain = $derived.by((): ThreadItem[] => {
-    if (!mainEvent.id || !threadEvents || threadEvents.events.length === 0) return [];
+    if (!mainEvent?.id || !threadEvents || threadEvents.events.length === 0) return [];
 
     const parents: ThreadItem[] = [];
     const eventMap = new Map(threadEvents.events.map(e => [e.id, e]));
@@ -129,7 +129,7 @@
 
   // Filter direct replies
   const directReplies = $derived.by(() => {
-    if (!replies || !mainEvent.id) return [];
+    if (!replies || !mainEvent?.id) return [];
 
     const repliesArray = replies.events;
 
@@ -151,42 +151,9 @@
     return directReplies.sort((a, b) => (a.created_at || 0) - (b.created_at || 0));
   });
 
-  let replyContent = $state('');
-  let isSubmitting = $state(false);
-
   function handleEventNavigation(event: NDKEvent) {
     const nevent = event.encode();
     window.location.href = `/e/${nevent}`;
-  }
-
-  async function handleReply() {
-    if (!ndk.signer || !replyContent || !mainEvent.id) return;
-
-    isSubmitting = true;
-
-    try {
-      const replyEvent = await mainEvent.reply();
-      replyEvent.content = replyContent;
-      await replyEvent.publish();
-
-      if (replyEvent.publishStatus === 'error') {
-        const error = replyEvent.publishError;
-        const relayErrors = error?.relayErrors || {};
-        const errorMessages = Object.entries(relayErrors)
-          .map(([relay, err]) => `${relay}: ${err}`)
-          .join('\n');
-        toast.error(`Failed to publish:\n${errorMessages || 'Unknown error'}`);
-        return;
-      }
-
-      replyContent = '';
-      toast.success('Reply published');
-    } catch (error) {
-      console.error('Failed to publish reply:', error);
-      toast.error(`Failed to send reply: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      isSubmitting = false;
-    }
   }
 </script>
 
@@ -206,7 +173,7 @@
     </div>
   </header>
 
-  {#if !mainEvent.id}
+  {#if !mainEvent}
     <div class="flex flex-col items-center justify-center mt-20">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       <p class="mt-4 text-neutral-400">Loading note...</p>
@@ -222,7 +189,7 @@
             showThreadLine={index < parentChain.length - 1}
             onEventFound={(event) => {
               // Refresh the thread when the missing event is found
-              if (mainEvent.id) {
+              if (mainEvent) {
                 const nevent = mainEvent.encode();
                 window.location.href = `/e/${nevent}`;
               }
@@ -241,43 +208,14 @@
       {/each}
 
       <!-- Main Note - Highlighted with larger text -->
-      {#if mainEvent.id}
-        {#if mainEvent.kind === 9802}
-          <HighlightCard event={mainEvent} variant="default" />
-        {:else if mainEvent}
-          <NoteCard
-            event={mainEvent}
-            variant="thread-main"
-            showThreadLine={false}
-          />
-        {/if}
-      {/if}
-
-      <!-- Reply Box -->
-      {#if ndk.signer && currentUser}
-        <div class="border-b border-neutral-800 p-4">
-          <div class="flex gap-3">
-            <Avatar {ndk} pubkey={currentUser.pubkey} class="w-10 h-10 flex-shrink-0" />
-            <div class="flex-1 flex flex-col gap-2">
-              <div class="p-3 bg-background border border-border rounded-lg">
-                <ContentComposer
-                  bind:value={replyContent}
-                  placeholder={`Reply to ${mainProfile.ready ? mainProfile.name : 'this note'}...`}
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div class="flex justify-end">
-                <button
-                  onclick={handleReply}
-                  disabled={!replyContent.trim() || isSubmitting}
-                  class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isSubmitting ? 'Posting...' : 'Reply'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {#if mainEvent.kind === 9802}
+        <HighlightCard event={mainEvent} variant="default" />
+      {:else}
+        <NoteCard
+          event={mainEvent}
+          variant="thread-main"
+          showThreadLine={false}
+        />
       {/if}
 
       <!-- Replies -->

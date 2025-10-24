@@ -14,8 +14,6 @@
 
   const { hashtag, isVisible, position, onMouseEnter, onMouseLeave }: Props = $props();
 
-  const currentUser = ndk.$currentUser;
-
   // Check if hashtag is followed
   const isFollowing = $derived(hashtagInterests.interests.includes(hashtag.toLowerCase()));
 
@@ -59,7 +57,7 @@
 
   // Get the most recent note from someone the current user follows
   const recentNoteFromFollowing = $derived.by(() => {
-    if (!currentUser) return null;
+    if (!ndk.$currentUser) return null;
 
     // Get the user's contact list
     const followingPubkeys = new Set<string>();
@@ -86,9 +84,15 @@
   }
 
   // Get profile for the recent note author
-  const recentNoteAuthorProfile = $derived.by(() => {
-    if (!recentNoteFromFollowing) return null;
-    return ndk.$fetchProfile(() => recentNoteFromFollowing.pubkey);
+  let recentNoteAuthorProfile = $state<import('@nostr-dev-kit/ndk').NDKUserProfile | null>(null);
+  $effect(() => {
+    if (!recentNoteFromFollowing) {
+      recentNoteAuthorProfile = null;
+      return;
+    }
+    ndk.fetchUser(recentNoteFromFollowing.pubkey).then(u => {
+      u?.fetchProfile().then(p => { recentNoteAuthorProfile = p; });
+    });
   });
 </script>
 
@@ -123,7 +127,7 @@
               <span class="text-primary">#</span>{hashtag}
             </h3>
 
-            {#if currentUser}
+            {#if ndk.$currentUser}
               <button
                 onclick={toggleFollow}
                 disabled={isTogglingFollow}

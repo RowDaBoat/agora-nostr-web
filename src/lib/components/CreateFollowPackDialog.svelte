@@ -1,9 +1,10 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
   import { NDKFollowPack, NDKKind } from '@nostr-dev-kit/ndk';
-  import { Avatar } from '@nostr-dev-kit/svelte';
   import { portal } from '$lib/utils/portal.svelte';
   import { toast } from '$lib/stores/toast.svelte';
+  import FollowPackMemberItem from './FollowPackMemberItem.svelte';
+  import SelectedPackMemberItem from './SelectedPackMemberItem.svelte';
 
   interface Props {
     open?: boolean;
@@ -24,12 +25,10 @@
   let selectedPubkeys = $state<Set<string>>(new Set(initialPubkey ? [initialPubkey] : []));
   let memberSearchQuery = $state('');
 
-  const currentUser = ndk.$currentUser;
-
   // Fetch current user's follows
   const contactListSubscription = ndk.$subscribe(
-    () => currentUser?.pubkey ? ({
-      filters: [{ kinds: [3], authors: [currentUser.pubkey], limit: 1 }],
+    () => ndk.$currentUser?.pubkey ? ({
+      filters: [{ kinds: [3], authors: [ndk.$currentUser.pubkey], limit: 1 }],
       bufferMs: 100,
     }) : undefined
   );
@@ -40,17 +39,35 @@
     return new Set(contactList.tags.filter(tag => tag[0] === 'p').map(tag => tag[1]));
   });
 
+  let cachedFilteredProfiles = $state<Map<string, { name?: string; displayName?: string; nip05?: string }>>(new Map());
+
   const filteredFollows = $derived.by(() => {
     if (!memberSearchQuery) return Array.from(userFollows);
+
+    const filtered = Array.from(cachedFilteredProfiles.entries())
+      .filter(([pubkey]) => userFollows.has(pubkey))
+      .map(([pubkey]) => pubkey);
+
+    return filtered;
+  });
+
+  // Update cached profiles when search query changes
+  $effect(() => {
+    if (!memberSearchQuery.trim() || !ndk.cacheAdapter?.getProfiles) {
+      cachedFilteredProfiles = new Map();
+      return;
+    }
+
     const search = memberSearchQuery.toLowerCase();
-    return Array.from(userFollows).filter(pubkey => {
-      const profile = ndk.$fetchProfile(() => pubkey);
-      return (
-        pubkey.toLowerCase().includes(search) ||
-        profile?.name?.toLowerCase().includes(search) ||
-        profile?.displayName?.toLowerCase().includes(search) ||
-        profile?.nip05?.toLowerCase().includes(search)
-      );
+
+    ndk.cacheAdapter.getProfiles({
+      fields: ['name', 'displayName', 'nip05'],
+      contains: search
+    }).then((profiles) => {
+      cachedFilteredProfiles = profiles ?? new Map();
+    }).catch(err => {
+      console.error('Failed to search profiles:', err);
+      cachedFilteredProfiles = new Map();
     });
   });
 
@@ -354,37 +371,7 @@
                   </div>
                 {:else}
                   {#each filteredFollows as pubkey (pubkey)}
-                    {@const profile = ndk.$fetchProfile(() => pubkey)}
-                    {@const isSelected = selectedPubkeys.has(pubkey)}
-                    <button
-                      onclick={() => toggleMember(pubkey)}
-                      class={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                        isSelected
-                          ? 'bg-primary/20 border border-primary/50'
-                          : 'bg-card border border-border hover:border-border'
-                      }`}
-                    >
-                      <Avatar {ndk} {pubkey} class="w-10 h-10 flex-shrink-0" />
-                      <div class="flex-1 min-w-0 text-left">
-                        <div class="font-medium text-foreground truncate">
-                          {profile?.displayName || profile?.name || `${pubkey.slice(0, 8)}...`}
-                        </div>
-                        <div class="text-xs text-muted-foreground truncate">
-                          {profile?.nip05 || `${pubkey.slice(0, 16)}...`}
-                        </div>
-                      </div>
-                      <div class={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                        isSelected
-                          ? 'bg-primary border-primary'
-                          : 'border'
-                      }`}>
-                        {#if isSelected}
-                          <svg class="w-3 h-3 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                          </svg>
-                        {/if}
-                      </div>
-                    </button>
+                    <FollowPackMemberItem {pubkey} isSelected={selectedPubkeys.has(pubkey)} onToggle={toggleMember} />
                   {/each}
                 {/if}
               </div>
@@ -398,27 +385,7 @@
                 </div>
                 <div class="space-y-2 max-h-48 overflow-y-auto">
                   {#each Array.from(selectedPubkeys) as pubkey (pubkey)}
-                    {@const profile = ndk.$fetchProfile(() => pubkey)}
-                    <div class="flex items-center gap-3 p-2 rounded-lg bg-card/50">
-                      <Avatar {ndk} {pubkey} class="w-8 h-8 flex-shrink-0" />
-                      <div class="flex-1 min-w-0">
-                        <div class="text-sm font-medium text-foreground truncate">
-                          {profile?.displayName || profile?.name || `${pubkey.slice(0, 8)}...`}
-                        </div>
-                        <div class="text-xs text-muted-foreground truncate">
-                          {profile?.nip05 || `${pubkey.slice(0, 16)}...`}
-                        </div>
-                      </div>
-                      <button
-                        onclick={() => toggleMember(pubkey)}
-                        class="p-1 text-muted-foreground hover:text-red-500 transition-colors"
-                        aria-label="Remove member"
-                      >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
+                    <SelectedPackMemberItem {pubkey} onRemove={toggleMember} />
                   {/each}
                 </div>
               </div>

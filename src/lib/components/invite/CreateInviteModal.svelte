@@ -507,7 +507,7 @@ Looking forward to connecting with you on the open social web!`;
 			</Drawer.Description>
 		</Drawer.Header>
 
-		<div class="space-y-6 px-4">
+		<div class="space-y-6 px-4 overflow-y-auto pb-4">
 
 			{#if !inviteLink}
 					<!-- Welcome Message -->

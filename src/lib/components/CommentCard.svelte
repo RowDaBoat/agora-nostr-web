@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { NDKEvent } from '@nostr-dev-kit/ndk';
+  import type { NDKEvent, NDKUserProfile } from '@nostr-dev-kit/ndk';
   import { Avatar, EventContent } from '@nostr-dev-kit/svelte';
   import { ndk } from '$lib/ndk.svelte';
   import { navigateToProfile } from '$lib/utils/navigation';
@@ -11,7 +11,12 @@
 
   let { event }: Props = $props();
 
-  const profile = ndk.$fetchProfile(() => event.pubkey);
+  let profile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    event.author.fetchProfile().then(p => { profile = p; });
+  });
+
   const displayName = $derived(profile?.name || profile?.displayName || 'Anonymous');
 
   function handleProfileClick() {
@@ -20,7 +25,7 @@
 </script>
 
 <div class="group">
-  <div class="flex gap-3">
+  <div class="flex gap-3 items-start">
     <button type="button" onclick={handleProfileClick} class="flex-shrink-0">
       <Avatar {ndk} pubkey={event.pubkey} class="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity" />
     </button>

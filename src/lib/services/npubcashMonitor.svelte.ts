@@ -18,20 +18,18 @@ class NpubCashMonitor {
 			return;
 		}
 
-		const currentUser = ndk.$currentUser;
-
-		if (!currentUser) {
+		if (!ndk.$currentUser) {
 			console.warn('[NpubCashMonitor] No active user, cannot start monitoring');
 			return;
 		}
 
-		console.log('[NpubCashMonitor] Starting zap monitoring for', currentUser.pubkey);
+		console.log('[NpubCashMonitor] Starting zap monitoring for', ndk.$currentUser.pubkey);
 
 		// Subscribe to zap events for the current user
 		this.zapSubscription = ndk.subscribe(
 			{
 				kinds: [ZAP_KIND],
-				'#p': [currentUser.pubkey],
+				'#p': [ndk.$currentUser.pubkey],
 			},
 			{ closeOnEose: false }
 		);

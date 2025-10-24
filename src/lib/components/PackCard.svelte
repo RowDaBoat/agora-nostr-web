@@ -4,6 +4,7 @@
   import { Avatar } from '@nostr-dev-kit/svelte';
   import { getPackUrl } from '$lib/utils/packUrl';
   import { getProfileUrl } from '$lib/utils/navigation';
+  import type { NDKUser } from '@nostr-dev-kit/ndk';
 
   interface Pack {
     id: string;
@@ -15,6 +16,7 @@
     kind: number;
     pubkey: string;
     created_at: number;
+    author?: NDKUser;
   }
 
   interface Props {
@@ -24,7 +26,16 @@
 
   const { pack, variant = 'default' }: Props = $props();
 
-  const author = ndk.$fetchUser(() => pack.pubkey);
+  let author = $state<NDKUser | undefined>(undefined);
+
+  $effect(() => {
+    if (pack.author) {
+      author = pack.author;
+    } else {
+      ndk.fetchUser(pack.pubkey).then(u => { author = u; });
+    }
+  });
+
   const packUrl = $derived(getPackUrl(pack, author));
 
   function handlePackClick() {

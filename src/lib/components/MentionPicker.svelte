@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import { Avatar } from '@nostr-dev-kit/svelte';
   import { portal } from '$lib/utils/portal.svelte';
   import { nip19 } from 'nostr-tools';
+  import MentionPickerItem from './MentionPickerItem.svelte';
 
   interface Props {
     position: { top: number; left: number };
@@ -13,13 +13,12 @@
 
   let { position, searchQuery, onSelect, onClose }: Props = $props();
 
-  const currentUser = ndk.$currentUser;
   let selectedIndex = $state(0);
 
   // Fetch current user's follows
   const contactListSubscription = ndk.$subscribe(
-    () => currentUser?.pubkey ? ({
-      filters: [{ kinds: [3], authors: [currentUser.pubkey], limit: 1 }],
+    () => ndk.$currentUser?.pubkey ? ({
+      filters: [{ kinds: [3], authors: [ndk.$currentUser.pubkey], limit: 1 }],
       bufferMs: 100,
     }) : undefined
   );
@@ -113,32 +112,16 @@
   <div
     use:portal
     style="position: fixed; top: {position.top}px; left: {position.left}px; max-width: 320px;"
-    class="bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden"
+    class="bg-card border border-border rounded-lg shadow-xl z-[1003] overflow-hidden"
   >
     <div class="max-h-[300px] overflow-y-auto">
       {#each filteredFollows as pubkey, index (pubkey)}
-        {@const profile = ndk.$fetchProfile(() => pubkey) as { name?: string; displayName?: string; nip05?: string } | undefined}
-        {@const isSelected = index === selectedIndex}
-        <button
-          type="button"
-          onclick={() => handleSelect(pubkey)}
-          onmouseenter={() => selectedIndex = index}
-          class={`w-full flex items-center gap-2 p-2 transition-colors ${
-            isSelected ? 'bg-primary/20' : 'hover:bg-muted'
-          }`}
-        >
-          <Avatar {ndk} {pubkey} size={32} class="flex-shrink-0" />
-          <div class="flex-1 min-w-0 text-left">
-            <div class="text-sm font-medium text-foreground truncate">
-              {profile?.displayName || profile?.name || 'Anonymous'}
-            </div>
-            {#if profile?.nip05}
-              <div class="text-xs text-muted-foreground truncate">
-                {profile.nip05}
-              </div>
-            {/if}
-          </div>
-        </button>
+        <MentionPickerItem
+          {pubkey}
+          isSelected={index === selectedIndex}
+          onSelect={handleSelect}
+          onMouseEnter={() => selectedIndex = index}
+        />
       {/each}
     </div>
   </div>

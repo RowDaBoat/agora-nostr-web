@@ -3,6 +3,7 @@
 	import { Avatar } from '@nostr-dev-kit/svelte';
 	import FollowButton from './FollowButton.svelte';
 	import { formatTimeAgo } from '$lib/utils/formatTime';
+	import type { NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
 
 	interface Props {
 		pubkey: string;
@@ -24,14 +25,28 @@
 		class: className = ''
 	}: Props = $props();
 
-	const profile = ndk.$fetchProfile(() => pubkey);
-	const inviterProfile = $derived(inviterPubkey ? ndk.$fetchProfile(() => inviterPubkey) : null);
-	const user = $derived.by(() => {
-		const u = ndk.getUser({ pubkey });
-		if (profile.ready) {
-			u.profile = profile;
+	let user = $state<NDKUser | undefined>(undefined);
+	let profile = $state<NDKUserProfile | null>(null);
+	let inviterUser = $state<NDKUser | undefined>(undefined);
+	let inviterProfile = $state<NDKUserProfile | null>(null);
+
+	$effect(() => {
+		ndk.fetchUser(pubkey).then(u => {
+			user = u;
+			u?.fetchProfile().then(p => { profile = p; });
+		});
+	});
+
+	$effect(() => {
+		if (!inviterPubkey) {
+			inviterUser = undefined;
+			inviterProfile = null;
+			return;
 		}
-		return u;
+		ndk.fetchUser(inviterPubkey).then(u => {
+			inviterUser = u;
+			u?.fetchProfile().then(p => { inviterProfile = p; });
+		});
 	});
 </script>
 
@@ -74,7 +89,7 @@
 							{/if}
 							<span>
 								Invited by
-								<a href="/p/{ndk.getUser({ pubkey: inviterPubkey }).npub}" class="text-primary hover:underline">
+								<a href="/p/{inviterUser?.npub}" class="text-primary hover:underline">
 									{inviterProfile.displayName || inviterProfile.name || 'someone'}
 								</a>
 							</span>

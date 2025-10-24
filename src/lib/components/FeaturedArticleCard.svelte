@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { NDKArticle } from '@nostr-dev-kit/ndk';
+  import type { NDKArticle, NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
   import TimeAgo from './TimeAgo.svelte';
   import { getArticleUrl } from '$lib/utils/articleUrl';
@@ -10,8 +10,14 @@
 
   let { article }: Props = $props();
 
-  const author = ndk.$fetchUser(() => article.pubkey);
-  const authorProfile = ndk.$fetchProfile(() => article.pubkey);
+  let author = $state<NDKUser | undefined>(undefined);
+  let authorProfile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    author = article.author;
+    article.author.fetchProfile().then(p => { authorProfile = p; });
+  });
+
   const title = $derived(article.title || 'Untitled');
   const summary = $derived(article.summary);
   const imageUrl = $derived(article.image);

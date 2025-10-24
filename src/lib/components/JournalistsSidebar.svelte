@@ -39,14 +39,12 @@
       .slice(0, 5); // Show top 5 journalists
   });
 
-  const currentUser = ndk.$currentUser;
-
   function isFollowing(pubkey: string): boolean {
     return ndk.$follows.includes(pubkey);
   }
 
   async function toggleFollow(pubkey: string) {
-    if (!currentUser) return;
+    if (!ndk.$currentUser) return;
 
     try {
       if (isFollowing(pubkey)) {
@@ -88,7 +86,7 @@
               </p>
             {/snippet}
           </User>
-          {#if currentUser && journalist.pubkey !== currentUser.pubkey}
+          {#if ndk.$currentUser && journalist.pubkey !== ndk.$currentUser.pubkey}
             <button
               onclick={() => toggleFollow(journalist.pubkey)}
               class="px-3 py-1 text-xs font-medium rounded-full transition-colors flex-shrink-0 {

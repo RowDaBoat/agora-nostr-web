@@ -87,8 +87,7 @@
   }
 
   async function handleCreateBackup() {
-    const currentUser = ndk.$currentUser;
-    if (!currentUser) {
+    if (!ndk.$currentUser) {
       throw new BackupError(BackupErrorCode.NO_USER, 'No authenticated user found');
     }
 

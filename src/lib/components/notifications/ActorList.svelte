@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
   import { navigateToProfile } from '$lib/utils/navigation';
+  import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
   interface Props {
     pubkeys: string[];
@@ -9,11 +10,25 @@
 
   const { pubkeys, maxVisible = 2 }: Props = $props();
 
-  // Fetch profiles for the actors
+  let profilesMap = $state<Map<string, NDKUserProfile | null>>(new Map());
+
+  $effect(() => {
+    profilesMap.clear();
+    const visiblePubkeys = pubkeys.slice(0, maxVisible);
+    visiblePubkeys.forEach(pubkey => {
+      ndk.fetchUser(pubkey).then(u => {
+        u?.fetchProfile().then(p => {
+          profilesMap.set(pubkey, p || null);
+          profilesMap = new Map(profilesMap);
+        });
+      });
+    });
+  });
+
   const profiles = $derived(
     pubkeys.slice(0, maxVisible).map((pubkey) => ({
       pubkey,
-      profile: ndk.$fetchProfile(() => pubkey),
+      profile: profilesMap.get(pubkey),
     }))
   );
 

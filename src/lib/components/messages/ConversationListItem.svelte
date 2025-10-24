@@ -4,6 +4,7 @@
   import { Avatar } from '@nostr-dev-kit/svelte';
   import TimeAgo from '../TimeAgo.svelte';
   import { ndk } from '$lib/ndk.svelte';
+  import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
   interface Props {
     conversation: NDKConversation;
@@ -14,8 +15,17 @@
   const participant = conversation.getOtherParticipant();
   const lastMessage = conversation.getLastMessage();
 
-  // Use NDK's reactive profile fetching
-  const profile = participant ? ndk.$fetchProfile(() => participant.pubkey) : null;
+  let profile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    if (!participant?.pubkey) {
+      profile = null;
+      return;
+    }
+    ndk.fetchUser(participant.pubkey).then(u => {
+      u?.fetchProfile().then(p => { profile = p; });
+    });
+  });
 
   function openConversation() {
     if (!participant) return;

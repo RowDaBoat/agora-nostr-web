@@ -10,13 +10,12 @@ export function createBookmarksManager(ndk: NDKSvelte) {
   let isBookmarked = $state(false);
 
   async function checkBookmark(article: NDKArticle) {
-    const currentUser = ndk.$currentUser;
-    if (!currentUser || !article) return;
+    if (!ndk.$currentUser || !article) return;
 
     try {
       const bookmarksNaddr = nip19.naddrEncode({
         kind: NDKKind.CurationSet,
-        pubkey: currentUser.pubkey,
+        pubkey: ndk.$currentUser.pubkey,
         identifier: 'bookmarks'
       });
 
@@ -35,13 +34,12 @@ export function createBookmarksManager(ndk: NDKSvelte) {
   }
 
   async function toggleBookmark(article: NDKArticle) {
-    const currentUser = ndk.$currentUser;
-    if (!currentUser || !article) return;
+    if (!ndk.$currentUser || !article) return;
 
     try {
       const bookmarksNaddr = nip19.naddrEncode({
         kind: NDKKind.ArticleCurationSet,
-        pubkey: currentUser.pubkey,
+        pubkey: ndk.$currentUser.pubkey,
         identifier: 'bookmarks'
       });
 

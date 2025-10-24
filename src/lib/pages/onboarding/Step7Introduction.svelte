@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import { NDKEvent } from '@nostr-dev-kit/ndk';
+  import { NDKEvent, type NDKUserProfile } from '@nostr-dev-kit/ndk';
   import { createIntroductionPostsManager } from '$lib/utils/introductionPosts.svelte';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import { locale, t } from 'svelte-i18n';
@@ -28,7 +28,17 @@
   const hasValidIntro = $derived(introText.length > 10);
   const charCount = $derived(introText.length);
 
-  const inviterProfile = ndk.$fetchProfile(() => inviterPubkey);
+  let inviterProfile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    if (!inviterPubkey) {
+      inviterProfile = null;
+      return;
+    }
+    ndk.fetchUser(inviterPubkey).then(u => {
+      u?.fetchProfile().then(p => { inviterProfile = p; });
+    });
+  });
 
   const inviterName = $derived(inviterProfile?.displayName || inviterProfile?.name || 'your inviter');
 

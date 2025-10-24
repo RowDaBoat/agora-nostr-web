@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { ndk } from '$lib/ndk.svelte';
-  import { NDKKind, NDKArticle, type NDKEvent } from '@nostr-dev-kit/ndk';
+  import { NDKKind, NDKArticle, type NDKEvent, type NDKUser, type NDKUserProfile } from '@nostr-dev-kit/ndk';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import ProfileHeader from '$lib/components/ProfileHeader.svelte';
   import ShareProfileModal from '$lib/components/ShareProfileModal.svelte';
@@ -19,10 +19,23 @@
   import { layoutMode } from '$lib/stores/layoutMode.svelte';
   import { t } from 'svelte-i18n';
 
-  const identifier = $derived($page.params.identifier || '');
-  const user = ndk.$fetchUser(() => identifier);
-  const profile = ndk.$fetchProfile(() => user?.pubkey);
-  const pubkey = $derived(user?.pubkey || '');
+  const identifier = $derived($page.params.identifier);
+
+  let user = $state<NDKUser | undefined>(undefined);
+  let profile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    ndk.fetchUser(identifier).then(u => {
+      user = u;
+      if (u?.pubkey) {
+        ndk.fetchUser(u.pubkey).then(u2 => {
+          u2?.fetchProfile().then(p => { profile = p; });
+        });
+      }
+    });
+  });
+
+  const pubkey = $derived(user?.pubkey);
   const isOwnProfile = $derived.by(() => ndk.$currentPubkey === pubkey);
   const isDesktop = new MediaQuery('(min-width: 768px)');
 
@@ -31,6 +44,8 @@
   let packFilter = $state<'all' | 'created' | 'appears'>('all');
   let isCreatePackDialogOpen = $state(false);
   let isEditProfileModalOpen = $state(false);
+  let profileSubmitHandler = $state<(() => Promise<void>) | null>(null);
+  let profileFormState = $state({ isSubmitting: false, isUploading: false });
 
   const allTextEventsFeed = createLazyFeed(
     ndk,
@@ -461,12 +476,14 @@
     {/if}
   </div>
 
-  <ShareProfileModal
-    isOpen={isShareModalOpen}
-    onClose={() => isShareModalOpen = false}
-    {pubkey}
-    {npub}
-  />
+  {#if pubkey}
+    <ShareProfileModal
+      isOpen={isShareModalOpen}
+      onClose={() => isShareModalOpen = false}
+      {pubkey}
+      {npub}
+    />
+  {/if}
 
   <CreateFollowPackDialog
     bind:open={isCreatePackDialogOpen}
@@ -495,9 +512,28 @@
           <Drawer.Title>Edit Profile</Drawer.Title>
           <Drawer.Description>Update your profile information and settings</Drawer.Description>
         </Drawer.Header>
-        <div class="px-4">
-          <ProfileSettings />
+        <div class="overflow-y-auto px-4 pb-4">
+          <ProfileSettings
+            hideSubmitButton={true}
+            onSubmit={(handler) => profileSubmitHandler = handler}
+            onFormStateChange={(state) => profileFormState = state}
+          />
         </div>
+        <Drawer.Footer class="pt-2">
+          <button
+            type="button"
+            onclick={() => profileSubmitHandler?.()}
+            disabled={profileFormState.isSubmitting || profileFormState.isUploading}
+            class="w-full px-6 py-3 bg-primary hover:bg-accent-dark text-foreground font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {#if profileFormState.isSubmitting}
+              <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Saving...</span>
+            {:else}
+              <span>Save Profile</span>
+            {/if}
+          </button>
+        </Drawer.Footer>
       </Drawer.Content>
     </Drawer.Root>
   {/if}

@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { t } from 'svelte-i18n';
   import { settings } from '$lib/stores/settings.svelte';
+  import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
   interface Props {
     collapsed?: boolean;
@@ -15,10 +16,21 @@
   let dropdownRef: HTMLDivElement | undefined = $state();
   let buttonRef: HTMLButtonElement | undefined = $state();
 
-  const currentUser = ndk.$currentUser;
-  const profile = ndk.$fetchProfile(() => currentUser?.pubkey);
+  let profile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    const pubkey = ndk.$currentUser?.pubkey;
+    if (!pubkey) {
+      profile = null;
+      return;
+    }
+    ndk.fetchUser(pubkey).then(u => {
+      u?.fetchProfile().then(p => { profile = p; });
+    });
+  });
+
   const displayName = $derived(profile?.displayName || profile?.name || 'Anonymous');
-  const npub = $derived(currentUser?.npub);
+  const npub = $derived(ndk.$currentUser?.npub);
 
   function toggleDropdown() {
     showDropdown = !showDropdown;
@@ -72,7 +84,7 @@
 
 </script>
 
-{#if currentUser}
+{#if ndk.$currentUser}
   <!-- Trigger Button -->
   <button
     bind:this={buttonRef}
@@ -80,7 +92,7 @@
     class="w-full flex items-center {collapsed ? 'justify-center p-3' : 'gap-3 px-2 py-2'} rounded-lg hover:bg-muted transition-colors cursor-pointer"
     title={collapsed ? displayName : undefined}
   >
-    <Avatar {ndk} pubkey={currentUser.pubkey} class="w-10 h-10" />
+    <Avatar {ndk} pubkey={ndk.$currentUser.pubkey} class="w-10 h-10" />
     {#if !collapsed}
       <div class="flex-1 min-w-0 text-left">
         <p class="font-medium text-sm truncate text-foreground">
@@ -107,7 +119,7 @@
           onclick={navigateToProfile}
           class="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
         >
-          <Avatar {ndk} pubkey={currentUser.pubkey} class="w-12 h-12" />
+          <Avatar {ndk} pubkey={ndk.$currentUser.pubkey} class="w-12 h-12" />
           <div class="flex-1 min-w-0">
             <p class="font-medium text-sm truncate text-popover-foreground">
               {displayName}

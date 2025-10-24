@@ -1,0 +1,42 @@
+<script lang="ts">
+  import { ndk } from '$lib/ndk.svelte';
+  import { Avatar } from '@nostr-dev-kit/svelte';
+  import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
+
+  interface Props {
+    pubkey: string;
+    isSelected: boolean;
+    onSelect: (pubkey: string) => void;
+    onMouseEnter: () => void;
+  }
+
+  let { pubkey, isSelected, onSelect, onMouseEnter }: Props = $props();
+
+  let profile = $state<NDKUserProfile | null>(null);
+  $effect(() => {
+    ndk.fetchUser(pubkey).then(u => {
+      u?.fetchProfile().then(p => { profile = p; });
+    });
+  });
+</script>
+
+<button
+  type="button"
+  onclick={() => onSelect(pubkey)}
+  onmouseenter={onMouseEnter}
+  class={`w-full flex items-center gap-2 p-2 transition-colors ${
+    isSelected ? 'bg-primary/20' : 'hover:bg-muted'
+  }`}
+>
+  <Avatar {ndk} {pubkey} size={32} class="flex-shrink-0" />
+  <div class="flex-1 min-w-0 text-left">
+    <div class="text-sm font-medium text-foreground truncate">
+      {profile?.displayName || profile?.name || 'Anonymous'}
+    </div>
+    {#if profile?.nip05}
+      <div class="text-xs text-muted-foreground truncate">
+        {profile.nip05}
+      </div>
+    {/if}
+  </div>
+</button>

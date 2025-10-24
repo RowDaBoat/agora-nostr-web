@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { NDKSvelte } from '@nostr-dev-kit/ndk';
+  import type { NDKSvelte, NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
   import { Avatar } from '@nostr-dev-kit/svelte';
 
   interface Props {
@@ -16,8 +16,22 @@
     class: className = '',
   }: Props = $props();
 
-  const user = $derived(ndk ? ndk.$fetchUser(() => bech32) : null);
-  const profile = $derived(ndk && user && user.ready ? ndk.$fetchProfile(() => user.pubkey) : null);
+  let user = $state<NDKUser | undefined>(undefined);
+  let profile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    if (!ndk || !bech32) {
+      user = undefined;
+      profile = null;
+      return;
+    }
+    ndk.fetchUser(bech32).then(u => {
+      user = u;
+      if (u?.pubkey) {
+        u.fetchProfile().then(p => { profile = p; });
+      }
+    });
+  });
 
   const displayName = $derived.by(() => {
     if (profile?.displayName) return profile.displayName.slice(0, 48);
@@ -34,7 +48,7 @@
   }
 </script>
 
-{#if !user || !user.ready}
+{#if !user || !user.pubkey}
   <span class="inline-flex items-center gap-1 text-primary font-medium {className}">
     {bech32.slice(0, 12)}
   </span>

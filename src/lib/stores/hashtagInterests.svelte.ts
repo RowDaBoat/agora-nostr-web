@@ -15,8 +15,7 @@ export function createHashtagInterestsStore(ndk: NDKSvelte) {
   });
 
   async function addHashtag(hashtag: string): Promise<void> {
-    const currentUser = ndk.$currentUser;
-    if (!currentUser) throw new Error('No user logged in');
+    if (!ndk.$currentUser) throw new Error('No user logged in');
 
     const normalizedHashtag = hashtag.toLowerCase();
     if (interests.includes(normalizedHashtag)) return;
@@ -42,8 +41,7 @@ export function createHashtagInterestsStore(ndk: NDKSvelte) {
   }
 
   async function removeHashtag(hashtag: string): Promise<void> {
-    const currentUser = ndk.$currentUser;
-    if (!currentUser) throw new Error('No user logged in');
+    if (!ndk.$currentUser) throw new Error('No user logged in');
 
     const normalizedHashtag = hashtag.toLowerCase();
     if (!interests.includes(normalizedHashtag)) return;

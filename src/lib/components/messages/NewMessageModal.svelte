@@ -2,7 +2,10 @@
   import { goto } from '$app/navigation';
   import { ndk } from '$lib/ndk.svelte';
   import type { NDKUser } from '@nostr-dev-kit/ndk';
-  import { onMount } from 'svelte';
+  import { MediaQuery } from 'svelte/reactivity';
+  import * as Dialog from '$lib/components/ui/dialog';
+  import * as Drawer from '$lib/components/ui/drawer';
+  import UserSelectableItem from '$lib/components/UserSelectableItem.svelte';
 
   interface Props {
     isOpen: boolean;
@@ -10,6 +13,7 @@
   }
 
   const { isOpen, onClose }: Props = $props();
+  const isDesktop = new MediaQuery('(min-width: 768px)');
 
   let searchQuery = $state('');
   let searching = $state(false);
@@ -28,7 +32,7 @@
       // Try to parse as npub/nprofile first
       if (searchQuery.startsWith('npub') || searchQuery.startsWith('nprofile')) {
         try {
-          const user = await ndk.$fetchUser(searchQuery.trim());
+          const user = await ndk.fetchUser(searchQuery.trim());
           if (user) {
             searchResults = [user];
           } else {
@@ -42,7 +46,7 @@
       // Search by name using NDK's fetchUser
       else {
         try {
-          const user = await ndk.$fetchUser(searchQuery.trim());
+          const user = await ndk.fetchUser(searchQuery.trim());
           if (user) {
             searchResults = [user];
           } else {
@@ -68,9 +72,7 @@
   }
 
   function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      onClose();
-    } else if (e.key === 'Enter' && !searching) {
+    if (e.key === 'Enter' && !searching) {
       handleSearch();
     }
   }
@@ -101,45 +103,25 @@
   });
 </script>
 
-{#if isOpen}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-    onclick={onClose}
-    onkeydown={handleKeyDown}
-    role="button"
-    tabindex="-1"
-  >
-    <div
-      class="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl"
-      onclick={(e) => e.stopPropagation()}
-      role="dialog"
-      aria-modal="true"
-    >
-      <!-- Header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
-        <h2 class="text-xl font-bold text-white">New Message</h2>
-        <button
-          onclick={onClose}
-          class="p-2 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400 hover:text-white"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+{#if isDesktop.current}
+  <Dialog.Root open={isOpen} onOpenChange={(newOpen) => { if (!newOpen) onClose(); }}>
+    <Dialog.Content class="max-w-md" onkeydown={handleKeyDown}>
+      <Dialog.Header>
+        <Dialog.Title>New Message</Dialog.Title>
+      </Dialog.Header>
 
       <!-- Search -->
-      <div class="p-6 border-b border-neutral-800">
+      <div class="mb-4">
         <div class="relative">
           <input
             bind:this={searchInput}
             bind:value={searchQuery}
             type="text"
             placeholder="Search by name or paste npub..."
-            class="w-full px-4 py-3 pl-12 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            class="w-full px-4 py-3 pl-12 bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
           <svg
-            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500"
+            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -160,69 +142,101 @@
           </div>
         {:else if searchQuery.trim() && searchResults.length === 0}
           <div class="flex flex-col items-center justify-center py-12 px-6 text-center">
-            <svg class="w-16 h-16 text-neutral-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-16 h-16 text-muted-foreground mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <p class="text-neutral-400">No users found</p>
-            <p class="text-sm text-neutral-600 mt-1">Try a different search term</p>
+            <p class="text-muted-foreground">No users found</p>
+            <p class="text-sm text-muted-foreground/60 mt-1">Try a different search term</p>
           </div>
         {:else if searchResults.length > 0}
-          <div class="divide-y divide-neutral-800">
+          <div class="divide-y divide-border">
             {#each searchResults as user (user.pubkey)}
-              {@const profile = user.profile}
-
-              <button
-                onclick={() => handleUserSelect(user)}
-                class="w-full flex items-center gap-3 px-6 py-4 hover:bg-neutral-800 transition-colors text-left"
-              >
-                <!-- Avatar -->
-                {#if profile?.image}
-                  <img
-                    src={profile.image}
-                    alt={profile.name || 'User'}
-                    class="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                  />
-                {:else}
-                  <div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    <span class="text-primary font-semibold text-lg">
-                      {profile?.name?.[0]?.toUpperCase() || '?'}
-                    </span>
-                  </div>
-                {/if}
-
-                <!-- Info -->
-                <div class="flex-1 min-w-0">
-                  <div class="font-semibold text-white truncate">
-                    {profile?.name || profile?.displayName || 'Anonymous'}
-                  </div>
-                  {#if profile?.nip05}
-                    <div class="text-sm text-neutral-500 truncate">
-                      {profile.nip05}
-                    </div>
-                  {:else if profile?.about}
-                    <div class="text-sm text-neutral-500 truncate">
-                      {profile.about}
-                    </div>
-                  {/if}
-                </div>
-
-                <!-- Arrow -->
-                <svg class="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+              <UserSelectableItem
+                {user}
+                onClick={handleUserSelect}
+                showArrow={true}
+                size="lg"
+              />
             {/each}
           </div>
         {:else}
           <div class="flex flex-col items-center justify-center py-12 px-6 text-center">
-            <svg class="w-16 h-16 text-neutral-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-16 h-16 text-muted-foreground mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <p class="text-neutral-400">Search for someone to message</p>
-            <p class="text-sm text-neutral-600 mt-1">Enter a name or paste an npub</p>
+            <p class="text-muted-foreground">Search for someone to message</p>
+            <p class="text-sm text-muted-foreground/60 mt-1">Enter a name or paste an npub</p>
           </div>
         {/if}
       </div>
-    </div>
-  </div>
+    </Dialog.Content>
+  </Dialog.Root>
+{:else}
+  <Drawer.Root open={isOpen} onOpenChange={(newOpen) => { if (!newOpen) onClose(); }}>
+    <Drawer.Content onkeydown={handleKeyDown}>
+      <Drawer.Header class="text-left">
+        <Drawer.Title>New Message</Drawer.Title>
+      </Drawer.Header>
+
+      <!-- Search -->
+      <div class="px-4 mb-4">
+        <div class="relative">
+          <input
+            bind:this={searchInput}
+            bind:value={searchQuery}
+            type="text"
+            placeholder="Search by name or paste npub..."
+            class="w-full px-4 py-3 pl-12 bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+          <svg
+            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="overflow-y-auto pb-4">
+        {#if searching}
+          <div class="flex items-center justify-center py-12">
+            <svg class="w-8 h-8 text-primary animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </div>
+        {:else if searchQuery.trim() && searchResults.length === 0}
+          <div class="flex flex-col items-center justify-center py-12 px-6 text-center">
+            <svg class="w-16 h-16 text-muted-foreground mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <p class="text-muted-foreground">No users found</p>
+            <p class="text-sm text-muted-foreground/60 mt-1">Try a different search term</p>
+          </div>
+        {:else if searchResults.length > 0}
+          <div class="divide-y divide-border">
+            {#each searchResults as user (user.pubkey)}
+              <UserSelectableItem
+                {user}
+                onClick={handleUserSelect}
+                showArrow={true}
+                size="lg"
+              />
+            {/each}
+          </div>
+        {:else}
+          <div class="flex flex-col items-center justify-center py-12 px-6 text-center">
+            <svg class="w-16 h-16 text-muted-foreground mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <p class="text-muted-foreground">Search for someone to message</p>
+            <p class="text-sm text-muted-foreground/60 mt-1">Enter a name or paste an npub</p>
+          </div>
+        {/if}
+      </div>
+    </Drawer.Content>
+  </Drawer.Root>
 {/if}

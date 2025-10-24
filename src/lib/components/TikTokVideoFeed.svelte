@@ -20,6 +20,7 @@
 
   let containerRef = $state<HTMLDivElement | null>(null);
   let isMuted = $state(true);
+  let currentVideoIndex = $state(0);
 
   function extractMediaUrls(content: string): string[] {
     const urlRegex = /(https?:\/\/[^\s]+\.(mp4|webm|mov|avi|mkv))/gi;
@@ -66,6 +67,7 @@
   }));
 
   let observer: IntersectionObserver | null = null;
+  let videoElements = new Map<number, HTMLVideoElement>();
 
   onMount(() => {
     observer = new IntersectionObserver(
@@ -74,12 +76,10 @@
           const videoElement = entry.target as HTMLVideoElement;
 
           if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-            // Play video when more than 50% is visible
             videoElement.play().catch(err => {
               console.log('Auto-play prevented:', err);
             });
           } else {
-            // Pause video when not visible
             videoElement.pause();
           }
         });
@@ -90,17 +90,29 @@
       }
     );
 
+    // Auto-play the first video
+    setTimeout(() => {
+      const firstVideo = videoElements.get(0);
+      if (firstVideo) {
+        firstVideo.play().catch(err => {
+          console.log('Auto-play prevented:', err);
+        });
+      }
+    }, 100);
+
     return () => {
       observer?.disconnect();
     };
   });
 
-  function registerVideoRef(videoElement: HTMLVideoElement) {
+  function registerVideoRef(videoElement: HTMLVideoElement, index: number) {
+    videoElements.set(index, videoElement);
     if (observer) {
       observer.observe(videoElement);
     }
     return {
       destroy() {
+        videoElements.delete(index);
         if (observer) {
           observer.unobserve(videoElement);
         }
@@ -116,13 +128,12 @@
 {:else}
   <div
     bind:this={containerRef}
-    class="fixed inset-x-0 bottom-0 overflow-y-scroll snap-y snap-mandatory scrollbar-hide bg-black"
-    style="top: var(--header-height, 132px);"
+    class="fixed inset-0 overflow-y-scroll snap-y snap-mandatory scrollbar-hide bg-black lg:bottom-0 bottom-[72px]"
   >
     {#each videoItems as { event, imeta }, index (`${event.id}-${index}`)}
-      <div class="relative w-screen snap-start snap-always flex items-center justify-center bg-black" style="height: calc(100dvh - var(--header-height, 132px));">
+      <div class="relative w-screen snap-start snap-always flex items-center justify-center bg-black h-screen lg:h-screen">
         <video
-          use:registerVideoRef
+          use:registerVideoRef={index}
           src={imeta.url}
           class="w-full h-full object-contain"
           loop

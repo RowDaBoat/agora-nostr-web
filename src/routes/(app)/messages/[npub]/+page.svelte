@@ -6,10 +6,8 @@
   import { Avatar } from '@nostr-dev-kit/svelte';
   import ConversationThread from '$lib/components/messages/ConversationThread.svelte';
   import MessageComposer from '$lib/components/messages/MessageComposer.svelte';
-  import type { NDKUser } from '@nostr-dev-kit/ndk';
+  import type { NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
   import type { NDKMessage, NDKConversation } from '@nostr-dev-kit/messages';
-
-  const currentUser = ndk.$currentUser;
 
   let participant = $state<NDKUser | null>(null);
   let participantPubkey = $state<string | null>(null);
@@ -21,11 +19,20 @@
 
   const npub = $derived($page.params.npub);
 
-  // Reactive profile fetching
-  const profile = $derived(participantPubkey ? ndk.$fetchProfile(() => participantPubkey) : null);
+  let profile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    if (!participantPubkey) {
+      profile = null;
+      return;
+    }
+    ndk.fetchUser(participantPubkey).then(u => {
+      u?.fetchProfile().then(p => { profile = p; });
+    });
+  });
 
   async function loadConversation() {
-    if (!npub || !currentUser) {
+    if (!npub || !ndk.$currentUser) {
       error = 'Invalid conversation';
       loading = false;
       return;
@@ -81,7 +88,7 @@
 
   // Load conversation when component mounts or npub changes
   $effect(() => {
-    if (npub && currentUser) {
+    if (npub && ndk.$currentUser) {
       loadConversation();
     }
   });
@@ -136,7 +143,7 @@
   </div>
 
   <!-- Content -->
-  {#if !currentUser}
+  {#if !ndk.$currentUser}
     <!-- Not logged in -->
     <div class="flex-1 flex items-center justify-center px-6 text-center">
       <div>

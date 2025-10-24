@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { ndk } from '$lib/ndk.svelte';
-  import { NDKFollowPack, NDKKind, type NDKEvent, NDKClassified } from '@nostr-dev-kit/ndk';
+  import { NDKFollowPack, NDKKind, type NDKEvent, NDKClassified, type NDKUser } from '@nostr-dev-kit/ndk';
 
   const nip05Identifier = $derived($page.params.nip05);
   const dTagIdentifier = $derived($page.params.identifier);
@@ -11,8 +11,12 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
 
-  // Resolve NIP-05 to pubkey
-  const user = ndk.$fetchUser(() => nip05Identifier);
+  let user = $state<NDKUser | undefined>(undefined);
+
+  $effect(() => {
+    ndk.fetchUser(nip05Identifier).then(u => { user = u; });
+  });
+
   const pubkey = $derived(user?.pubkey);
 
   // Fetch the event and redirect to appropriate route

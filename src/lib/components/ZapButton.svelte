@@ -54,7 +54,15 @@
       toast.success(`Zapped ${amount} sats!`);
     } catch (err) {
       console.error('Failed to zap:', err);
-      toast.error('Failed to send zap');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send zap';
+
+      if (errorMessage.includes('wallet') || errorMessage.includes('NWC')) {
+        toast.error('Lightning wallet error. Please check your wallet connection in settings.');
+      } else if (errorMessage.includes('invoice')) {
+        toast.error('Failed to create invoice. The recipient may not have a Lightning address configured.');
+      } else {
+        toast.error('Failed to send zap. Please try again.');
+      }
     } finally {
       isZapping = false;
     }

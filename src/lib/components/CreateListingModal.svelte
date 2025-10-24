@@ -34,8 +34,6 @@
   let categories = $state<string[]>([]);
   let newCategory = $state('');
 
-  const currentUser = ndk.$currentUser;
-
   // Image upload using blossom
   const imageUpload = useImageUpload(ndk, {
     fallbackServer: 'https://blossom.primal.net'
@@ -75,7 +73,7 @@
       return;
     }
 
-    if (!currentUser) {
+    if (!ndk.$currentUser) {
       toast.error('Please log in to create a listing');
       return;
     }

@@ -68,6 +68,7 @@
     kind: number;
     pubkey: string;
     created_at: number;
+    author?: import('@nostr-dev-kit/ndk').NDKUser;
   }
 
   let allPacks = $derived.by(() => {
@@ -81,6 +82,7 @@
       kind: event.kind || 39089,
       pubkey: event.pubkey,
       created_at: event.created_at || 0,
+      author: event.author,
     }));
 
     // Use relay packs if available, otherwise mock data
@@ -92,9 +94,8 @@
 
     // Apply filter type
     if (activeFilter !== 'all') {
-      const currentUser = ndk.$currentUser;
-      const userPubkey = currentUser?.pubkey;
-      const userFollows = currentUser?.follows;
+      const userPubkey = ndk.$currentUser?.pubkey;
+      const userFollows = ndk.$currentUser?.follows;
 
       if (activeFilter === 'mine' && userPubkey) {
         filtered = filtered.filter(pack => pack.pubkey === userPubkey);

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import { Avatar } from '@nostr-dev-kit/svelte';
+	import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
 	interface InviterStats {
 		pubkey: string;
@@ -23,6 +24,20 @@
 	}
 
 	const maxSuccess = $derived(Math.max(...stats.map(s => s.successfulInvites), 1));
+
+	let profiles = $state<Map<string, NDKUserProfile | null>>(new Map());
+
+	$effect(() => {
+		profiles.clear();
+		stats.forEach(stat => {
+			ndk.fetchUser(stat.pubkey).then(u => {
+				u?.fetchProfile().then(p => {
+					profiles.set(stat.pubkey, p || null);
+					profiles = new Map(profiles);
+				});
+			});
+		});
+	});
 </script>
 
 <div class="bg-card rounded-xl border border-border p-6">
@@ -33,7 +48,7 @@
 	{:else}
 		<div class="space-y-3">
 			{#each stats as stat (stat.pubkey)}
-				{@const profile = ndk.$fetchProfile(() => stat.pubkey)}
+				{@const profile = profiles.get(stat.pubkey)}
 				<div class="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
 					<div class="flex items-center gap-3 flex-1">
 						<span class="text-2xl w-8 text-center">{getRankEmoji(stat.rank)}</span>

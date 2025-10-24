@@ -10,6 +10,7 @@
   import { Avatar } from '@nostr-dev-kit/svelte';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import CreateFollowPackDialog from '$lib/components/CreateFollowPackDialog.svelte';
+  import UserCard from '$lib/components/UserCard.svelte';
   import { getProfileUrl } from '$lib/utils/navigation';
 
   const packId = $derived($page.params.packId);
@@ -52,6 +53,7 @@
         kind: packEvent.kind || 39089,
         pubkey: packEvent.pubkey,
         created_at: packEvent.created_at || 0,
+        author: packEvent.author,
       };
     }
 
@@ -65,8 +67,16 @@
 
   let pubkeys = $derived(pack?.pubkeys || []);
 
-  // Fetch profile for pack creator
-  const packCreatorProfile = ndk.$fetchProfile(() => pack?.pubkey);
+  let packCreatorProfile = $state<import('@nostr-dev-kit/ndk').NDKUserProfile | null>(null);
+
+  $effect(() => {
+    if (!pack?.author) {
+      packCreatorProfile = null;
+      return;
+    }
+    pack.author.fetchProfile().then(p => { packCreatorProfile = p; });
+  });
+
 
   let isFavorite = $derived(pack ? followPacksStore.isFavorite(pack.id) : false);
   let isMyPack = $derived(pack && ndk.$currentUser ? pack.pubkey === ndk.$currentUser.pubkey : false);
@@ -101,10 +111,8 @@
 
     isFollowingAll = true;
     try {
-      // This would actually follow all users in the pack
-      console.log('Following all users:', pubkeys);
       toast.success(`Following ${pubkeys.length} users`);
-      // TODO: Implement actual follow logic
+      ndk.$follows.add(pubkeys);
     } catch (error) {
       console.error('Error following all users:', error);
       toast.error('Failed to follow users');
@@ -278,28 +286,7 @@
     {:else}
       <div class="grid gap-4 md:grid-cols-2">
         {#each pubkeys as pubkey (pubkey)}
-          {@const memberProfile = ndk.$fetchProfile(() => pubkey)}
-          <button
-            onclick={() => goto(getProfileUrl(pubkey))}
-            class="flex items-center gap-3 p-4 bg-card border border-border rounded-lg hover:border-border transition-colors text-left"
-          >
-            <Avatar {ndk} {pubkey} class="w-12 h-12 rounded-full" />
-            <div class="flex-1 min-w-0">
-              <p class="font-medium text-foreground truncate">
-                {memberProfile?.name || 'Anonymous'}
-              </p>
-              {#if memberProfile?.nip05}
-                <p class="text-sm text-muted-foreground truncate">
-                  {memberProfile?.nip05}
-                </p>
-              {/if}
-              {#if memberProfile?.about}
-                <p class="text-sm text-muted-foreground line-clamp-1 mt-1">
-                  {memberProfile?.about}
-                </p>
-              {/if}
-            </div>
-          </button>
+          <UserCard {pubkey} />
         {/each}
       </div>
     {/if}

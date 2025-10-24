@@ -15,7 +15,7 @@
   import { createLazyFeed } from '$lib/utils/lazyFeed.svelte';
   import { Avatar } from '@nostr-dev-kit/svelte';
   import FeedHeader from '$lib/components/headers/FeedHeader.svelte';
-  import { getRelaysToUse, isAgorasSelection } from '$lib/utils/relayUtils';
+  import { getRelaysToUse } from '$lib/utils/relayUtils';
   import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';
   import { sub } from 'date-fns';
   import CreateMediaPostModal from '$lib/components/CreateMediaPostModal.svelte';
@@ -270,8 +270,8 @@
     // If showing hashtag filters, return null to show hashtags instead
     if (hashtagInterests.interests.length > 0) return null;
 
-    // If Agoras or Following is selected, show Agora logo
-    if (isAgorasSelection(settings.selectedRelay) || !settings.selectedRelay) {
+    // If Following is selected, show Agora logo
+    if (!settings.selectedRelay) {
       return { type: 'logo' as const };
     }
 

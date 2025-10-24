@@ -2,7 +2,7 @@
   import { type NDKEvent, NDKArticle } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
   import { Avatar } from '@nostr-dev-kit/svelte';
-  import TimeAgo from './TimeAgo.svelte';
+  import EventCardHeader from './EventCardHeader.svelte';
   import EventActions from './EventActions.svelte';
   import { getArticleUrl } from '$lib/utils/articleUrl';
   import { fetchUrlMetadata, type UrlMetadata } from '$lib/utils/urlMetadata';
@@ -14,7 +14,12 @@
 
   let { event, variant = 'default' }: Props = $props();
 
-  const authorProfile = ndk.$fetchProfile(() => event.pubkey);
+  let authorProfile = $state<import('@nostr-dev-kit/ndk').NDKUserProfile | null>(null);
+
+  $effect(() => {
+    event.author.fetchProfile().then(p => { authorProfile = p; });
+  });
+
   const authorName = $derived(authorProfile?.name || authorProfile?.displayName || 'Anonymous');
 
   // Extract the highlighted content
@@ -174,11 +179,13 @@
 
   const publishedAt = $derived(event.created_at);
 
-  function navigateToProfile() {
-    window.location.href = `/p/${event.author.npub}`;
+  function navigateToHighlight() {
+    const neventId = event.encode();
+    window.location.href = `/e/${neventId}`;
   }
 
-  function navigateToSource() {
+  function navigateToSource(e: MouseEvent) {
+    e.stopPropagation();
     if (sourceInfo?.type === 'web' && sourceInfo.url) {
       window.open(sourceInfo.url, '_blank', 'noopener,noreferrer');
     } else if (sourceInfo?.type === 'article' && referencedArticle) {
@@ -191,30 +198,14 @@
 {#if variant === 'feed'}
   <article class="p-3 sm:p-4 hover:bg-card/30 transition-colors border-b border-border">
     <!-- Author header -->
-    <div class="flex items-center gap-2 sm:gap-3 mb-3">
-      <button
-        type="button"
-        onclick={(e) => { e.stopPropagation(); navigateToProfile(); }}
-        class="flex-shrink-0"
-      >
-        <Avatar {ndk} pubkey={event.pubkey} class="w-9 h-9 sm:w-12 sm:h-12 rounded-full hover:opacity-80 transition-opacity" />
-      </button>
-      <div class="flex items-center gap-2 flex-1 min-w-0">
-        <div class="flex items-center gap-2 min-w-0 flex-shrink">
-          <span class="text-base font-semibold text-foreground truncate min-w-0">{authorName}</span>
-          <span class="text-muted-foreground text-sm truncate min-w-0">@{authorProfile?.name || event.pubkey.slice(0, 8)}</span>
-        </div>
-        <span class="text-muted-foreground text-sm flex-shrink-0">·</span>
-        {#if publishedAt}
-          <TimeAgo timestamp={publishedAt} class="text-muted-foreground text-sm flex-shrink-0" />
-        {/if}
-      </div>
+    <div class="mb-3">
+      <EventCardHeader {event} avatarClass="w-9 h-9 sm:w-12 sm:h-12" />
     </div>
 
     <!-- Book page style highlight -->
     <div
-      onclick={(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? navigateToSource : undefined}
-      class="relative rounded-lg overflow-hidden bg-card border border-border shadow-lg mb-2 {(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? 'cursor-pointer' : ''}"
+      onclick={navigateToHighlight}
+      class="relative rounded-lg overflow-hidden bg-card border border-border shadow-lg mb-2 cursor-pointer"
     >
       <!-- Content -->
       <div class="relative flex flex-col items-center justify-center py-12 sm:py-16 px-8 sm:px-12 min-h-[200px] max-h-[600px]">
@@ -228,7 +219,11 @@
 
       <!-- Source badge (small, bottom right corner) -->
       {#if sourceInfo}
-        <div class="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded text-xs text-muted-foreground">
+        <button
+          type="button"
+          onclick={navigateToSource}
+          class="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded text-xs text-muted-foreground hover:bg-background transition-colors"
+        >
           {#if sourceInfo.type === 'web'}
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -243,7 +238,7 @@
             </svg>
           {/if}
           <span class="max-w-[200px] truncate">{sourceInfo.displayText}</span>
-        </div>
+        </button>
       {/if}
     </div>
 
@@ -251,7 +246,10 @@
     <EventActions {event} />
   </article>
 {:else if variant === 'compact'}
-  <div class="block p-4 hover:bg-card/30 transition-colors rounded-lg group">
+  <div
+    onclick={navigateToHighlight}
+    class="block p-4 hover:bg-card/30 transition-colors rounded-lg group cursor-pointer"
+  >
     <div class="relative">
       <!-- Highlight marker line on the left -->
       <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/60 to-primary rounded-full" />
@@ -294,8 +292,8 @@
   <article class="hover:bg-card/30 transition-colors w-full">
     <!-- Book page style highlight -->
     <div
-      onclick={(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? navigateToSource : undefined}
-      class="relative aspect-square rounded-lg overflow-hidden bg-card border border-border shadow-lg w-full {(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? 'cursor-pointer' : ''}"
+      onclick={navigateToHighlight}
+      class="relative aspect-square rounded-lg overflow-hidden bg-card border border-border shadow-lg w-full cursor-pointer"
     >
       <!-- Content -->
       <div class="relative flex flex-col items-center justify-center p-4 sm:p-6 min-h-[150px]">
@@ -317,7 +315,11 @@
 
       <!-- Source badge (small, bottom right corner) -->
       {#if sourceInfo}
-        <div class="absolute bottom-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-background/80 backdrop-blur-sm border border-border rounded text-xs text-muted-foreground">
+        <button
+          type="button"
+          onclick={navigateToSource}
+          class="absolute bottom-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-background/80 backdrop-blur-sm border border-border rounded text-xs text-muted-foreground hover:bg-background transition-colors"
+        >
           {#if sourceInfo.type === 'web'}
             <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -332,7 +334,7 @@
             </svg>
           {/if}
           <span class="max-w-[100px] truncate text-[10px]">{sourceInfo.displayText}</span>
-        </div>
+        </button>
       {/if}
     </div>
 
@@ -345,30 +347,14 @@
 {:else}
   <article class="p-3 sm:p-4 hover:bg-card/30 transition-colors border-b border-border">
     <!-- Author header -->
-    <div class="flex items-center gap-2 sm:gap-3 mb-3">
-      <button
-        type="button"
-        onclick={(e) => { e.stopPropagation(); navigateToProfile(); }}
-        class="flex-shrink-0"
-      >
-        <Avatar {ndk} pubkey={event.pubkey} class="w-9 h-9 sm:w-12 sm:h-12 rounded-full hover:opacity-80 transition-opacity" />
-      </button>
-      <div class="flex items-center gap-2 flex-1 min-w-0">
-        <div class="flex items-center gap-2 min-w-0 flex-shrink">
-          <span class="text-base font-semibold text-foreground truncate min-w-0">{authorName}</span>
-          <span class="text-muted-foreground text-sm truncate min-w-0">@{authorProfile?.name || event.pubkey.slice(0, 8)}</span>
-        </div>
-        <span class="text-muted-foreground text-sm flex-shrink-0">·</span>
-        {#if publishedAt}
-          <TimeAgo timestamp={publishedAt} class="text-muted-foreground text-sm flex-shrink-0" />
-        {/if}
-      </div>
+    <div class="mb-3">
+      <EventCardHeader {event} avatarClass="w-9 h-9 sm:w-12 sm:h-12" />
     </div>
 
     <!-- Book page style highlight -->
     <div
-      onclick={(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? navigateToSource : undefined}
-      class="relative rounded-lg overflow-hidden bg-card border border-border shadow-lg mb-2 {(sourceInfo?.type === 'web' || sourceInfo?.type === 'article') ? 'cursor-pointer' : ''}"
+      onclick={navigateToHighlight}
+      class="relative rounded-lg overflow-hidden bg-card border border-border shadow-lg mb-2 cursor-pointer"
     >
       <!-- Content -->
       <div class="relative flex flex-col items-center justify-center py-12 sm:py-16 px-8 sm:px-12 min-h-[200px] max-h-[600px]">
@@ -382,7 +368,11 @@
 
       <!-- Source badge (small, bottom right corner) -->
       {#if sourceInfo}
-        <div class="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded text-xs text-muted-foreground">
+        <button
+          type="button"
+          onclick={navigateToSource}
+          class="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-background/80 backdrop-blur-sm border border-border rounded text-xs text-muted-foreground hover:bg-background transition-colors"
+        >
           {#if sourceInfo.type === 'web'}
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -397,7 +387,7 @@
             </svg>
           {/if}
           <span class="max-w-[200px] truncate">{sourceInfo.displayText}</span>
-        </div>
+        </button>
       {/if}
     </div>
 

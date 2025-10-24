@@ -4,6 +4,7 @@
   import { EventContent } from '@nostr-dev-kit/svelte';
   import FollowButton from './FollowButton.svelte';
   import { generateBannerGradient } from '$lib/utils/bannerGradient';
+  import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
   interface Props {
     pubkey: string;
@@ -13,9 +14,15 @@
 
   const { pubkey, isVisible, position }: Props = $props();
 
-  const profile = ndk.$fetchProfile(() => pubkey);
-  const currentUser = ndk.$currentUser;
-  const isOwnProfile = $derived(currentUser?.pubkey === pubkey);
+  let profile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    ndk.fetchUser(pubkey).then(u => {
+      u?.fetchProfile().then(p => { profile = p; });
+    });
+  });
+
+  const isOwnProfile = $derived(ndk.$currentUser?.pubkey === pubkey);
 
   // Subscribe to user's notes to get note count
   const notesSubscription = ndk.$subscribe(

@@ -2,15 +2,11 @@
  * Utility functions for relay operations
  */
 
-/** Special value for selecting both Agora relays */
-export const AGORAS_SELECTION = 'agoras';
-
 /** Agora relay URLs */
 export const AGORA_RELAYS = [
 	"wss://ve.agorawlc.com/",
 	"wss://ni.agorawlc.com/",
 	"wss://zw.agorawlc.com/",
-	"wss://4cfbf6275e9a.ngrok.app/",
 ] as const;
 
 /** Default relays for NIP-60 wallet events */
@@ -46,17 +42,8 @@ export function isAgoraRelay(url: string | null | undefined): boolean {
 }
 
 /**
- * Checks if the selectedRelay value represents the Agoras selection
- * @param selectedRelay - The selectedRelay value from settings
- * @returns true if the value represents the Agoras selection
- */
-export function isAgorasSelection(selectedRelay: string | null | undefined): boolean {
-  return selectedRelay === AGORAS_SELECTION;
-}
-
-/**
  * Gets the relay URLs to use based on the selectedRelay value
- * @param selectedRelay - The selectedRelay value from settings (null, "agoras", or a specific relay URL)
+ * @param selectedRelay - The selectedRelay value from settings (null or a specific relay URL)
  * @param enabledRelays - Array of enabled relay URLs (unused when selectedRelay is null)
  * @returns Array of relay URLs to use (empty array for "Following" mode)
  */
@@ -64,9 +51,6 @@ export function getRelaysToUse(
   selectedRelay: string | null | undefined,
   enabledRelays: string[]
 ): string[] {
-  if (isAgorasSelection(selectedRelay)) {
-    return [...AGORA_RELAYS];
-  }
   if (selectedRelay) {
     return [selectedRelay];
   }

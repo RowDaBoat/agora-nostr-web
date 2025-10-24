@@ -4,8 +4,6 @@
   import NewMessageModal from '$lib/components/messages/NewMessageModal.svelte';
   import { messagesStore } from '$lib/stores/messages.svelte';
 
-  const currentUser = ndk.$currentUser;
-
   let showNewMessageModal = $state(false);
 
   function handleNewMessage() {
@@ -32,7 +30,7 @@
 
   <!-- Conversations List -->
   <div class="flex-1 overflow-y-auto">
-    {#if !currentUser}
+    {#if !ndk.$currentUser}
       <!-- Not logged in state -->
       <div class="flex flex-col items-center justify-center h-full px-6 text-center">
         <svg class="w-20 h-20 text-muted mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

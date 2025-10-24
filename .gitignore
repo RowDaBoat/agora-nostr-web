@@ -32,3 +32,6 @@ dist-ssr
 # Generated worker files (created during postinstall)
 static/worker-*.js
 src/lib/worker-version.ts
+
+*storybook.log
+storybook-static

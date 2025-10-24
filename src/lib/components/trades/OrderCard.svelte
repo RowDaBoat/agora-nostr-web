@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { NDKEvent } from '@nostr-dev-kit/ndk';
+  import type { NDKEvent, NDKUserProfile } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
   import TakeOrderModal from './TakeOrderModal.svelte';
   import TimeAgo from '../TimeAgo.svelte';
@@ -27,7 +27,12 @@
 
   let { order }: Props = $props();
 
-  const profile = ndk.$fetchProfile(() => order.pubkey);
+  let profile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    order.event.author.fetchProfile().then(p => { profile = p; });
+  });
+
   let showTakeModal = $state(false);
 
   const currencyData: { [key: string]: { symbol: string; flag: string } } = {

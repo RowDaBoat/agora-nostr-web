@@ -19,6 +19,8 @@
   import { npubCashMonitor } from '$lib/services/npubcashMonitor.svelte';
   import { NDKKind, NDKArticle, NDKSubscriptionCacheUsage } from '@nostr-dev-kit/ndk';
   import { getArticleUrl } from '$lib/utils/articleUrl';
+  import { createNotificationsManager } from '$lib/utils/useNotifications.svelte';
+  import { formatBalance, formatBalanceLong } from '$lib/utils/formatBalance';
   import RelaySelector from './RelaySelector.svelte';
   import LoginButton from './LoginButton.svelte';
   import UserMenu from './UserMenu.svelte';
@@ -35,8 +37,8 @@
 
   const { children }: Props = $props();
 
-  const currentUser = ndk.$currentUser;
   const wallet = ndk.$wallet;
+  const notificationsManager = createNotificationsManager(ndk);
   let sidebarCollapsed = $state(false);
 
   const path = $derived($page.url.pathname);
@@ -98,14 +100,14 @@
 
   // Handle messages subscription lifecycle
   $effect(() => {
-    if (!currentUser) {
+    if (!ndk.$currentUser) {
       messagesStore.stop();
     }
   });
 
   // Handle npub.cash monitor lifecycle
   $effect(() => {
-    if (currentUser) {
+    if (ndk.$currentUser) {
       npubCashMonitor.start();
     } else {
       npubCashMonitor.stop();
@@ -115,11 +117,6 @@
       npubCashMonitor.stop();
     };
   });
-
-  function formatBalance(sats: number): string {
-    if (sats === 0) return '0 sats';
-    return new Intl.NumberFormat('en-US').format(sats) + ' sats';
-  }
 </script>
 
 <div class="h-screen bg-background flex justify-center overflow-hidden">
@@ -286,7 +283,7 @@
             {/if}
           </div>
           {#if !sidebarCollapsed}
-            <span class="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary font-medium">{formatBalance(wallet.balance)}</span>
+            <span class="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary font-medium">{formatBalanceLong(wallet.balance)}</span>
           {/if}
         </a>
 
@@ -383,7 +380,7 @@
 
       <!-- Login/User Section -->
       <div class="mt-auto pt-4 border-t border-border">
-        {#if currentUser}
+        {#if ndk.$currentUser}
           <UserMenu collapsed={sidebarCollapsed} />
         {:else}
           <LoginButton class="w-full flex items-center justify-center {sidebarCollapsed ? 'p-3' : 'gap-2 px-4 py-3'} bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full transition-colors" />
@@ -396,7 +393,7 @@
       <!-- Center column - Main content -->
       <div class={`w-full lg:flex-1 ${hideRightSidebar ? 'lg:max-w-[900px]' : 'lg:max-w-[600px]'} min-w-0 flex flex-col h-full border-x border-border`}>
         <!-- Page content -->
-        <main class="flex-1 pb-20 md:pb-0 bg-background max-w-screen overflow-y-auto">
+        <main class="flex-1 pb-20 lg:pb-0 bg-background max-w-screen overflow-y-auto">
           <!-- Structured Header Config - rendered by Layout for consistency -->
           {#if headerStore.headerConfig}
             <div class="border-b border-border bg-background">
@@ -442,6 +439,39 @@
                   {#if headerStore.headerConfig.actions}
                     {@render headerStore.headerConfig.actions()}
                   {/if}
+
+                  <!-- Mobile-only: Wallet and Notifications -->
+                  <div class="lg:hidden flex items-center gap-2">
+                    <!-- Notifications -->
+                    <a
+                      href="/notifications"
+                      class="relative flex items-center justify-center p-2 rounded-lg hover:bg-muted transition-colors text-foreground"
+                      aria-label="Notifications"
+                    >
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      {#if notificationsManager.counts.all > 0}
+                        <div class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary flex items-center justify-center">
+                          <span class="text-[10px] font-bold text-primary-foreground">
+                            {notificationsManager.counts.all > 9 ? '9+' : notificationsManager.counts.all}
+                          </span>
+                        </div>
+                      {/if}
+                    </a>
+
+                    <!-- Wallet -->
+                    <a
+                      href="/wallet"
+                      class="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-muted transition-colors text-foreground"
+                      aria-label="Wallet"
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
+                      </svg>
+                      <span class="text-xs font-medium">{formatBalance(wallet.balance)}</span>
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -517,9 +547,8 @@
                     <div class="h-4 bg-muted rounded animate-pulse"></div>
                   {:else}
                     {#each recentArticles as article (article.id)}
-                      {@const author = ndk.$fetchUser(() => article.pubkey)}
                       <a
-                        href={getArticleUrl(article, author)}
+                        href={getArticleUrl(article, article.author)}
                         class="block text-sm text-muted-foreground hover:text-primary transition-colors line-clamp-2"
                       >
                         {article.title}

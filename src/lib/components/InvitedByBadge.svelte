@@ -2,6 +2,7 @@
   import { ndk } from '$lib/ndk.svelte';
   import { Avatar } from '@nostr-dev-kit/svelte';
   import { KIND_INVITE_ACCEPTANCE } from '$lib/constants/nostr';
+  import type { NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
 
   interface Props {
     pubkey: string;
@@ -25,11 +26,23 @@
     return inviteEvent.tags.find((t) => t[0] === 'p')?.[1];
   });
 
-  const inviterUser = ndk.$fetchUser(() => inviterPubkey);
-  const inviterProfile = ndk.$fetchProfile(() => inviterPubkey);
+  let inviterUser = $state<NDKUser | undefined>(undefined);
+  let inviterProfile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    if (!inviterPubkey) {
+      inviterUser = undefined;
+      inviterProfile = null;
+      return;
+    }
+    ndk.fetchUser(inviterPubkey).then(u => {
+      inviterUser = u;
+      u?.fetchProfile().then(p => { inviterProfile = p; });
+    });
+  });
 </script>
 
-{#if inviterPubkey && inviterUser.ready}
+{#if inviterPubkey && inviterUser?.pubkey}
   <a
     href={`/p/${inviterUser.npub}`}
     class="inline-flex items-center gap-2.5 px-3 py-2 rounded-lg bg-card border border-border hover:bg-muted/50 transition-colors text-sm group"

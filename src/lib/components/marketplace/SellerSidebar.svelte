@@ -2,7 +2,7 @@
   import { ndk } from '$lib/ndk.svelte';
   import { goto } from '$app/navigation';
   import { toast } from '$lib/stores/toast.svelte';
-  import { NDKEvent } from '@nostr-dev-kit/ndk';
+  import { NDKEvent, type NDKUserProfile } from '@nostr-dev-kit/ndk';
 
   interface Props {
     listing: NDKEvent | null;
@@ -10,7 +10,16 @@
 
   const { listing }: Props = $props();
 
-  const profile = ndk.$fetchProfile(() => listing?.pubkey || '');
+  let profile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    if (!listing) {
+      profile = null;
+      return;
+    }
+    listing.author.fetchProfile().then(p => { profile = p; });
+  });
+
   const isOwner = $derived(ndk.$sessions.current?.pubkey === listing?.pubkey);
 
   function handleShare() {

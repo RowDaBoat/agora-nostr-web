@@ -275,17 +275,15 @@ const notificationProcessors = {
  * Creates a notifications manager that aggregates and groups notifications
  */
 export function createNotificationsManager(ndk: NDKSvelte) {
-  const currentUser = ndk.$currentUser;
-
   // Subscription for all notification events
   const notificationsSubscription = ndk.$subscribe(() => {
-    if (!currentUser) return undefined;
+    if (!ndk.$currentUser) return undefined;
 
     return {
       filters: [
         {
           kinds: [...NOTIFICATION_KINDS],
-          '#p': [currentUser.pubkey],
+          '#p': [ndk.$currentUser.pubkey],
           since: Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 30, // last 30 days
           limit: 500,
         },
@@ -296,13 +294,13 @@ export function createNotificationsManager(ndk: NDKSvelte) {
 
   // Subscription for user's own events (to identify replies vs mentions)
   const userEventsSubscription = ndk.$subscribe(() => {
-    if (!currentUser) return undefined;
+    if (!ndk.$currentUser) return undefined;
 
     return {
       filters: [
         {
           kinds: [KIND_TEXT_NOTE, KIND_REPLY, 30023], // text, reply, article
-          authors: [currentUser.pubkey],
+          authors: [ndk.$currentUser.pubkey],
           since: Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 30, // last 30 days
         },
       ],
@@ -326,7 +324,7 @@ export function createNotificationsManager(ndk: NDKSvelte) {
    * Aggregate raw notification events into groups using strategy pattern
    */
   const notificationGroups = $derived.by(() => {
-    if (!currentUser) return [];
+    if (!ndk.$currentUser) return [];
 
     const events = Array.from(notificationsSubscription.events ?? []);
     const groups: NotificationGroup[] = [];

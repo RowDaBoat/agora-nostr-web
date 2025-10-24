@@ -1,5 +1,5 @@
 import NDKCacheSqliteWasm from "@nostr-dev-kit/cache-sqlite-wasm";
-import { NDKSvelte } from '@nostr-dev-kit/svelte';
+import { createNDK } from '@nostr-dev-kit/svelte';
 import { LocalStorage } from '@nostr-dev-kit/sessions';
 import { NDKEvent, NDKKind, NDKBlossomList, NDKInterestList } from '@nostr-dev-kit/ndk';
 import { browser } from '$app/environment';
@@ -13,18 +13,19 @@ const DEFAULT_RELAYS = [
   'wss://relay.nostr.band',
 ];
 
-// Initialize SQLite WASM cache with worker mode (browser only)
-const cacheAdapter = browser ? new NDKCacheSqliteWasm({
+// Initialize SQLite WASM cache (worker-only, browser only)
+const cacheAdapter = new NDKCacheSqliteWasm({
   dbName: "voces-cache",
-  useWorker: true,
   workerUrl: `/worker-${CACHE_WORKER_VERSION}.js`,
   wasmUrl: "/sql-wasm.wasm",
-}) : undefined;
+});
+
+export const cacheInitialized = cacheAdapter.initializeAsync();
 
 // Initialize signature verification worker (only in browser)
 let sigVerifyWorker: Worker | undefined;
 
-export const ndk = new NDKSvelte({
+export const ndk = createNDK({
   explicitRelayUrls: DEFAULT_RELAYS,
   autoConnectUserRelays: true,
   cacheAdapter,
@@ -33,7 +34,7 @@ export const ndk = new NDKSvelte({
   lowestValidationRatio: 0.1,
   aiGuardrails: false,
   futureTimestampGrace: 30,
-  session: browser ? {
+  session: {
     storage: new LocalStorage(),
     autoSave: true,
     fetches: {
@@ -43,8 +44,8 @@ export const ndk = new NDKSvelte({
       relayList: true,
       eventConstructors: [NDKBlossomList, NDKInterestList],
     }
-  } : undefined
-});
+  }
+})
 
 // Set the relay authentication policy (browser only)
 if (browser) {
@@ -61,6 +62,11 @@ export const ndkReady = (async () => {
   if (!browser) return;
 
   try {
+    // Wait for cache to be initialized
+    console.log("🔄 Initializing cache...");
+    await cacheInitialized;
+    console.log("✅ Cache initialized.");
+
     // Initialize worker
     const SigVerifyWorker = (await import('./sig-verify.worker.ts?worker')).default;
     sigVerifyWorker = new SigVerifyWorker();

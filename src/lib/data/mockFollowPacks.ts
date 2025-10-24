@@ -10,6 +10,7 @@ export const mockFollowPacks = [
     kind: 39089,
     pubkey: 'npub1creator1',
     created_at: Math.floor(Date.now() / 1000),
+    author: undefined,
   },
   {
     id: 'pack2',
@@ -21,6 +22,7 @@ export const mockFollowPacks = [
     kind: 39089,
     pubkey: 'npub1creator2',
     created_at: Math.floor(Date.now() / 1000),
+    author: undefined,
   },
   {
     id: 'pack3',
@@ -32,6 +34,7 @@ export const mockFollowPacks = [
     kind: 39089,
     pubkey: 'npub1creator3',
     created_at: Math.floor(Date.now() / 1000),
+    author: undefined,
   },
   {
     id: 'pack4',
@@ -43,6 +46,7 @@ export const mockFollowPacks = [
     kind: 39089,
     pubkey: 'npub1creator4',
     created_at: Math.floor(Date.now() / 1000),
+    author: undefined,
   },
   {
     id: 'pack5',
@@ -53,6 +57,7 @@ export const mockFollowPacks = [
     kind: 39089,
     pubkey: 'npub1creator5',
     created_at: Math.floor(Date.now() / 1000),
+    author: undefined,
   },
   {
     id: 'pack6',
@@ -64,5 +69,6 @@ export const mockFollowPacks = [
     kind: 39089,
     pubkey: 'npub1creator6',
     created_at: Math.floor(Date.now() / 1000),
+    author: undefined,
   },
 ];

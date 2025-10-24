@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
   import { loginModal } from '$lib/stores/loginModal.svelte';
+  import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
   interface Props {
     class?: string;
@@ -8,8 +9,19 @@
 
   const { class: className = "px-4 py-2 bg-primary hover:bg-accent-dark text-foreground rounded-lg transition-colors font-semibold" }: Props = $props();
 
-  const currentUser = ndk.$currentUser;
-  const profile = ndk.$fetchProfile(() => currentUser?.pubkey);
+  let profile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    const pubkey = ndk.$currentUser?.pubkey;
+    if (!pubkey) {
+      profile = null;
+      return;
+    }
+    ndk.fetchUser(pubkey).then(u => {
+      u?.fetchProfile().then(p => { profile = p; });
+    });
+  });
+
   const displayName = $derived(profile?.name || profile?.displayName || 'Anon');
 
   function logout() {
@@ -17,7 +29,7 @@
   }
 </script>
 
-{#if currentUser}
+{#if ndk.$currentUser}
   <button
     onclick={logout}
     class="flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted text-foreground rounded-lg transition-colors"

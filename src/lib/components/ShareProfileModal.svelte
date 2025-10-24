@@ -6,6 +6,7 @@
   import * as Dialog from '$lib/components/ui/dialog';
   import * as Drawer from '$lib/components/ui/drawer';
   import { Button } from '$lib/components/ui/button';
+  import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
   interface Props {
     isOpen: boolean;
@@ -18,7 +19,13 @@
 
   const isDesktop = new MediaQuery('(min-width: 768px)');
 
-  const profile = ndk.$fetchProfile(() => pubkey);
+  let profile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    ndk.fetchUser(pubkey).then(u => {
+      u?.fetchProfile().then(p => { profile = p; });
+    });
+  });
 
   let copiedUrl = $state(false);
   let copiedNpub = $state(false);

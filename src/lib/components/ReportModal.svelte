@@ -1,6 +1,6 @@
 <script lang="ts">
   import { MediaQuery } from 'svelte/reactivity';
-  import { NDKEvent } from '@nostr-dev-kit/ndk';
+  import { NDKEvent, NDKUser } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
@@ -12,15 +12,12 @@
   const isDesktop = new MediaQuery('(min-width: 768px)');
 
   interface Props {
-    event?: NDKEvent;
-    pubkey?: string;
+    target: NDKUser | NDKEvent;
     open: boolean;
     onClose: () => void;
   }
 
-  let { event, pubkey, open, onClose }: Props = $props();
-
-  const reportPubkey = $derived(event?.pubkey || pubkey || '');
+  let { target, open, onClose }: Props = $props();
 
   let selectedReportType = $state<string>('');
   let additionalInfo = $state('');
@@ -55,13 +52,8 @@
       const reportEvent = new NDKEvent(ndk);
       reportEvent.kind = 1984;
 
-      // Add p tag for the author being reported
-      reportEvent.tags.push(['p', reportPubkey, selectedReportType]);
-
-      // Add e tag for the note being reported (only if reporting a specific event)
-      if (event?.id) {
-        reportEvent.tags.push(['e', event.id, selectedReportType]);
-      }
+      // NDK automatically adds the correct tag (e or p) based on the target type
+      reportEvent.tag(target, selectedReportType);
 
       // Add additional info as content if provided
       if (additionalInfo.trim()) {

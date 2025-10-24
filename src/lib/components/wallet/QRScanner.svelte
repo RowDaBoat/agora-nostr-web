@@ -12,18 +12,20 @@
     if (!browser) return;
 
     try {
-      // Hide background to show camera
-      document.body.classList.add('scanner-active');
+      // Make body background transparent so camera shows through
+      document.body.style.background = 'transparent';
+      document.documentElement.style.background = 'transparent';
+
       isScanning = true;
       error = null;
 
       // Dynamically import the scanner
       const { CapacitorBarcodeScanner } = await import('@capacitor/barcode-scanner');
 
-      // Start scanning - the plugin handles permissions internally
+      // Start scanning with minimal native UI
       const result = await CapacitorBarcodeScanner.scanBarcode({
         hint: 17, // QR_CODE format
-        scanInstructions: 'Position QR code within the frame',
+        scanInstructions: '', // We'll show our own instructions
         scanButton: false,
         scanText: ''
       });
@@ -40,8 +42,10 @@
   }
 
   function stopScan() {
+    // Restore background
     if (browser && document?.body) {
-      document.body.classList.remove('scanner-active');
+      document.body.style.background = '';
+      document.documentElement.style.background = '';
     }
     isScanning = false;
   }
@@ -106,6 +110,7 @@
   {/if}
 
   {#if isScanning}
+    <!-- Custom UI overlay that doesn't block the camera -->
     <div class="scanner-overlay">
       <div class="scanner-frame">
         <div class="corner top-left"></div>
@@ -124,6 +129,7 @@
     </div>
   {/if}
 
+  <!-- Paste button always available at bottom -->
   <div class="paste-section">
     {#if showPasteInput}
       <div class="paste-input-container">
@@ -164,8 +170,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: black;
     z-index: 9999;
+    pointer-events: none; /* Allow camera interaction to pass through */
   }
 
   .scanner-overlay {
@@ -179,6 +185,7 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
+    pointer-events: none; /* Allow camera interaction */
   }
 
   .scanner-frame {
@@ -228,17 +235,20 @@
     text-align: center;
     margin-bottom: 2rem;
     font-size: 1rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   }
 
   .cancel-button {
     padding: 0.75rem 2rem;
     background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 8px;
     color: white;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    pointer-events: auto; /* Enable interaction for button */
   }
 
   .cancel-button:hover {
@@ -251,7 +261,8 @@
     left: 0;
     right: 0;
     padding: 1.5rem;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    pointer-events: none; /* Allow camera interaction */
   }
 
   .paste-button {
@@ -269,11 +280,16 @@
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.2s;
+    pointer-events: auto; /* Enable interaction for button */
   }
 
   .paste-button:hover {
     background: rgba(255, 255, 255, 0.9);
     transform: translateY(-2px);
+  }
+
+  .paste-button:active {
+    transform: translateY(0);
   }
 
   .paste-icon {
@@ -285,6 +301,7 @@
     background: white;
     border-radius: 12px;
     padding: 1rem;
+    pointer-events: auto; /* Enable interaction for container */
   }
 
   .paste-input {
@@ -346,7 +363,7 @@
   }
 
   .error-overlay {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
@@ -356,7 +373,7 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    z-index: 10;
+    z-index: 9999;
   }
 
   .error-content {
@@ -378,10 +395,6 @@
     font-size: 1rem;
   }
 
-  :global(body.scanner-active) {
-    background: transparent !important;
-  }
-
   @media (max-width: 640px) {
     .scanner-frame {
       width: 200px;
@@ -391,6 +404,11 @@
     .corner {
       width: 30px;
       height: 30px;
+      border-width: 2px;
+    }
+
+    .scanner-instructions {
+      font-size: 0.875rem;
     }
   }
 </style>

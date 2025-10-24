@@ -3,10 +3,8 @@
   import { ndk } from '$lib/ndk.svelte';
   import { EventContent } from '@nostr-dev-kit/svelte';
   import ReplyIndicator from './ReplyIndicator.svelte';
-  import User from './User.svelte';
-  import TimeAgo from './TimeAgo.svelte';
+  import EventCardHeader from './EventCardHeader.svelte';
   import EventActions from './EventActions.svelte';
-  import EventOptionsMenu from './EventOptionsMenu.svelte';
 
   interface Props {
     event: NDKEvent;
@@ -23,9 +21,6 @@
     showThreadLine = false,
     onNavigate
   }: Props = $props();
-
-  const profile = ndk.$fetchProfile(() => event.pubkey);
-  const npub = $derived(event.author.npub);
 
   function navigateToEvent() {
     if (onNavigate) {
@@ -58,6 +53,8 @@
   );
 
   const clickable = $derived(variant === 'default' || (onNavigate !== undefined));
+
+  const headerVariant = $derived(variant === 'thread-main' ? 'full' : 'compact');
 </script>
 
 <article
@@ -72,48 +69,13 @@
   {/if}
 
   <!-- Header Row: Avatar + Name/Handle/Time -->
-  <div class="flex items-center gap-2 sm:gap-3 {variant === 'thread-main' ? 'mb-2' : 'mb-1.5'}">
-    <div class="flex items-center gap-2 flex-1 min-w-0" onclick={(e) => e.stopPropagation()}>
-      {#if variant === 'default' || variant === 'thread-reply'}
-        <User
-          pubkey={event.pubkey}
-          variant="avatar"
-          avatarSize={avatarSize}
-        />
-        <div class="flex items-center gap-2 min-w-0 flex-1">
-          <div class="flex items-center gap-2 min-w-0 flex-shrink">
-            <span class={`${nameSize} text-foreground truncate min-w-0`}>
-              {profile?.displayName || profile?.name || `${event.pubkey.slice(0, 8)}...`}
-            </span>
-            <span class="text-muted-foreground text-sm truncate min-w-0">
-              @{profile?.name || event.pubkey.slice(0, 8)}
-            </span>
-          </div>
-          <span class="text-muted-foreground text-sm flex-shrink-0">·</span>
-          {#if event.created_at}
-            <TimeAgo timestamp={event.created_at} class="text-muted-foreground text-sm flex-shrink-0" />
-          {/if}
-        </div>
-      {:else}
-        <User
-          pubkey={event.pubkey}
-          variant="avatar-name-meta"
-          avatarSize={avatarSize}
-          nameSize={nameSize}
-        >
-          {#snippet meta()}
-            {#if event.created_at}
-              <div class="flex items-center gap-2">
-                <span class="text-muted-foreground text-sm">·</span>
-                <TimeAgo timestamp={event.created_at} class="text-muted-foreground text-sm" />
-              </div>
-            {/if}
-          {/snippet}
-        </User>
-      {/if}
-    </div>
-
-    <EventOptionsMenu {event} />
+  <div class="{variant === 'thread-main' ? 'mb-2' : 'mb-1.5'}">
+    <EventCardHeader
+      {event}
+      avatarClass={avatarSize}
+      nameClass={nameSize}
+      variant={headerVariant}
+    />
   </div>
 
   <!-- Reply indicator -->
@@ -125,9 +87,6 @@
   <div class="text-foreground whitespace-pre-wrap break-words {textSize} mb-2 overflow-hidden">
     <EventContent {ndk} event={event} />
   </div>
-
-  {event.relay?.url ?? "no relay"}
-  {event.onRelays?.map(r => r.url).join(', ') ?? "no onRelays"}
 
   <!-- Actions -->
   {#if showActions}

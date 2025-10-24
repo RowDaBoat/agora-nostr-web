@@ -1,10 +1,11 @@
 <script lang="ts">
 	import type { InviteAcceptanceNotification } from '$lib/utils/useNotifications.svelte';
-	import { Avatar } from '@nostr-dev-kit/svelte';
 	import { ndk } from '$lib/ndk.svelte';
-	import { navigateToProfile } from '$lib/utils/navigation';
+	import User from '../User.svelte';
 	import FollowButton from '../FollowButton.svelte';
 	import NotificationBase from './NotificationBase.svelte';
+	import TimeAgo from '../TimeAgo.svelte';
+	import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
 	interface Props {
 		notification: InviteAcceptanceNotification;
@@ -12,32 +13,34 @@
 
 	const { notification }: Props = $props();
 
-	const profile = ndk.$fetchProfile(() => notification.inviteePubkey);
+	let profile = $state<NDKUserProfile | null>(null);
 
-	const displayName = $derived.by(() => {
-		if (profile?.name || profile?.displayName) {
-			return profile.name || profile.displayName;
-		}
-		return notification.inviteePubkey.slice(0, 8) + '...';
+	$effect(() => {
+		ndk.fetchUser(notification.inviteePubkey).then(u => {
+			u?.fetchProfile().then(p => { profile = p; });
+		});
 	});
 
 	const follows = $derived(ndk.$sessions?.follows ?? new Set());
 	const isFollowing = $derived.by(() => follows.has(notification.inviteePubkey));
-
-	function handleProfileClick() {
-		navigateToProfile(notification.inviteePubkey);
-	}
 </script>
 
 <NotificationBase testId="invite-acceptance-notification" timestamp={notification.timestamp}>
 	{#snippet avatar()}
-		<button type="button" onclick={handleProfileClick} class="flex-shrink-0">
-			<Avatar
-				{ndk}
+		<div class="flex-1 min-w-0">
+			<User
 				pubkey={notification.inviteePubkey}
-				class="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity"
-			/>
-		</button>
+				variant="avatar-name-meta"
+				avatarSize="w-10 h-10"
+				nameSize="text-base font-semibold"
+			>
+				{#snippet meta()}
+					<p class="text-sm text-muted-foreground">
+						accepted your invite 🎉
+					</p>
+				{/snippet}
+			</User>
+		</div>
 	{/snippet}
 
 	{#snippet icon()}
@@ -57,27 +60,20 @@
 	{/snippet}
 
 	{#snippet message()}
-		<button
-			type="button"
-			onclick={handleProfileClick}
-			class="font-semibold hover:underline text-foreground"
-		>
-			{displayName}
-		</button>
-		accepted your invite 🎉
+		<!-- User component handles the name and message -->
 	{/snippet}
 
 	{#snippet content()}
 		{#if profile?.about}
-			<p class="text-sm text-muted-foreground mt-1 line-clamp-2 break-words">
+			<p class="text-sm text-muted-foreground mt-1 line-clamp-2 break-words ml-[54px]">
 				{profile.about}
 			</p>
 		{/if}
 
-		{#if !isFollowing}
-			<div class="mt-2">
+		<div class="flex items-center gap-2 mt-2 ml-[54px]">
+			{#if !isFollowing}
 				<FollowButton pubkey={notification.inviteePubkey} variant="outline" />
-			</div>
-		{/if}
+			{/if}
+		</div>
 	{/snippet}
 </NotificationBase>

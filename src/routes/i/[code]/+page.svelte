@@ -123,10 +123,17 @@
 		return inviteData.validCodes.some(c => !usedCodes.has(c));
 	});
 
-	const inviterProfile = $derived.by(() => {
+	let inviterProfile = $state<import('@nostr-dev-kit/ndk').NDKUserProfile | null>(null);
+
+	$effect(() => {
 		const inviter = inviteData?.inviter;
-		if (!inviter) return null;
-		return ndk.$fetchProfile(() => inviter);
+		if (!inviter) {
+			inviterProfile = null;
+			return;
+		}
+		ndk.fetchUser(inviter).then(u => {
+			u?.fetchProfile().then(p => { inviterProfile = p; });
+		});
 	});
 
 	const isLoading = $derived(!code || !inviteData);

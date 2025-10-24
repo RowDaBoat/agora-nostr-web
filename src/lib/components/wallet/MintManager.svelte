@@ -1,12 +1,11 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
 
-  const wallet = $derived(ndk.$wallet);
-  const mints = $derived(wallet.mints.map(m => typeof m === 'string' ? m : m.url));
+  const mints = $derived(ndk.$wallet.mints.map(m => typeof m === 'string' ? m : m.url));
   const mintBalances = $derived(() => {
     const balances = new Map<string, number>();
     mints.forEach(mint => {
-      const walletInstance = wallet.wallet;
+      const walletInstance = ndk.$wallet.wallet;
       if (walletInstance?.mintBalance) {
         balances.set(mint, walletInstance.mintBalance(mint));
       }
@@ -33,9 +32,9 @@
       const currentMints = mints;
       const updatedMints = [...currentMints, newMintUrl.trim()];
 
-      await wallet?.save({
+      await ndk.$wallet.save({
         mints: updatedMints,
-        relays: wallet.relays
+        relays: ndk.$wallet.relays
       });
 
       newMintUrl = '';
@@ -52,9 +51,9 @@
         const currentMints = mints;
         const updatedMints = currentMints.filter(m => m !== mint);
 
-        await wallet.save({
+        await ndk.$wallet.save({
           mints: updatedMints,
-          relays: wallet.relays
+          relays: ndk.$wallet.relays
         });
       } catch (e) {
         error = e instanceof Error ? e.message : String(e);

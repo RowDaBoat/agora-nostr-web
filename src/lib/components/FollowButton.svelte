@@ -6,7 +6,7 @@
 
   interface Props {
     pubkey: string;
-    variant?: 'default' | 'outline';
+    variant?: 'default' | 'outline' | 'primary';
     showIcon?: boolean;
     class?: string;
   }
@@ -16,6 +16,22 @@
   const follows = $derived(ndk.$sessions?.follows ?? new Set());
   const isFollowing = $derived.by(() => follows.has(pubkey));
   const isOwnProfile = $derived(ndk.$currentUser?.pubkey === pubkey);
+
+  const buttonClasses = $derived.by(() => {
+    if (className) return className;
+
+    if (variant === 'primary') {
+      return isFollowing
+        ? 'px-4 py-2 rounded-full font-medium transition-colors bg-muted text-foreground hover:bg-red-500 hover:text-white text-sm'
+        : 'px-4 py-2 rounded-full font-medium transition-colors bg-accent text-accent-foreground hover:bg-accent/90 text-sm';
+    }
+
+    return `text-sm font-medium transition-colors inline-flex items-center gap-1 ${
+      isFollowing
+        ? 'text-muted-foreground hover:text-red-500'
+        : 'text-primary hover:underline'
+    }`;
+  });
 
   async function handleToggleFollow(event: MouseEvent) {
     if (!ndk.$currentUser) return;
@@ -48,11 +64,7 @@
     type="button"
     onclick={handleToggleFollow}
     aria-label={isFollowing ? $t('profile.unfollow') : $t('profile.follow')}
-    class={`text-sm font-medium transition-colors inline-flex items-center gap-1 ${
-      isFollowing
-        ? 'text-muted-foreground hover:text-red-500'
-        : 'text-primary hover:underline'
-    } ${className}`}
+    class={buttonClasses}
   >
     {#if showIcon}
       {#if isFollowing}

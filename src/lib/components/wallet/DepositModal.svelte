@@ -147,7 +147,7 @@
           <Drawer.Title>Deposit Funds</Drawer.Title>
         </Drawer.Header>
 
-        <div class="px-4 space-y-4">
+        <div class="px-4 space-y-4 overflow-y-auto pb-4">
           <div>
             <Label for="amount-mobile">Amount (sats)</Label>
             <Input
@@ -160,6 +160,14 @@
             />
           </div>
 
+          {#if error}
+            <div class="p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">
+              {error}
+            </div>
+          {/if}
+        </div>
+
+        <Drawer.Footer class="pt-2">
           <Button
             onclick={handleDeposit}
             disabled={isLoading || amount < 1}
@@ -167,13 +175,16 @@
           >
             {isLoading ? 'Creating Invoice...' : 'Create Invoice'}
           </Button>
-        </div>
+          <Button variant="outline" onclick={close} class="w-full">
+            Close
+          </Button>
+        </Drawer.Footer>
       {:else}
         <Drawer.Header class="text-left">
           <Drawer.Title>Pay Invoice</Drawer.Title>
         </Drawer.Header>
 
-        <div class="px-4 space-y-4">
+        <div class="px-4 space-y-4 overflow-y-auto pb-4">
           {#if invoice}
             <div class="flex justify-center">
               <QRCode value={invoice} size={256} />
@@ -184,6 +195,16 @@
             {invoice}
           </div>
 
+          <p class="text-center text-muted-foreground text-sm">Waiting for payment...</p>
+
+          {#if error}
+            <div class="p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">
+              {error}
+            </div>
+          {/if}
+        </div>
+
+        <Drawer.Footer class="pt-2">
           <Button
             onclick={() => copyToClipboard(invoice || '')}
             variant="outline"
@@ -191,24 +212,11 @@
           >
             Copy Invoice
           </Button>
-
-          <p class="text-center text-muted-foreground text-sm">Waiting for payment...</p>
-        </div>
+          <Button variant="outline" onclick={close} class="w-full">
+            Close
+          </Button>
+        </Drawer.Footer>
       {/if}
-
-      {#if error}
-        <div class="px-4 mt-4 mb-4">
-          <div class="p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">
-            {error}
-          </div>
-        </div>
-      {/if}
-
-      <Drawer.Footer class="pt-2">
-        <Button variant="ghost" onclick={close} class="w-full">
-          Close
-        </Button>
-      </Drawer.Footer>
     </Drawer.Content>
   </Drawer.Root>
 {/if}

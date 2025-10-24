@@ -42,7 +42,12 @@
 
   const isLoadingComments = $derived(!commentsSubscription.eosed);
 
-  const profile = ndk.$fetchProfile(() => event.pubkey);
+  let profile = $state<import('@nostr-dev-kit/ndk').NDKUserProfile | null>(null);
+
+  $effect(() => {
+    event.author.fetchProfile().then(p => { profile = p; });
+  });
+
   const displayName = $derived(profile?.name || profile?.displayName || 'Anonymous');
   const npub = $derived(nip19.npubEncode(event.pubkey));
 

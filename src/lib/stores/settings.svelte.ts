@@ -44,7 +44,7 @@ const DEFAULT_RELAYS: Relay[] = [
 
 const DEFAULT_SETTINGS: AppSettings = {
   relays: DEFAULT_RELAYS,
-  selectedRelay: 'agoras',
+  selectedRelay: AGORA_RELAYS[0],
   theme: 'system',
   themeColor: 'orange',
   language: 'en',

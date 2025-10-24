@@ -60,7 +60,6 @@
   const blossom = new NDKBlossom(ndk);
   const upload = createBlossomUpload(blossom);
 
-  const currentUser = ndk.$currentUser;
   const isMobile = $derived(browser && window.innerWidth < 768);
 
   const relaySelection = useModalRelaySelection(() => open);
@@ -204,7 +203,7 @@
       return;
     }
 
-    if (!currentUser) {
+    if (!ndk.$currentUser) {
       toast.error('Please log in to create a media post');
       return;
     }

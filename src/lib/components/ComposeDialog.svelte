@@ -36,7 +36,15 @@
   let showProtectedInfo = $state(false);
   let selectedMentions = $state<string[]>([]);
 
-  const replyToProfile = $derived(replyTo ? ndk.$fetchProfile(() => replyTo.pubkey) : null);
+  let replyToProfile = $state<import('@nostr-dev-kit/ndk').NDKUserProfile | null>(null);
+
+  $effect(() => {
+    if (!replyTo) {
+      replyToProfile = null;
+      return;
+    }
+    replyTo.author.fetchProfile().then(p => { replyToProfile = p; });
+  });
 
   const relaySelection = useModalRelaySelection(() => open);
   const { selectedRelayUrls, allRelays } = $derived(relaySelection);
@@ -408,7 +416,7 @@
                     role="presentation"
                     onclick={handleRelayDropdownClickOutside}
                     onkeydown={(e) => e.key === 'Escape' && handleRelayDropdownClickOutside()}
-                    class="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center transition-opacity"
+                    class="fixed inset-0 bg-black/50 z-[1002] flex items-center justify-center transition-opacity"
                   >
                     <div
                       role="dialog"

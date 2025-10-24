@@ -10,10 +10,12 @@
   import LoginModal from '$lib/components/LoginModal.svelte';
   import RelayAuthModal from '$lib/components/RelayAuthModal.svelte';
   import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
+  import SplashScreen from '$lib/components/SplashScreen.svelte';
   import Hashtag from '$lib/components/Hashtag.svelte';
   import EmbeddedNote from '$lib/components/EmbeddedNote.svelte';
   import Mention from '$lib/components/Mention.svelte';
   import { applyThemeColor } from '$lib/theme/colors';
+  import { fade } from 'svelte/transition';
   import '../app.css';
   import type { Snippet } from 'svelte';
 
@@ -87,16 +89,13 @@
 
 <Toaster />
 
+<SplashScreen visible={!ready} />
+
 {#if ready}
-  {@render children()}
-  <PWAInstallPrompt />
-  <LoginModal />
-  <RelayAuthModal />
-{:else}
-  <div class="flex items-center justify-center min-h-screen bg-background">
-    <div class="text-center">
-      <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
-      <p class="mt-4 text-muted-foreground">Initializing...</p>
-    </div>
+  <div transition:fade={{ duration: 300 }}>
+    {@render children()}
+    <PWAInstallPrompt />
+    <LoginModal />
+    <RelayAuthModal />
   </div>
 {/if}

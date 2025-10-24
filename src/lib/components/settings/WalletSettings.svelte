@@ -319,7 +319,7 @@
       <!-- Add New Mint -->
       <button
         onclick={() => isBrowsingMints = true}
-        class="w-full border-2 border-dashed border rounded-lg p-4 hover:border-primary dark:hover:border-primary transition-colors group"
+        class="w-full border rounded-lg p-3 hover:bg-muted transition-colors group"
       >
         <div class="flex items-center justify-center gap-2 text-muted-foreground group-hover:text-primary dark:group-hover:text-primary">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -422,9 +422,9 @@
       {:else}
         <button
           onclick={() => isAddingRelay = true}
-          class="w-full border-2 border-dashed border rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-600 transition-colors group"
+          class="w-full border rounded-lg p-3 hover:bg-muted transition-colors group"
         >
-          <div class="flex items-center justify-center gap-2 text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-500">
+          <div class="flex items-center justify-center gap-2 text-muted-foreground group-hover:text-primary dark:group-hover:text-primary">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
@@ -466,9 +466,8 @@
 </div>
 
 <!-- Mint Browser Modal -->
-{#if isBrowsingMints}
-  <MintBrowser
-    onSelectMints={handleBrowseMints}
-    onClose={() => isBrowsingMints = false}
-  />
-{/if}
+<MintBrowser
+  bind:open={isBrowsingMints}
+  onSelectMints={handleBrowseMints}
+  onClose={() => isBrowsingMints = false}
+/>

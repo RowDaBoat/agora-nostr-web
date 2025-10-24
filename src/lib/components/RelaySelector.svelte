@@ -3,7 +3,7 @@
   import { settings } from '$lib/stores/settings.svelte';
   import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';
   import { clickOutside } from '$lib/utils/clickOutside';
-  import { isAgoraRelay, isAgorasSelection, AGORAS_SELECTION, AGORA_RELAYS } from '$lib/utils/relayUtils';
+  import { isAgoraRelay, AGORA_RELAYS } from '$lib/utils/relayUtils';
   import { portal } from '$lib/utils/portal.svelte';
   import { ndk } from '$lib/ndk.svelte';
   import { followPacksStore } from '$lib/stores/followPacks.svelte';
@@ -27,8 +27,7 @@
   // Get follows and check if user has any
   const follows = $derived(ndk.$sessions?.follows || []);
   const hasFollows = $derived(follows.size > 0);
-  const isLoggedIn = $derived(!!ndk.$currentUser);
-  const shouldShowFollowing = $derived(isLoggedIn && hasFollows);
+  const shouldShowFollowing = $derived(!!ndk.$currentUser && hasFollows);
 
   // Fetch favorite follow pack events
   let favoritePackEvents = $state<NDKEvent[]>([]);
@@ -54,15 +53,14 @@
 
   // Fetch user's own created follow packs
   $effect(() => {
-    const currentUser = ndk.$currentUser;
-    if (!currentUser) {
+    if (!ndk.$currentUser) {
       userCreatedPackEvents = [];
       return;
     }
 
     ndk.fetchEvents({
       kinds: [39089], // NDKKind.FollowPack
-      authors: [currentUser.pubkey]
+      authors: [ndk.$currentUser.pubkey]
     }).then(events => {
       userCreatedPackEvents = Array.from(events);
     }).catch(err => {
@@ -89,7 +87,7 @@
   });
 
   const selectedRelayInfo = $derived.by(() => {
-    if (!settings.selectedRelay || isAgorasSelection(settings.selectedRelay)) return null;
+    if (!settings.selectedRelay) return null;
     if (isFollowPackSelection(settings.selectedRelay)) return null;
     return useRelayInfoCached(settings.selectedRelay);
   });
@@ -107,9 +105,6 @@
   });
 
   const displayName = $derived.by(() => {
-    if (isAgorasSelection(settings.selectedRelay)) {
-      return 'Agoras';
-    }
     if (isFollowPackSelection(settings.selectedRelay) && selectedFollowPack) {
       return selectedFollowPack.tagValue('title') || 'Untitled Pack';
     }
@@ -145,11 +140,6 @@
     isOpen = false;
   }
 
-  function selectAgoras() {
-    settings.setSelectedRelay(AGORAS_SELECTION);
-    isOpen = false;
-  }
-
   function selectFollowing() {
     settings.setSelectedRelay(null);
     isOpen = false;
@@ -180,10 +170,7 @@
     title={collapsed ? displayName : undefined}
   >
     <!-- Icon - changes based on selection -->
-    {#if isAgorasSelection(settings.selectedRelay)}
-      <!-- Agora icon -->
-      <img src="/logo-icon.svg" alt="Agoras" class="{iconOnly ? 'w-5 h-5' : 'w-6 h-6'} flex-shrink-0" />
-    {:else if isFollowPackSelection(settings.selectedRelay)}
+    {#if isFollowPackSelection(settings.selectedRelay)}
       <!-- Follow Pack icon -->
       {#if selectedFollowPack?.tagValue('image')}
         <img src={selectedFollowPack.tagValue('image')} alt="" class="{iconOnly ? 'w-5 h-5' : 'w-6 h-6'} rounded flex-shrink-0" />
@@ -219,23 +206,6 @@
   </button>
 
   {#snippet dropdownContent()}
-      <!-- Agoras option -->
-      <button
-        onclick={selectAgoras}
-        class="w-full px-4 py-3 hover:bg-muted transition-colors text-left flex items-center gap-3 {isAgorasSelection(settings.selectedRelay) ? 'bg-muted/50' : ''}"
-      >
-        <img src="/logo-icon.svg" alt="Agoras" class="w-5 h-5" />
-        <div class="flex-1">
-          <div class="font-medium text-foreground">Agoras</div>
-          <div class="text-xs text-muted-foreground">Posts from both Agora communities</div>
-        </div>
-        {#if isAgorasSelection(settings.selectedRelay)}
-          <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-        {/if}
-      </button>
-
       <!-- Following option (only show if user has follows) -->
       {#if shouldShowFollowing}
         <button

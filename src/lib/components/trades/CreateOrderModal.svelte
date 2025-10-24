@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { NDKEvent } from '@nostr-dev-kit/ndk';
+  import { NDKEvent, NDKRelaySet } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
   import { settings } from '$lib/stores/settings.svelte';
   import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';
   import { clickOutside } from '$lib/utils/clickOutside';
+  import { portal } from '$lib/utils/portal.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import * as Dialog from '$lib/components/ui/dialog';
@@ -97,6 +98,8 @@
   let selectedRelayUrls = $state<string[]>([]);
   let isProtected = $state(false);
   let isRelayDropdownOpen = $state(false);
+  let relayButtonElement = $state<HTMLElement | null>(null);
+  let dropdownPosition = $state({ top: 0, left: 0 });
 
   const allRelays = $derived(settings.relays.filter(r => r.enabled));
 
@@ -160,6 +163,21 @@
     isRelayDropdownOpen = false;
   }
 
+  function toggleRelayDropdown() {
+    if (!isRelayDropdownOpen && relayButtonElement) {
+      const rect = relayButtonElement.getBoundingClientRect();
+      const dropdownHeight = 400; // max-h-[400px]
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const shouldShowAbove = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+
+      dropdownPosition = {
+        top: shouldShowAbove ? rect.top - dropdownHeight - 8 : rect.bottom + 8,
+        left: rect.left
+      };
+    }
+    isRelayDropdownOpen = !isRelayDropdownOpen;
+  }
+
   async function handleCreate() {
     const actualPaymentMethod = paymentMethod === 'custom' ? customPaymentMethod : paymentMethod;
 
@@ -176,7 +194,7 @@
     creating = true;
 
     try {
-      const event = new NDKEvent(ndk.ndk);
+      const event = new NDKEvent(ndk);
       event.kind = 38383;
 
       const orderId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -194,7 +212,7 @@
         ['z', 'order'],
         ['network', 'mainnet'],
         ['layer', 'lightning'],
-        ['expiration', (Math.floor(Date.now() / 1000) + parseInt(expirationHours) * 3600).toString()]
+        ['expiration', (Math.floor(Date.now() / 1000) + Number.parseInt(expirationHours) * 3600).toString()]
       ];
 
       if (geohash) {
@@ -210,9 +228,7 @@
       event.content = '';
 
       // Publish to selected relays
-      const relaySet = selectedRelayUrls.length > 0
-        ? ndk.ndk.pool.getRelayset(selectedRelayUrls)
-        : undefined;
+      const relaySet = NDKRelaySet.fromRelayUrls(selectedRelayUrls, ndk);
 
       await event.publish(relaySet);
 
@@ -416,10 +432,11 @@
     <Dialog.Footer class="mt-6 flex items-center justify-between gap-4">
       <div class="relative">
         <Button
+          bind:ref={relayButtonElement}
           type="button"
           variant="outline"
           size="icon"
-          onclick={() => isRelayDropdownOpen = !isRelayDropdownOpen}
+          onclick={toggleRelayDropdown}
           disabled={creating}
           class="h-10 w-10"
           title="Select relays"
@@ -456,8 +473,10 @@
 
         {#if isRelayDropdownOpen}
           <div
+            use:portal
             use:clickOutside={handleRelayDropdownClickOutside}
-            class="absolute bottom-full left-0 mb-2 bg-popover border border-border rounded-lg shadow-xl z-50 w-80 max-h-[400px] overflow-y-auto"
+            style="position: fixed; top: {dropdownPosition.top}px; left: {dropdownPosition.left}px;"
+            class="bg-popover border border-border rounded-lg shadow-xl z-50 w-80 max-h-[400px] overflow-y-auto"
           >
             <RelayPublishDropdownContent
               {selectedRelayUrls}
@@ -492,7 +511,7 @@
       <Drawer.Title>Create P2P Order</Drawer.Title>
     </Drawer.Header>
 
-    <div class="space-y-6 px-4">
+    <div class="space-y-6 px-4 overflow-y-auto pb-4">
       <!-- Order Type -->
       <div>
         <Label class="block mb-2">Order Type</Label>
@@ -668,10 +687,11 @@
       <div class="flex items-center justify-between gap-4 w-full">
         <div class="relative">
           <Button
+            bind:ref={relayButtonElement}
             type="button"
             variant="outline"
             size="icon"
-            onclick={() => isRelayDropdownOpen = !isRelayDropdownOpen}
+            onclick={toggleRelayDropdown}
             disabled={creating}
             class="h-10 w-10"
             title="Select relays"
@@ -708,8 +728,10 @@
 
           {#if isRelayDropdownOpen}
             <div
+              use:portal
               use:clickOutside={handleRelayDropdownClickOutside}
-              class="absolute bottom-full left-0 mb-2 bg-popover border border-border rounded-lg shadow-xl z-50 w-80 max-h-[400px] overflow-y-auto"
+              style="position: fixed; top: {dropdownPosition.top}px; left: {dropdownPosition.left}px;"
+              class="bg-popover border border-border rounded-lg shadow-xl z-50 w-80 max-h-[400px] overflow-y-auto"
             >
               <RelayPublishDropdownContent
                 {selectedRelayUrls}

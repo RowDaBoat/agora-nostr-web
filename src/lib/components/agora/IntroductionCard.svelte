@@ -2,18 +2,31 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { formatTimeAgo } from '$lib/utils/formatTime';
 	import { Avatar } from '@nostr-dev-kit/svelte';
-	import type { NDKEvent } from '@nostr-dev-kit/ndk';
+	import type { NDKEvent, NDKUserProfile } from '@nostr-dev-kit/ndk';
 
 	interface Props {
 		event: NDKEvent;
-		invitedBy: string | null;
+		invitedBy: string | undefined;
 	}
 
 	const { event, invitedBy }: Props = $props();
 
-	const profile = $derived(ndk.$fetchProfile(() => event.pubkey));
-	const inviterProfile = $derived(invitedBy ? ndk.$fetchProfile(() => invitedBy) : null);
-	const replyCount = $derived(event.tags.filter(t => t[0] === 'e').length || 0);
+	let profile = $state<NDKUserProfile | null>(null);
+	let inviterProfile = $state<NDKUserProfile | null>(null);
+
+	$effect(() => {
+		event.author.fetchProfile().then(p => { profile = p; });
+	});
+
+	$effect(() => {
+		if (!invitedBy) {
+			inviterProfile = null;
+			return;
+		}
+		ndk.fetchUser(invitedBy).then(u => {
+			u?.fetchProfile().then(p => { inviterProfile = p; });
+		});
+	});
 </script>
 
 <div class="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors">
@@ -40,18 +53,12 @@
 
 	<!-- Footer -->
 	<div class="flex items-center justify-between text-sm">
-		{#if invitedBy && inviterProfile && inviterProfile.ready}
+		{#if inviterProfile}
 			<div class="text-muted-foreground">
 				Invited by <span class="font-medium text-primary">@{inviterProfile.name || 'anonymous'}</span>
 			</div>
 		{:else}
 			<div></div>
 		{/if}
-
-		<div class="flex items-center gap-4 text-muted-foreground">
-			<span class="flex items-center gap-1">
-				💬 {replyCount}
-			</span>
-		</div>
 	</div>
 </div>

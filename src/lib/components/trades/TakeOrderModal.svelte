@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { NDKEvent } from '@nostr-dev-kit/ndk';
+  import { NDKEvent, type NDKUserProfile } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import * as Dialog from '$lib/components/ui/dialog';
@@ -30,7 +30,12 @@
 
   let { open = $bindable(false), order, onClose }: Props = $props();
 
-  const profile = ndk.$fetchProfile(() => order.pubkey);
+  let profile = $state<NDKUserProfile | null>(null);
+
+  $effect(() => {
+    order.event.author.fetchProfile().then(p => { profile = p; });
+  });
+
   let step = $state<'confirm' | 'processing' | 'complete'>('confirm');
   let accepted = $state(false);
 
@@ -39,7 +44,7 @@
 
     try {
       // Create a take order event
-      const event = new NDKEvent(ndk.ndk);
+      const event = new NDKEvent(ndk);
       event.kind = 38383;
 
       // Create response event with reference to original order
@@ -62,7 +67,7 @@
       await event.publish();
 
       // Update original order status (in real implementation, this would be handled by the maker)
-      const statusUpdate = new NDKEvent(ndk.ndk);
+      const statusUpdate = new NDKEvent(ndk);
       statusUpdate.kind = 38383;
       statusUpdate.tags = [
         ...order.event.tags.filter(t => t[0] !== 's'),
@@ -205,7 +210,7 @@
         <Drawer.Title>Confirm Trade</Drawer.Title>
       </Drawer.Header>
 
-      <div class="space-y-4 px-4">
+      <div class="space-y-4 px-4 overflow-y-auto pb-4">
         <!-- Trade Summary -->
         <div class="bg-neutral-50 dark:bg-background rounded-lg p-4 space-y-3">
           <div class="flex items-center justify-between">

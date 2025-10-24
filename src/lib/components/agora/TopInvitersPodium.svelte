@@ -2,6 +2,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { Avatar } from '@nostr-dev-kit/svelte';
 	import { getProfileUrl } from '$lib/utils/navigation';
+	import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
 	interface InviterStats {
 		pubkey: string;
@@ -28,6 +29,20 @@
 	const top3 = $derived(stats.slice(0, 3));
 	const remaining = $derived(stats.slice(3, 10));
 	const maxSuccess = $derived(Math.max(...stats.map(s => s.successfulInvites), 1));
+
+	let profiles = $state<Map<string, NDKUserProfile | null>>(new Map());
+
+	$effect(() => {
+		profiles.clear();
+		stats.forEach(stat => {
+			ndk.fetchUser(stat.pubkey).then(u => {
+				u?.fetchProfile().then(p => {
+					profiles.set(stat.pubkey, p || null);
+					profiles = new Map(profiles);
+				});
+			});
+		});
+	});
 </script>
 
 <div>
@@ -39,7 +54,7 @@
 		<!-- Top 3 Podium - Horizontal Portrait Cards -->
 		<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
 			{#each top3 as stat (stat.pubkey)}
-				{@const profile = ndk.$fetchProfile(() => stat.pubkey)}
+				{@const profile = profiles.get(stat.pubkey)}
 				<a
 					href={getProfileUrl(stat.pubkey)}
 					class="relative bg-gradient-to-b from-primary/5 to-transparent border border-border rounded-xl p-6 hover:border-primary/50 transition-all hover:shadow-lg group"
@@ -111,7 +126,7 @@
 		{#if expanded && remaining.length > 0}
 			<div class="mt-4 space-y-2 border-t border-border pt-4">
 				{#each remaining as stat (stat.pubkey)}
-					{@const profile = ndk.$fetchProfile(() => stat.pubkey)}
+					{@const profile = profiles.get(stat.pubkey)}
 					<a
 						href={getProfileUrl(stat.pubkey)}
 						class="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"

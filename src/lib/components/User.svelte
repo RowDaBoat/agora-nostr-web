@@ -3,6 +3,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { Avatar } from '@nostr-dev-kit/svelte';
 	import UserHoverCard from './UserHoverCard.svelte';
+    import type { NDKUserProfile, NDKUser } from '@nostr-dev-kit/ndk';
 
 	interface Props {
 		pubkey: string;
@@ -30,9 +31,12 @@
 		class: className = ''
 	}: Props = $props();
 
-	const profile = ndk.$fetchProfile(() => pubkey);
-	const user = $derived(ndk.getUser({ pubkey }));
-	const npub = $derived(user.npub);
+	let user = $state<NDKUser | undefined>(undefined);
+	let profile = $state<NDKUserProfile | null>(null);
+	$effect(() => { ndk.fetchUser(pubkey).then(u => {
+		user = u;
+		u?.fetchProfile().then(p => { profile = p; });
+	}) });
 
 	let showUserHoverCard = $state(false);
 	let hoverCardPosition = $state({ x: 0, y: 0 });
@@ -43,7 +47,7 @@
 		if (onclick) {
 			onclick(e);
 		} else {
-			window.location.href = `/p/${npub}`;
+			window.location.href = `/p/${user?.npub}`;
 		}
 	}
 
@@ -94,8 +98,8 @@
 		showUserHoverCard = false;
 	}
 
-	const displayName = $derived(profile?.displayName || profile?.name || `${pubkey.slice(0, 8)}...`);
-	const handle = $derived(profile?.name || pubkey.slice(0, 8));
+	const displayName = $derived(profile?.displayName || profile?.name || `${pubkey?.slice(0, 8)}...`);
+	const handle = $derived(profile?.name || pubkey?.slice(0, 8));
 </script>
 
 {#if variant === 'avatar'}

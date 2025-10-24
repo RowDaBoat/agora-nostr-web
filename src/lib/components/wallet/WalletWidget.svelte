@@ -23,18 +23,14 @@
 
   async function handlePayInvoice(invoice: string) {
     try {
-      // Use NDK wallet to pay the invoice
-      await ndk.$wallet.pay({
-        invoice,
-        unit: 'sat',
+      await ndk.$wallet.lnPay({
+        pr: invoice,
       });
 
-      // Success - go back to wallet view
       currentTab = 'wallet';
       scannedInvoice = '';
     } catch (e) {
       console.error('Payment failed:', e);
-      // Error will be shown by the wallet
       throw e;
     }
   }

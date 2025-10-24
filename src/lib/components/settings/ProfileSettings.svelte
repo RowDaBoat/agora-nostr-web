@@ -5,14 +5,43 @@
   import { createBlossomUpload } from '@nostr-dev-kit/svelte';
     import { AGORA_RELAYS } from '$lib/utils/relayUtils';
 
+  interface Props {
+    hideSubmitButton?: boolean;
+    onSubmit?: (handler: () => Promise<void>) => void;
+    onFormStateChange?: (state: { isSubmitting: boolean; isUploading: boolean }) => void;
+  }
+
+  let { hideSubmitButton = false, onSubmit, onFormStateChange }: Props = $props();
+
   let user = $derived(ndk.$currentUser);
-  let profile = ndk.$fetchProfile(() => user?.pubkey);
+  let profile = $state<import('@nostr-dev-kit/ndk').NDKUserProfile | null>(null);
+
+  $effect(() => {
+    const pubkey = user?.pubkey;
+    if (!pubkey) {
+      profile = null;
+      return;
+    }
+    ndk.fetchUser(pubkey).then(u => {
+      u?.fetchProfile().then(p => { profile = p; });
+    });
+  });
 
   // Fetch the profile event reactively to get hashtags
-  let profileEvent = ndk.$fetchEvent(() => user ? {
-    kinds: [0],
-    authors: [user.pubkey]
-  } : undefined);
+  let profileEvent = $state<NDKEvent | null>(null);
+
+  $effect(() => {
+    if (!user?.pubkey) {
+      profileEvent = null;
+      return;
+    }
+    ndk.fetchEvent({
+      kinds: [0],
+      authors: [user.pubkey]
+    }).then(event => {
+      profileEvent = event || null;
+    });
+  });
 
   let isSubmitting = $state(false);
   let isSaved = $state(false);
@@ -49,7 +78,8 @@
 
   // Update form when profile loads
   $effect(() => {
-    if (profile.ready) {
+    // Only update if we have profile data (check for any profile property)
+    if (profile.name || profile.displayName || profile.about || profile.image || profile.banner) {
       // Extract hashtags from profile event
       const hashtags = profileEvent?.tags
         ?.filter(tag => tag[0] === 't')
@@ -67,6 +97,21 @@
         website: profile.website || '',
         hashtags
       };
+    }
+  });
+
+  // Expose submit handler to parent
+  $effect(() => {
+    if (onSubmit) {
+      onSubmit(handleSubmit);
+    }
+  });
+
+  // Notify parent of form state changes
+  $effect(() => {
+    if (onFormStateChange) {
+      const isUploading = pictureUpload?.status === 'uploading' || bannerUpload?.status === 'uploading';
+      onFormStateChange({ isSubmitting, isUploading });
     }
   });
 
@@ -402,19 +447,21 @@
   </div>
 
   <!-- Save Button -->
-  <div class="flex justify-end pt-4">
-    <button
-      type="button"
-      onclick={handleSubmit}
-      disabled={isSubmitting || pictureUpload?.status === 'uploading' || bannerUpload?.status === 'uploading'}
-      class="px-6 py-3 bg-primary hover:bg-accent-dark text-foreground font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-    >
-      {#if isSubmitting}
-        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-        <span>Saving...</span>
-      {:else}
-        <span>Save Profile</span>
-      {/if}
-    </button>
-  </div>
+  {#if !hideSubmitButton}
+    <div class="flex justify-end pt-4">
+      <button
+        type="button"
+        onclick={handleSubmit}
+        disabled={isSubmitting || pictureUpload?.status === 'uploading' || bannerUpload?.status === 'uploading'}
+        class="px-6 py-3 bg-primary hover:bg-accent-dark text-foreground font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      >
+        {#if isSubmitting}
+          <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span>Saving...</span>
+        {:else}
+          <span>Save Profile</span>
+        {/if}
+      </button>
+    </div>
+  {/if}
 </div>

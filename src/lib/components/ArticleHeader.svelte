@@ -8,9 +8,6 @@
   }
 
   let { article }: Props = $props();
-
-  const authorProfile = ndk.$fetchProfile(() => article.pubkey);
-  const currentUser = ndk.$currentUser;
   const title = $derived(article.title || 'Untitled');
   const summary = $derived(article.summary);
   const publishedAt = $derived(article.published_at);

@@ -139,15 +139,13 @@
         <Drawer.Title>Send Payment</Drawer.Title>
       </Drawer.Header>
 
-      {#if success}
-        <div class="px-4 mb-4">
+      <div class="px-4 space-y-4 overflow-y-auto pb-4">
+        {#if success}
           <div class="p-4 bg-green-900/20 border border-green-800 rounded-lg text-green-400 text-center">
             ✓ Payment sent successfully!
           </div>
-        </div>
-      {/if}
+        {/if}
 
-      <div class="px-4 space-y-4">
         <div>
           <Label for="amount-mobile">Amount (sats)</Label>
           <Input
@@ -182,14 +180,6 @@
           />
         </div>
 
-        <Button
-          onclick={handleSend}
-          disabled={isSending || amount < 1 || success}
-          class="w-full"
-        >
-          {isSending ? 'Sending...' : success ? 'Sent!' : `Send ${amount} sats`}
-        </Button>
-
         {#if error}
           <div class="p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">
             {error}
@@ -198,7 +188,14 @@
       </div>
 
       <Drawer.Footer class="pt-2">
-        <Button variant="ghost" onclick={close} class="w-full">
+        <Button
+          onclick={handleSend}
+          disabled={isSending || amount < 1 || success}
+          class="w-full"
+        >
+          {isSending ? 'Sending...' : success ? 'Sent!' : `Send ${amount} sats`}
+        </Button>
+        <Button variant="outline" onclick={close} class="w-full">
           Close
         </Button>
       </Drawer.Footer>

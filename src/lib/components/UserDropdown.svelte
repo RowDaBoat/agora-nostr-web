@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { ndk } from '$lib/ndk.svelte';
-  import { NDKKind, NDKEvent } from '@nostr-dev-kit/ndk';
+  import { NDKKind, NDKEvent, NDKUser } from '@nostr-dev-kit/ndk';
   import { toast } from '$lib/stores/toast.svelte';
   import { t } from 'svelte-i18n';
   import { createLazyFeed } from '$lib/utils/lazyFeed.svelte';
@@ -15,21 +16,21 @@
 
   let { pubkey, isOpen, onClose, onOpenCreatePack }: Props = $props();
 
-  const currentUser = ndk.$currentUser;
+  const reportTarget = $derived(new NDKUser({ pubkey }));
 
   // Fetch current user's created follow packs
   const userPacksFeed = createLazyFeed(
     ndk,
-    () => currentUser?.pubkey ? {
-      filters: [{ kinds: [39089, 39092], authors: [currentUser.pubkey], limit: 100 }]
+    () => ndk.$currentUser?.pubkey ? {
+      filters: [{ kinds: [39089, 39092], authors: [ndk.$currentUser.pubkey], limit: 100 }]
     } : undefined,
     { initialLimit: 100, pageSize: 100 }
   );
 
   // Fetch current user's mute list
   const muteListSubscription = ndk.$subscribe(
-    () => currentUser?.pubkey ? ({
-      filters: [{ kinds: [10000], authors: [currentUser.pubkey], limit: 1 }],
+    () => ndk.$currentUser?.pubkey ? ({
+      filters: [{ kinds: [10000], authors: [ndk.$currentUser.pubkey], limit: 1 }],
       bufferMs: 100,
     }) : undefined
   );
@@ -91,7 +92,7 @@
   }
 
   async function toggleMute() {
-    if (!currentUser?.pubkey) return;
+    if (!ndk.$currentUser?.pubkey) return;
 
     try {
       let muteList = muteListSubscription.events[0];
@@ -143,11 +144,30 @@
     isReportModalOpen = true;
     onClose();
   }
+
+  function handleSendDM() {
+    const user = new NDKUser({ pubkey });
+    goto(`/messages/${user.npub}`);
+    onClose();
+  }
 </script>
 
 {#if isOpen}
   <div class="absolute right-0 mt-2 w-64 bg-popover border border-border rounded-lg shadow-xl overflow-hidden z-50">
     <div class="py-1">
+      <!-- Send DM button -->
+      <button
+        onclick={handleSendDM}
+        class="w-full px-4 py-3 text-left text-sm text-muted-foreground hover:bg-muted transition-colors flex items-center gap-3"
+      >
+        <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        Send Message
+      </button>
+
+      <div class="border-t border-border my-1"></div>
+
       <!-- Mute/Unmute button -->
       <button
         onclick={toggleMute}
@@ -214,7 +234,7 @@
 {/if}
 
 <ReportModal
-  {pubkey}
+  target={reportTarget}
   open={isReportModalOpen}
   onClose={() => isReportModalOpen = false}
 />
