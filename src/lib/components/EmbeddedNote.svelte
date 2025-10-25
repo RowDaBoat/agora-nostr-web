@@ -3,6 +3,7 @@
   import { NDKKind, NDKArticle } from '@nostr-dev-kit/ndk';
   import NoteCard from './NoteCard.svelte';
   import ArticlePreviewCard from './ArticlePreviewCard.svelte';
+  import LoadingSpinner from './LoadingSpinner.svelte';
 
   interface Props {
     ndk: NDKSvelte;
@@ -55,7 +56,7 @@
 
 {#if loading}
   <div class="flex items-center gap-2 p-4 border border-border rounded-lg bg-card/50 my-2">
-    <div class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-muted-foreground border-r-transparent"></div>
+    <LoadingSpinner size="sm" />
     <span class="text-sm text-muted-foreground">Loading event...</span>
   </div>
 {:else if error}

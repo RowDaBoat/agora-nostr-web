@@ -1,4 +1,6 @@
 <script lang="ts">
+  import LoadingSpinner from './LoadingSpinner.svelte';
+
   interface Props {
     onIntersect: () => void;
     hasMore: boolean;
@@ -36,7 +38,7 @@
 {#if hasMore}
   <div bind:this={element} class="p-4 text-center">
     {#if isLoading}
-      <div class="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <LoadingSpinner size="md" />
     {:else}
       <button
         onclick={onIntersect}
