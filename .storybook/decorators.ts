@@ -15,8 +15,8 @@ init({
   initialLocale: 'en',
 });
 
-// Mock NDK for components that use it
-export const withNDKMock: Decorator = (story) => {
-  // This is a basic mock - you may need to expand this based on your needs
+// NDK decorator - uses real NDK instance from your app
+// The NDK instance will be initialized when components import it
+export const withNDK: Decorator = (story) => {
   return story();
 };

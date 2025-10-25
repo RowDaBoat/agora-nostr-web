@@ -1,6 +1,6 @@
 import type { Preview } from '@storybook/sveltekit'
 import '../src/app.css'
-import { withNDKMock } from './decorators';
+import { withNDK } from './decorators';
 
 const preview: Preview = {
   parameters: {
@@ -24,7 +24,7 @@ const preview: Preview = {
       ],
     },
   },
-  decorators: [withNDKMock],
+  decorators: [withNDK],
 };
 
 export default preview;

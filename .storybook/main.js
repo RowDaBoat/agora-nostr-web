@@ -1,10 +1,9 @@
 const config = {
   stories: [
     "../src/**/*.mdx",
-    "../src/**/*.stories.@(js|ts|svelte)"
+    "../src/**/*.stories.@(js|ts)"
   ],
   addons: [
-    "@storybook/addon-svelte-csf",
     "@chromatic-com/storybook",
     "@storybook/addon-docs",
     "@storybook/addon-a11y",
@@ -13,7 +12,8 @@ const config = {
   framework: {
     name: "@storybook/sveltekit",
     options: {}
-  }
+  },
+  staticDirs: ['../static']
 };
 
 export default config;

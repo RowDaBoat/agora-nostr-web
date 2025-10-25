@@ -15,6 +15,13 @@ const config = {
 			'$lib': './src/lib',
 			'$i18n': './src/i18n'
 		}
+	},
+	onwarn: (warning, handler) => {
+		// Suppress legacy export warnings from Storybook addon packages
+		if (warning.code === 'legacy_export_invalid' && warning.filename?.includes('node_modules/@storybook')) {
+			return;
+		}
+		handler(warning);
 	}
 };
 
