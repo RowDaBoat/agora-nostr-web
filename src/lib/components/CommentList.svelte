@@ -3,6 +3,7 @@
   import { NDKKind } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
   import NoteCard from './NoteCard.svelte';
+  import EmptyState from './EmptyState.svelte';
 
   interface Props {
     article: NDKArticle;
@@ -25,9 +26,7 @@
 </script>
 
 {#if comments.length === 0}
-  <div class="py-12 text-center text-muted-foreground">
-    No comments yet. Be the first to share your thoughts!
-  </div>
+  <EmptyState icon="message" title="No comments yet" description="Be the first to share your thoughts!" size="lg" />
 {:else}
   <div>
     {#each comments as comment (comment.id)}

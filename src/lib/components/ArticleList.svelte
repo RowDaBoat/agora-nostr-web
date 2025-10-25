@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { NDKArticle } from '@nostr-dev-kit/ndk';
   import ArticlePreviewCard from './ArticlePreviewCard.svelte';
+  import EmptyState from './EmptyState.svelte';
 
   interface Props {
     articles: NDKArticle[];
@@ -11,9 +12,7 @@
 </script>
 
 {#if articles.length === 0}
-  <div class="text-center py-8 text-muted-foreground">
-    {emptyMessage}
-  </div>
+  <EmptyState icon="article" title={emptyMessage} />
 {:else}
   <div class="divide-y divide-neutral-800/50">
     {#each articles as article (article.id)}

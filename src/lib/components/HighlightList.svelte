@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
   import HighlightCard from './HighlightCard.svelte';
+  import EmptyState from './EmptyState.svelte';
 
   interface Props {
     highlights: NDKEvent[];
@@ -11,9 +12,7 @@
 </script>
 
 {#if highlights.length === 0}
-  <div class="text-center py-8 text-muted-foreground">
-    {emptyMessage}
-  </div>
+  <EmptyState icon="highlight" title={emptyMessage} />
 {:else}
   <div class="divide-y divide-neutral-800/50">
     {#each highlights as highlight (highlight.id)}

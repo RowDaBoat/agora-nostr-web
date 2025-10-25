@@ -2,6 +2,7 @@
   import type { NDKEvent, NDKImetaTag } from '@nostr-dev-kit/ndk';
   import { mapImetaTag } from '@nostr-dev-kit/ndk';
   import MediaViewerModal from './MediaViewerModal.svelte';
+  import EmptyState from './EmptyState.svelte';
 
   interface Props {
     events: NDKEvent[];
@@ -71,9 +72,7 @@
 </script>
 
 {#if mediaItems.length === 0}
-  <div class="text-center py-8 text-muted-foreground">
-    No media uploaded yet
-  </div>
+  <EmptyState icon="image" title="No media uploaded yet" />
 {:else}
   <div class="grid grid-cols-3 gap-1">
     {#each mediaItems as { event, imeta }, index (`${event.id}-${index}`)}

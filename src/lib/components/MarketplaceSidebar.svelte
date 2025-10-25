@@ -4,6 +4,7 @@
   import { NDKKind, NDKSubscriptionCacheUsage } from '@nostr-dev-kit/ndk';
   import { goto } from '$app/navigation';
   import { getRelaysToUse } from '$lib/utils/relayUtils';
+  import EmptyState from './EmptyState.svelte';
 
   // Get relays to use based on selected relay
   const relaysToUse = $derived(
@@ -67,9 +68,7 @@
 
   <div class="space-y-3">
     {#if recentListings.length === 0}
-      <div class="text-center py-6 text-sm text-muted-foreground">
-        No marketplace items yet
-      </div>
+      <EmptyState icon="marketplace" title="No marketplace items yet" size="sm" />
     {:else}
       {#each recentListings as listing (listing.id)}
         {@const price = getListingPrice(listing)}
