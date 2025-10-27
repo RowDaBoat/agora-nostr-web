@@ -4,7 +4,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { decryptInvitePayload } from '$lib/utils/inviteEncryption';
 	import { AGORA_RELAYS } from '$lib/utils/relayUtils';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import Avatar from '$lib/components/ndk/avatar.svelte';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind, NDKSubscriptionCacheUsage } from '@nostr-dev-kit/ndk';
 	import { onboardingStore } from '$lib/stores/onboarding.svelte';

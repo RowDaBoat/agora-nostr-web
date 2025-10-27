@@ -1,7 +1,7 @@
 <script lang="ts">
   import { type NDKEvent, NDKArticle } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
   import EventCardHeader from './EventCardHeader.svelte';
   import EventActions from './EventActions.svelte';
   import { getArticleUrl } from '$lib/utils/articleUrl';

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
-  import { EventContent } from '@nostr-dev-kit/svelte';
+  import EventContent from '$lib/components/ndk/event-content.svelte';
   import ReplyIndicator from './ReplyIndicator.svelte';
   import EventCardHeader from './EventCardHeader.svelte';
   import EventActions from './EventActions.svelte';

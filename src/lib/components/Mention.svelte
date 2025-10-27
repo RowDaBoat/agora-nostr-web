@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { NDKSvelte, NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
 
   interface Props {
     ndk: NDKSvelte;

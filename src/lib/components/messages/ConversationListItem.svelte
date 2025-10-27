@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import type { NDKConversation } from '@nostr-dev-kit/messages';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
   import TimeAgo from '../TimeAgo.svelte';
   import { ndk } from '$lib/ndk.svelte';
   import type { NDKUserProfile } from '@nostr-dev-kit/ndk';

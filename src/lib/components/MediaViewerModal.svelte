@@ -5,7 +5,7 @@
   import { portal } from '$lib/utils/portal.svelte';
   import CommentCard from './CommentCard.svelte';
   import CommentForm from './CommentForm.svelte';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
   import { nip19 } from 'nostr-tools';
   import TimeAgo from './TimeAgo.svelte';
 

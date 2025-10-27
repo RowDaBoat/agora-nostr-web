@@ -4,7 +4,7 @@
   import { settings } from '$lib/stores/settings.svelte';
   import { sidebarStore } from '$lib/stores/sidebar.svelte';
   import { NDKKind, type NDKEvent, NDKArticle } from '@nostr-dev-kit/ndk';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import ArticlePreviewCard from '$lib/components/ArticlePreviewCard.svelte';
   import MediaGrid from '$lib/components/MediaGrid.svelte';

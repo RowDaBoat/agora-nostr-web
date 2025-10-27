@@ -1,7 +1,7 @@
 <script lang="ts">
   import { marked } from 'marked';
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
   import { ndk } from '$lib/ndk.svelte';
   import { SvelteMap } from 'svelte/reactivity';
 

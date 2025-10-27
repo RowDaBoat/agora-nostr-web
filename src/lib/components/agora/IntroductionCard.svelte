@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import { formatTimeAgo } from '$lib/utils/formatTime';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import Avatar from '$lib/components/ndk/avatar.svelte';
 	import type { NDKEvent, NDKUserProfile } from '@nostr-dev-kit/ndk';
 
 	interface Props {

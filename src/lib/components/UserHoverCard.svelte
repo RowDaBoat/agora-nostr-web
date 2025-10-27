@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import { Avatar } from '@nostr-dev-kit/svelte';
-  import { EventContent } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import EventContent from '$lib/components/ndk/event-content.svelte';
   import FollowButton from './FollowButton.svelte';
   import { generateBannerGradient } from '$lib/utils/bannerGradient';
   import type { NDKUserProfile } from '@nostr-dev-kit/ndk';

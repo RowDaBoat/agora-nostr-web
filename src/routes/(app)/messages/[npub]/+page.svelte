@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { ndk } from '$lib/ndk.svelte';
   import { messagesStore } from '$lib/stores/messages.svelte';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
   import ConversationThread from '$lib/components/messages/ConversationThread.svelte';
   import MessageComposer from '$lib/components/messages/MessageComposer.svelte';
   import type { NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';

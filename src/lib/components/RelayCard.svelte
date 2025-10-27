@@ -3,7 +3,7 @@
   import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';
   import { isAgoraRelay } from '$lib/utils/relayUtils';
   import RelayIcon from './RelayIcon.svelte';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
 
   interface Props {
     relayUrl: string;

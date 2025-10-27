@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import { Avatar } from '@nostr-dev-kit/svelte';
-  import { EventContent } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import EventContent from '$lib/components/ndk/event-content.svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
   import UserDropdown from '$lib/components/UserDropdown.svelte';
   import InvitedByBadge from '$lib/components/InvitedByBadge.svelte';

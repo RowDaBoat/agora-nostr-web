@@ -2,8 +2,6 @@
   import { ndkReady } from '$lib/ndk.svelte';
   import { settings } from '$lib/stores/settings.svelte';
   import { browser } from '$app/environment';
-  import { EventContentHandlersProxy, setEventContentComponents } from '@nostr-dev-kit/svelte';
-  import { goto } from '$app/navigation';
   import { locale } from 'svelte-i18n';
   import { initializeI18n } from '$i18n/config';
   import Toaster from '$lib/components/Toaster.svelte';
@@ -11,9 +9,6 @@
   import RelayAuthModal from '$lib/components/RelayAuthModal.svelte';
   import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
   import SplashScreen from '$lib/components/SplashScreen.svelte';
-  import Hashtag from '$lib/components/Hashtag.svelte';
-  import EmbeddedNote from '$lib/components/EmbeddedNote.svelte';
-  import Mention from '$lib/components/Mention.svelte';
   import { applyThemeColor } from '$lib/theme/colors';
   import { fade } from 'svelte/transition';
   import '../app.css';
@@ -34,32 +29,6 @@
     // Sync locale changes with settings
     $effect(() => {
       locale.set(settings.language);
-    });
-  }
-
-  // Set up global EventContent handlers (only in browser)
-  if (browser) {
-    EventContentHandlersProxy.onMentionClick = (bech32) => {
-      goto(`/p/${bech32}`);
-    };
-
-    EventContentHandlersProxy.onEventClick = (bech32, event) => {
-      goto(`/e/${bech32}`);
-    };
-
-    EventContentHandlersProxy.onHashtagClick = (tag) => {
-      goto(`/t/${tag}`);
-    };
-
-    EventContentHandlersProxy.onLinkClick = (url) => {
-      window.open(url, '_blank');
-    };
-
-    // Set up custom components
-    setEventContentComponents({
-      mention: Mention,
-      hashtag: Hashtag,
-      embeddedEvent: EmbeddedNote
     });
   }
 

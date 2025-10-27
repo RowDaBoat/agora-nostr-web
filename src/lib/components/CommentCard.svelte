@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { NDKEvent, NDKUserProfile } from '@nostr-dev-kit/ndk';
-  import { Avatar, EventContent } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
+import EventContent from '$lib/components/ndk/event-content.svelte';
   import { ndk } from '$lib/ndk.svelte';
   import { navigateToProfile } from '$lib/utils/navigation';
   import TimeAgo from './TimeAgo.svelte';

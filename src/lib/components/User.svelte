@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { ndk } from '$lib/ndk.svelte';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import Avatar from '$lib/components/ndk/avatar.svelte';
 	import UserHoverCard from './UserHoverCard.svelte';
     import type { NDKUserProfile, NDKUser } from '@nostr-dev-kit/ndk';
 

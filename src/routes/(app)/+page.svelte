@@ -13,7 +13,7 @@
   import TikTokVideoFeed from '$lib/components/TikTokVideoFeed.svelte';
   import LoadMoreTrigger from '$lib/components/LoadMoreTrigger.svelte';
   import { createLazyFeed } from '$lib/utils/lazyFeed.svelte';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
   import FeedHeader from '$lib/components/headers/FeedHeader.svelte';
   import { getRelaysToUse } from '$lib/utils/relayUtils';
   import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';

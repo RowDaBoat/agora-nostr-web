@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import { Avatar } from '@nostr-dev-kit/svelte';
+	import Avatar from '$lib/components/ndk/avatar.svelte';
 	import FollowButton from './FollowButton.svelte';
 	import { formatTimeAgo } from '$lib/utils/formatTime';
 	import type { NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';

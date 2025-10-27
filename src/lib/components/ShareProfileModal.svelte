@@ -1,6 +1,6 @@
 <script lang="ts">
   import { MediaQuery } from 'svelte/reactivity';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
   import { ndk } from '$lib/ndk.svelte';
   import QRCode from './wallet/QRCode.svelte';
   import * as Dialog from '$lib/components/ui/dialog';

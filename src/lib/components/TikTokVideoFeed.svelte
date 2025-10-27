@@ -2,7 +2,7 @@
   import type { NDKEvent, NDKImetaTag } from '@nostr-dev-kit/ndk';
   import { mapImetaTag } from '@nostr-dev-kit/ndk';
   import { onMount } from 'svelte';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
   import { ndk } from '$lib/ndk.svelte';
   import EventActions from './EventActions.svelte';
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { NDKMessage } from '@nostr-dev-kit/messages';
   import { NDKEvent } from '@nostr-dev-kit/ndk';
-  import { EventContent } from '@nostr-dev-kit/svelte';
+  import EventContent from '$lib/components/ndk/event-content.svelte';
   import TimeAgo from '../TimeAgo.svelte';
   import { onMount } from 'svelte';
   import { ndk } from '$lib/ndk.svelte';

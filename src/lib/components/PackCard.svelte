@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
   import { goto } from '$app/navigation';
-  import { Avatar } from '@nostr-dev-kit/svelte';
+  import Avatar from '$lib/components/ndk/avatar.svelte';
   import { getPackUrl } from '$lib/utils/packUrl';
   import { getProfileUrl } from '$lib/utils/navigation';
   import type { NDKUser } from '@nostr-dev-kit/ndk';
