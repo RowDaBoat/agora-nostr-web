@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ndk, hashtagInterests } from '$lib/ndk.svelte';
-  import { Avatar } from '@nostr-dev-kit/svelte';
-  import { EventContent } from '@nostr-dev-kit/svelte';
+  import Avatar from '$ndk/avatar.svelte';
+  import EventContent from '$ndk/event-content.svelte';
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
 
   interface Props {

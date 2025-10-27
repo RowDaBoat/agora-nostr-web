@@ -5,7 +5,7 @@
   import { clickOutside } from '$lib/utils/clickOutside';
   import { isAgoraRelay, AGORA_RELAYS } from '$lib/utils/relayUtils';
   import { portal } from '$lib/utils/portal.svelte';
-  import { ndk } from '$lib/ndk.svelte';
+  import { ndk, relayFeeds } from '$lib/ndk.svelte';
   import { followPacksStore } from '$lib/stores/followPacks.svelte';
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
   import RelayIcon from './RelayIcon.svelte';
@@ -19,10 +19,23 @@
   const { active = false, collapsed = false, iconOnly = false }: Props = $props();
 
   let isOpen = $state(false);
-  let enabledRelays = $derived(settings.relays.filter(r => r.enabled && r.read));
-  let otherRelays = $derived(enabledRelays.filter(r => !isAgoraRelay(r.url)));
   let buttonElement: HTMLElement | null = $state(null);
   let dropdownPosition = $state({ top: 0, left: 0, width: 0 });
+
+  // Get relays from NDK session's relay list (kind 10002)
+  const sessionRelays = $derived.by(() => {
+    const relayList = ndk.$sessions?.relayList;
+    if (!relayList) return [];
+
+    return Array.from(relayList.keys());
+  });
+
+  // Filter out agoras and favorite relays
+  const otherRelays = $derived.by(() => {
+    return sessionRelays.filter(url =>
+      !isAgoraRelay(url) && !relayFeeds.isFavorite(url)
+    );
+  });
 
   // Get follows and check if user has any
   const follows = $derived(ndk.$sessions?.follows || []);
@@ -206,6 +219,36 @@
   </button>
 
   {#snippet dropdownContent()}
+      <!-- Currently viewing relay (if not already in the list) -->
+      {#if settings.selectedRelay && !isFollowPackSelection(settings.selectedRelay) && !relayFeeds?.isFavorite(settings.selectedRelay) && !isAgoraRelay(settings.selectedRelay)}
+        {@const relayInfo = useRelayInfoCached(settings.selectedRelay)}
+        <div class="px-2 py-1">
+          <button
+            onclick={() => {
+              isOpen = false;
+              goto(`/?relay=${encodeURIComponent(settings.selectedRelay!)}`);
+            }}
+            class="w-full px-3 py-2.5 rounded-lg bg-muted/50 transition-colors text-left flex items-center gap-3"
+          >
+            <RelayIcon relayUrl={settings.selectedRelay} size="md" />
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-foreground truncate">
+                {relayInfo.info?.name || settings.selectedRelay.replace('wss://', '').replace('ws://', '')}
+              </div>
+              {#if relayInfo.info?.description}
+                <div class="text-xs text-muted-foreground truncate">
+                  {relayInfo.info.description}
+                </div>
+              {/if}
+            </div>
+            <svg class="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+        </div>
+        <div class="border-t border-border my-1"></div>
+      {/if}
+
       <!-- Following option (only show if user has follows) -->
       {#if shouldShowFollowing}
         <button
@@ -273,6 +316,46 @@
         </div>
       {/if}
 
+      <!-- Favorite Relays (kind 10012) -->
+      {#if relayFeeds && relayFeeds.relays.length > 0}
+        <div class="border-t border-border my-1"></div>
+        <div class="px-2 py-1">
+          <div class="text-xs text-muted-foreground px-2 py-1 font-medium flex items-center justify-between">
+            <span>Favorite Relays</span>
+            <svg class="w-3 h-3 text-primary" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          {#each relayFeeds.relays as relayUrl (relayUrl)}
+            {@const relayInfo = useRelayInfoCached(relayUrl)}
+            <button
+              onclick={() => {
+                isOpen = false;
+                goto(`/?relay=${encodeURIComponent(relayUrl)}`);
+              }}
+              class="w-full px-3 py-2.5 rounded-lg hover:bg-muted transition-colors text-left flex items-center gap-3"
+            >
+              <RelayIcon {relayUrl} size="md" />
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <div class="text-sm font-medium text-foreground truncate">
+                    {relayInfo.info?.name || relayUrl.replace('wss://', '').replace('ws://', '')}
+                  </div>
+                  <svg class="w-3.5 h-3.5 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                </div>
+                {#if relayInfo.info?.description}
+                  <div class="text-xs text-muted-foreground truncate">
+                    {relayInfo.info.description}
+                  </div>
+                {/if}
+              </div>
+            </button>
+          {/each}
+        </div>
+      {/if}
+
       <!-- Divider -->
       <div class="border-t border-border my-1"></div>
 
@@ -310,22 +393,22 @@
         {/each}
       </div>
 
-      <!-- Other relays section -->
+      <!-- Other relays section (from kind 10002) -->
       {#if otherRelays.length > 0}
         <div class="border-t border-border my-1"></div>
         <div class="px-2 py-1">
           <div class="text-xs text-muted-foreground px-2 py-1 font-medium">Other relays</div>
-          {#each otherRelays as relay (relay.url)}
-            {@const relayInfo = useRelayInfoCached(relay.url)}
+          {#each otherRelays as relayUrl (relayUrl)}
+            {@const relayInfo = useRelayInfoCached(relayUrl)}
             <button
-              onclick={() => selectRelay(relay.url)}
-              class="w-full px-3 py-2.5 rounded-lg hover:bg-muted transition-colors text-left flex items-center gap-3 {settings.selectedRelay === relay.url ? 'bg-muted/50' : ''}"
+              onclick={() => selectRelay(relayUrl)}
+              class="w-full px-3 py-2.5 rounded-lg hover:bg-muted transition-colors text-left flex items-center gap-3 {settings.selectedRelay === relayUrl ? 'bg-muted/50' : ''}"
             >
-              <RelayIcon relayUrl={relay.url} size="md" />
+              <RelayIcon {relayUrl} size="md" />
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5">
                   <div class="text-sm font-medium text-foreground truncate">
-                    {relayInfo.info?.name || relay.url.replace('wss://', '').replace('ws://', '')}
+                    {relayInfo.info?.name || relayUrl.replace('wss://', '').replace('ws://', '')}
                   </div>
                 </div>
                 {#if relayInfo.info?.description}
@@ -334,7 +417,7 @@
                   </div>
                 {/if}
               </div>
-              {#if settings.selectedRelay === relay.url}
+              {#if settings.selectedRelay === relayUrl}
                 <svg class="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
@@ -347,11 +430,11 @@
       <!-- Manage relays link -->
       <div class="border-t border-border mt-1">
         <a
-          href="/settings"
+          href="/relay-feeds"
           class="block w-full px-4 py-2.5 text-sm text-center text-primary hover:bg-muted transition-colors"
           onclick={() => isOpen = false}
         >
-          Manage Relays →
+          Browse Interesting Relays
         </a>
       </div>
   {/snippet}

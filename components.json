@@ -1,13 +1,15 @@
 {
   "$schema": "https://shadcn-svelte.com/schema.json",
   "style": "default",
+  "registry": "http://localhost:5173/r",
   "tailwind": {
     "config": "tailwind.config.js",
     "css": "src/app.css",
     "baseColor": "slate"
   },
   "aliases": {
-    "components": "$lib/components/ui",
+    "components": "$lib/components/ndk",
+    "ui": "$lib/components/ndk",
     "utils": "$lib/utils"
   }
 }

@@ -2,14 +2,23 @@
   import { ndk } from '$lib/ndk.svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import type { NDKEvent } from '@nostr-dev-kit/ndk';
+  import { NDKClassified, type NDKEvent } from '@nostr-dev-kit/ndk';
+    import { NDKWebLNWallet } from '@nostr-dev-kit/wallet';
 
   interface Props {
     listing: NDKEvent | null;
     loading: boolean;
   }
 
-  const { listing, loading }: Props = $props();
+  const naddr = $page.params.id;
+
+  let listing = $state<NDKClassified | null>(null);
+  
+  $effect(() => {
+    if (!naddr) return;
+
+    ndk.fetchEvent(naddr).then((e) => {listing = e})
+  })
 
   const timeAgo = $derived.by(() => {
     if (!listing?.created_at) return 'recently';
@@ -52,11 +61,7 @@
 
   <!-- Content -->
   <div class="listing-content">
-{#if loading}
-  <div class="flex items-center justify-center py-12">
-    <div class="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-  </div>
-{:else if !listing}
+{#if !listing}
   <div class="text-center py-12">
     <p class="text-muted-foreground">Listing not found</p>
   </div>

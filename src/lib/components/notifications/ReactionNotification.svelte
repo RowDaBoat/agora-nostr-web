@@ -3,6 +3,7 @@
 	import { truncateContent } from '$lib/utils/contentPreview';
 	import ActorList from './ActorList.svelte';
 	import NotificationBase from './NotificationBase.svelte';
+	import { onMount } from 'svelte';
 
 	interface Props {
 		emoji: string;
@@ -12,6 +13,12 @@
 	}
 
 	const { emoji, reactors, targetEvent, timestamp }: Props = $props();
+
+	console.log('[ReactionNotification] Rendering:', emoji, 'reactors:', reactors.length, 'targetEvent:', !!targetEvent);
+
+	onMount(() => {
+		console.log('[ReactionNotification] Mounted:', emoji);
+	});
 
 	const actorPubkeys = $derived(reactors.map((r) => r.pubkey));
 	const originalPreview = $derived(truncateContent(targetEvent?.content ?? ''));

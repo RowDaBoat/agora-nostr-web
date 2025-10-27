@@ -13,7 +13,8 @@ const config = {
 		}),
 		alias: {
 			'$lib': './src/lib',
-			'$i18n': './src/i18n'
+			'$i18n': './src/i18n',
+			'$ndk': './src/lib/components/ndk'
 		}
 	},
 	onwarn: (warning, handler) => {

@@ -1,9 +1,10 @@
 <script lang="ts">
-  import type { NDKEvent, NDKSvelte } from '@nostr-dev-kit/ndk';
+  import type { NDKEvent } from '@nostr-dev-kit/ndk';
   import { NDKKind, NDKArticle } from '@nostr-dev-kit/ndk';
   import NoteCard from './NoteCard.svelte';
   import ArticlePreviewCard from './ArticlePreviewCard.svelte';
   import LoadingSpinner from './LoadingSpinner.svelte';
+  import type { NDKSvelte } from '@nostr-dev-kit/svelte';
 
   interface Props {
     ndk: NDKSvelte;

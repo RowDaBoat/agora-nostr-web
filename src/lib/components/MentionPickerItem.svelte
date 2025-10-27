@@ -22,7 +22,11 @@
 
 <button
   type="button"
-  onclick={() => onSelect(pubkey)}
+  onclick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(pubkey);
+  }}
   onmouseenter={onMouseEnter}
   class={`w-full flex items-center gap-2 p-2 transition-colors ${
     isSelected ? 'bg-primary/20' : 'hover:bg-muted'

@@ -275,10 +275,16 @@ const notificationProcessors = {
  * Creates a notifications manager that aggregates and groups notifications
  */
 export function createNotificationsManager(ndk: NDKSvelte) {
+  console.log('[NotificationsManager] Creating notifications manager');
+
   // Subscription for all notification events
   const notificationsSubscription = ndk.$subscribe(() => {
-    if (!ndk.$currentUser) return undefined;
+    if (!ndk.$currentUser) {
+      console.log('[NotificationsManager] No current user, skipping notifications subscription');
+      return undefined;
+    }
 
+    console.log('[NotificationsManager] Setting up notifications subscription for user:', ndk.$currentUser.pubkey);
     return {
       filters: [
         {
@@ -294,8 +300,12 @@ export function createNotificationsManager(ndk: NDKSvelte) {
 
   // Subscription for user's own events (to identify replies vs mentions)
   const userEventsSubscription = ndk.$subscribe(() => {
-    if (!ndk.$currentUser) return undefined;
+    if (!ndk.$currentUser) {
+      console.log('[NotificationsManager] No current user, skipping user events subscription');
+      return undefined;
+    }
 
+    console.log('[NotificationsManager] Setting up user events subscription for user:', ndk.$currentUser.pubkey);
     return {
       filters: [
         {
@@ -310,8 +320,12 @@ export function createNotificationsManager(ndk: NDKSvelte) {
 
   // Build a Set of user's event IDs for quick lookup
   const userEventIds = $derived.by(() => {
+    console.log('[NotificationsManager] Building user event IDs set');
     const events = Array.from(userEventsSubscription.events ?? []);
-    return new Set(events.map((e) => e.id));
+    console.log('[NotificationsManager] User events count:', events.length);
+    const ids = new Set(events.map((e) => e.id));
+    console.log('[NotificationsManager] User event IDs count:', ids.size);
+    return ids;
   });
 
   // Cache for fetched target events
@@ -324,9 +338,14 @@ export function createNotificationsManager(ndk: NDKSvelte) {
    * Aggregate raw notification events into groups using strategy pattern
    */
   const notificationGroups = $derived.by(() => {
-    if (!ndk.$currentUser) return [];
+    console.log('[NotificationsManager] Computing notification groups');
+    if (!ndk.$currentUser) {
+      console.log('[NotificationsManager] No current user, returning empty groups');
+      return [];
+    }
 
     const events = Array.from(notificationsSubscription.events ?? []);
+    console.log('[NotificationsManager] Processing', events.length, 'notification events');
     const groups: NotificationGroup[] = [];
 
     // Categorize events by type
@@ -347,6 +366,16 @@ export function createNotificationsManager(ndk: NDKSvelte) {
       }
     });
 
+    console.log('[NotificationsManager] Categorized events:', {
+      reply: categorizedEvents.reply.length,
+      mention: categorizedEvents.mention.length,
+      quote: categorizedEvents.quote.length,
+      reaction: categorizedEvents.reaction.length,
+      repost: categorizedEvents.repost.length,
+      zap: categorizedEvents.zap.length,
+      invite_acceptance: categorizedEvents.invite_acceptance.length,
+    });
+
     // Process each category using strategy pattern
     groups.push(...notificationProcessors.reply(categorizedEvents.reply));
     groups.push(...notificationProcessors.mention(categorizedEvents.mention));
@@ -356,12 +385,17 @@ export function createNotificationsManager(ndk: NDKSvelte) {
     groups.push(...notificationProcessors.zap(categorizedEvents.zap, userEventIds));
     groups.push(...notificationProcessors.invite_acceptance(categorizedEvents.invite_acceptance));
 
+    console.log('[NotificationsManager] Created', groups.length, 'notification groups');
+
     // Sort by timestamp (most recent first)
-    return groups.sort((a, b) => b.timestamp - a.timestamp);
+    const sorted = groups.sort((a, b) => b.timestamp - a.timestamp);
+    console.log('[NotificationsManager] Sorted notification groups');
+    return sorted;
   });
 
   // Fetch target events that are referenced but not yet loaded
   $effect(() => {
+    console.log('[NotificationsManager] Effect running: fetching target events');
     const targetEventIds = new Set<string>();
 
     notificationGroups.forEach((group) => {
@@ -374,12 +408,18 @@ export function createNotificationsManager(ndk: NDKSvelte) {
       }
     });
 
+    console.log('[NotificationsManager] Target event IDs needed:', targetEventIds.size);
+
     // Find missing events
     const missing = Array.from(targetEventIds).filter((id) => !targetEventsCache.has(id));
 
+    console.log('[NotificationsManager] Missing target events:', missing.length, 'out of', targetEventIds.size);
+
     if (missing.length > 0) {
+      console.log('[NotificationsManager] Fetching missing target events:', missing);
       // Fetch missing events
       Promise.all(missing.map((id) => ndk.fetchEvent(id))).then((events) => {
+        console.log('[NotificationsManager] Fetched', events.filter(e => e).length, 'target events');
         events.forEach((event, index) => {
           if (event) {
             targetEventsCache.set(missing[index], event);
@@ -391,15 +431,24 @@ export function createNotificationsManager(ndk: NDKSvelte) {
 
   // Filtered notifications
   const filteredNotifications = $derived.by(() => {
-    if (currentFilter === 'all') return notificationGroups;
-    if (currentFilter === 'invite') {
-      return notificationGroups.filter((group) => group.type === 'invite_acceptance');
+    console.log('[NotificationsManager] Filtering notifications with filter:', currentFilter);
+    if (currentFilter === 'all') {
+      console.log('[NotificationsManager] Returning all', notificationGroups.length, 'notifications');
+      return notificationGroups;
     }
-    return notificationGroups.filter((group) => group.type === currentFilter);
+    if (currentFilter === 'invite') {
+      const filtered = notificationGroups.filter((group) => group.type === 'invite_acceptance');
+      console.log('[NotificationsManager] Filtered to', filtered.length, 'invite notifications');
+      return filtered;
+    }
+    const filtered = notificationGroups.filter((group) => group.type === currentFilter);
+    console.log('[NotificationsManager] Filtered to', filtered.length, currentFilter, 'notifications');
+    return filtered;
   });
 
   // Counts by type
   const counts = $derived.by(() => {
+    console.log('[NotificationsManager] Computing counts');
     const result = {
       all: notificationGroups.length,
       reply: 0,
@@ -419,23 +468,29 @@ export function createNotificationsManager(ndk: NDKSvelte) {
       }
     });
 
+    console.log('[NotificationsManager] Counts:', result);
     return result;
   });
 
   return {
     get notifications() {
+      console.log('[NotificationsManager] Getting notifications accessor');
       return filteredNotifications;
     },
     get filter() {
+      console.log('[NotificationsManager] Getting filter accessor');
       return currentFilter;
     },
     get counts() {
+      console.log('[NotificationsManager] Getting counts accessor');
       return counts;
     },
     get targetEventsCache() {
+      console.log('[NotificationsManager] Getting targetEventsCache accessor');
       return targetEventsCache;
     },
     setFilter(filter: NotificationFilter) {
+      console.log('[NotificationsManager] Setting filter to:', filter);
       currentFilter = filter;
     },
   };

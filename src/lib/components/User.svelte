@@ -135,7 +135,7 @@
 		class="flex items-center gap-3 cursor-pointer text-left w-full {className}"
 	>
 		<Avatar {ndk} {pubkey} class="{avatarSize} hover:opacity-80 transition-opacity flex-shrink-0" />
-		<div class="flex-1 min-w-0">
+		<div class="flex-1 min-w-0 flex flex-col">
 			<p class="{nameSize} text-foreground truncate hover:underline">{displayName}</p>
 			<p class="{handleSize} truncate">@{handle}</p>
 		</div>
@@ -175,7 +175,7 @@
 			<button
 				type="button"
 				onclick={handleClick}
-				class="text-left"
+				class="text-left w-full min-w-0"
 			>
 				<p class="{nameSize} text-foreground truncate hover:underline">{displayName}</p>
 			</button>

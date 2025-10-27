@@ -36,6 +36,7 @@
   let isProtected = $state(false);
   let showProtectedInfo = $state(false);
   let selectedMentions = $state<string[]>([]);
+  let composerRef: ContentComposer;
 
   let replyToProfile = $state<import('@nostr-dev-kit/ndk').NDKUserProfile | null>(null);
 
@@ -56,6 +57,9 @@
     try {
       isPublishing = true;
 
+      // Get content with nostr entities (replace markers with actual nostr: links)
+      const contentWithEntities = composerRef?.getContentWithNostrEntities() ?? content;
+
       let event: NDKEvent;
 
       if (replyTo) {
@@ -63,14 +67,13 @@
       } else if (quotedEvent) {
         event = new NDKEvent(ndk);
         event.kind = 1;
-        event.tags.push(['q', quotedEvent.id]);
-        event.tags.push(['p', quotedEvent.pubkey]);
+        event.tag(quotedEvent, undefined, false, "q");
       } else {
         event = new NDKEvent(ndk);
         event.kind = 1;
       }
-      
-      event.content = content;
+
+      event.content = quotedEvent ? `${contentWithEntities}\nnostr:${quotedEvent.encode()}` : contentWithEntities;
 
       if (!replyTo) {
         event.isProtected = isProtected;
@@ -106,6 +109,7 @@
         return;
       }
 
+      composerRef?.reset();
       content = '';
       selectedMentions = [];
       open = false;
@@ -213,6 +217,7 @@
       <!-- Compose area -->
       <div class="relative mb-4">
         <ContentComposer
+          bind:this={composerRef}
           bind:value={content}
           bind:selectedMentions
           placeholder={replyTo ? 'Write your reply...' : quotedEvent ? 'Add your thoughts...' : "What's on your mind?"}
@@ -354,6 +359,7 @@
       <div class="relative mb-4 flex-1 flex flex-col overflow-hidden px-4">
         <div class="flex-1 overflow-hidden">
           <ContentComposer
+            bind:this={composerRef}
             bind:value={content}
             bind:selectedMentions
             placeholder={replyTo ? 'Write your reply...' : quotedEvent ? 'Add your thoughts...' : "What's on your mind?"}

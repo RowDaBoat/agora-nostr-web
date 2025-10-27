@@ -1,11 +1,15 @@
 <script lang="ts">
-  import type { NDKEvent } from '@nostr-dev-kit/ndk';
+  import { NDKEvent } from '@nostr-dev-kit/ndk';
   import { toast } from '$lib/stores/toast.svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import * as Dialog from '$lib/components/ui/dialog';
   import * as Drawer from '$lib/components/ui/drawer';
   import { Button } from '$lib/components/ui/button';
   import RelayBadge from './RelayBadge.svelte';
+  import ReportModal from './ReportModal.svelte';
+  import { ndk } from '$lib/ndk.svelte';
+  import { t } from 'svelte-i18n';
+  import Icon from './Icon.svelte';
 
   interface Props {
     event: NDKEvent;
@@ -17,6 +21,21 @@
 
   let showOptionsMenu = $state(false);
   let showRawEventModal = $state(false);
+  let isReportModalOpen = $state(false);
+
+  // Fetch current user's mute list
+  const muteListSubscription = ndk.$subscribe(
+    () => ndk.$currentUser?.pubkey ? ({
+      filters: [{ kinds: [10000], authors: [ndk.$currentUser.pubkey], limit: 1 }],
+      bufferMs: 100,
+    }) : undefined
+  );
+
+  const isMuted = $derived.by(() => {
+    const muteList = muteListSubscription.events[0];
+    if (!muteList || !event.author) return false;
+    return muteList.tags.some(tag => tag[0] === 'p' && tag[1] === event.author.pubkey);
+  });
 
   async function copyToClipboard(text: string, label: string) {
     try {
@@ -39,14 +58,60 @@
     copyToClipboard(nevent, 'event ID');
   }
 
-  function copyRawEvent() {
-    const raw = event.inspect;
-    copyToClipboard(raw, 'raw event');
-  }
-
   function viewRawEvent() {
     showOptionsMenu = false;
     showRawEventModal = true;
+  }
+
+  async function toggleMute() {
+    if (!ndk.$currentUser?.pubkey || !event.author) return;
+
+    try {
+      let muteList = muteListSubscription.events[0];
+
+      if (!muteList) {
+        // Create new mute list
+        muteList = new NDKEvent(ndk as any);
+        muteList.kind = 10000;
+        muteList.content = '';
+        muteList.tags = [];
+      }
+
+      const pubkey = event.author.pubkey;
+
+      if (isMuted) {
+        // Remove from mute list
+        muteList.tags = muteList.tags.filter(tag => !(tag[0] === 'p' && tag[1] === pubkey));
+        toast.success('User unmuted');
+      } else {
+        // Add to mute list
+        muteList.tags.push(['p', pubkey]);
+        toast.success('User muted');
+      }
+
+      await muteList.sign();
+      await muteList.publishReplaceable();
+
+      if (muteList.publishStatus === 'error') {
+        const error = muteList.publishError as any;
+        const relayErrors = error?.relayErrors || {};
+        const errorMessages = Object.entries(relayErrors)
+          .map(([relay, err]) => `${relay}: ${err}`)
+          .join('\n');
+        toast.error(`Failed to publish:\n${errorMessages || 'Unknown error'}`);
+        return;
+      }
+
+      showOptionsMenu = false;
+    } catch (error) {
+      console.error('Failed to toggle mute:', error);
+      toast.error(`Failed to ${isMuted ? 'unmute' : 'mute'} user: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  function handleOpenReport() {
+    isReportModalOpen = true;
+    showOptionsMenu = false;
   }
 
   $effect(() => {
@@ -78,13 +143,38 @@
       class="absolute right-0 mt-1 w-72 bg-popover border border-border rounded-lg shadow-lg z-10 max-h-96 overflow-y-auto"
       onclick={(e) => e.stopPropagation()}
     >
+      <!-- Mute button -->
+      <button
+        onclick={toggleMute}
+        class="w-full px-4 py-3 text-left text-sm text-foreground hover:bg-muted transition-colors first:rounded-t-lg flex items-center gap-3"
+        type="button"
+      >
+        <Icon name={isMuted ? 'speaker' : 'speaker-muted'} size="md" class="text-red-500" />
+        {isMuted ? $t('userDropdown.unmute') : $t('userDropdown.mute')}
+      </button>
+
+      <!-- Report button -->
+      <button
+        onclick={handleOpenReport}
+        class="w-full px-4 py-3 text-left text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-3"
+        type="button"
+      >
+        <Icon name="alert" size="md" class="text-yellow-500" />
+        {$t('noteDropdown.report')}
+      </button>
+
+      <div class="border-t border-border my-1"></div>
+
+      <!-- Copy author nprofile -->
       <button
         onclick={copyAuthorNprofile}
-        class="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted transition-colors first:rounded-t-lg"
+        class="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted transition-colors"
         type="button"
       >
         Copy author (nprofile)
       </button>
+
+      <!-- Copy event ID -->
       <button
         onclick={copyEventId}
         class="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted transition-colors"
@@ -92,13 +182,8 @@
       >
         Copy ID (nevent)
       </button>
-      <button
-        onclick={copyRawEvent}
-        class="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted transition-colors"
-        type="button"
-      >
-        Copy raw event
-      </button>
+
+      <!-- View raw event -->
       <button
         onclick={viewRawEvent}
         class="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted transition-colors"
@@ -107,13 +192,20 @@
         View raw event
       </button>
 
-      {#if event.onRelays && event.onRelays.size > 0}
+      <!-- Relay information -->
+      {#if event.relay?.url}
+        <div class="border-t border-border mt-1 pt-1">
+          <div class="px-4 py-2 text-xs text-muted-foreground">
+            {event.relay.url}
+          </div>
+        </div>
+      {:else if event.onRelays && event.onRelays.length > 0}
         <div class="border-t border-border mt-1 pt-1">
           <div class="px-4 py-2 text-xs text-muted-foreground font-medium">
-            Seen on {event.onRelays.size} relay{event.onRelays.size === 1 ? '' : 's'}
+            Seen on {event.onRelays.length} relay{event.onRelays.length === 1 ? '' : 's'}
           </div>
           <div class="px-2 pb-2 space-y-1">
-            {#each Array.from(event.onRelays) as relay (relay.url)}
+            {#each event.onRelays as relay (relay.url)}
               <RelayBadge {relay} variant="compact" />
             {/each}
           </div>
@@ -179,3 +271,9 @@
     </Drawer.Content>
   </Drawer.Root>
 {/if}
+
+<ReportModal
+  target={event}
+  open={isReportModalOpen}
+  onClose={() => isReportModalOpen = false}
+/>

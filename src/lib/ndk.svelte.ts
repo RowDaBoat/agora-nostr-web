@@ -1,10 +1,11 @@
 import NDKCacheSqliteWasm from "@nostr-dev-kit/cache-sqlite-wasm";
 import { createNDK } from '@nostr-dev-kit/svelte';
 import { LocalStorage } from '@nostr-dev-kit/sessions';
-import { NDKEvent, NDKKind, NDKBlossomList, NDKInterestList } from '@nostr-dev-kit/ndk';
+import { NDKEvent, NDKKind, NDKBlossomList, NDKInterestList, NDKRelayFeedList } from '@nostr-dev-kit/ndk';
 import { browser } from '$app/environment';
 import { createAuthPolicyWithConfirmation } from './relayAuthPolicy.svelte';
 import { createHashtagInterestsStore } from './stores/hashtagInterests.svelte';
+import { createRelayFeedsStore } from './stores/relayFeeds.svelte';
 import { initializeCache } from './utils/clearCache';
 import { CACHE_WORKER_VERSION } from './worker-version';
 
@@ -42,7 +43,7 @@ export const ndk = createNDK({
       mutes: true,
       wallet: true,
       relayList: true,
-      eventConstructors: [NDKBlossomList, NDKInterestList],
+      eventConstructors: [NDKBlossomList, NDKInterestList, NDKRelayFeedList],
     }
   }
 })
@@ -80,6 +81,9 @@ export const ndkReady = (async () => {
 
 // Create hashtag interests store (only in browser)
 export const hashtagInterests = browser ? createHashtagInterestsStore(ndk) : null as any;
+
+// Create relay feeds store (only in browser)
+export const relayFeeds = browser ? createRelayFeedsStore(ndk) : null as any;
 
 // Re-export auth management utilities
 export {

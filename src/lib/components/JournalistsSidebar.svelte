@@ -79,6 +79,7 @@
             variant="avatar-name-meta"
             avatarSize="w-10 h-10"
             nameSize="text-sm font-medium"
+            class="flex-1 min-w-0"
           >
             {#snippet meta()}
               <p class="text-xs text-muted-foreground">

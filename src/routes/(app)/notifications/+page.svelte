@@ -2,8 +2,15 @@
   import { ndk } from '$lib/ndk.svelte';
   import { createNotificationsManager, type NotificationFilter } from '$lib/utils/useNotifications.svelte';
   import NotificationItem from '$lib/components/notifications/NotificationItem.svelte';
+  import { onMount } from 'svelte';
+
+  console.log('[NotificationsPage] Initializing notifications page');
 
   const notificationsManager = createNotificationsManager(ndk);
+
+  onMount(() => {
+    console.log('[NotificationsPage] Mounted');
+  });
 
   const filters: Array<{ value: NotificationFilter; label: string }> = [
     { value: 'all', label: 'All' },
@@ -17,8 +24,15 @@
   ];
 
   function handleFilterChange(filter: NotificationFilter) {
+    console.log('[NotificationsPage] Filter changed to:', filter);
     notificationsManager.setFilter(filter);
   }
+
+  $effect(() => {
+    console.log('[NotificationsPage] Notifications count:', notificationsManager.notifications.length);
+    console.log('[NotificationsPage] Current filter:', notificationsManager.filter);
+    console.log('[NotificationsPage] Counts:', notificationsManager.counts);
+  });
 </script>
 
 <div class="w-full">
@@ -57,7 +71,8 @@
         <p class="text-sm">When people interact with your posts, you'll see it here</p>
       </div>
     {:else}
-      {#each notificationsManager.notifications as notification (notification.id)}
+      {#each notificationsManager.notifications as notification, index (notification.id)}
+        {console.log('[NotificationsPage] Rendering notification', index, ':', notification.type, notification.id)}
         <NotificationItem {notification} targetEventsCache={notificationsManager.targetEventsCache} />
       {/each}
     {/if}

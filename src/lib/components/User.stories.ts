@@ -143,14 +143,14 @@ export const WithoutHoverCard: Story = {
 export const DifferentUser1: Story = {
   args: {
     variant: 'avatar-name-handle',
-    pubkey: 'npub1sg6plzptd64u62a878hep2kev88swjh3tw00gjsfl8f237lmu63q0uf63m',
+    pubkey: '82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2',
   },
 };
 
 export const DifferentUser2: Story = {
   args: {
     variant: 'avatar-name-bio',
-    pubkey: 'npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6',
+    pubkey: '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
   },
 };
 

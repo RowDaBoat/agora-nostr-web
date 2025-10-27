@@ -21,9 +21,20 @@
   import CreateMediaPostModal from '$lib/components/CreateMediaPostModal.svelte';
   import { createMediaPostModal } from '$lib/stores/createMediaPostModal.svelte';
   import { homePageFilter } from '$lib/stores/homePageFilter.svelte';
+  import { page } from '$app/stores';
 
   type MediaFilter = 'conversations' | 'images' | 'videos' | 'articles';
   let selectedFilter = $state<MediaFilter>('conversations');
+
+  // Get relay from URL parameter (e.g., /?relay=wss://relay.example.com)
+  const relayParam = $derived($page.url.searchParams.get('relay'));
+
+  // Sync relay URL parameter with settings
+  $effect(() => {
+    if (relayParam && relayParam !== settings.selectedRelay) {
+      settings.setSelectedRelay(relayParam);
+    }
+  });
 
   // Sync with store
   $effect(() => {
@@ -31,12 +42,13 @@
   });
 
   // Get relays to use based on filter
+  // If a relay URL parameter is present, use only that relay
   // If a specific relay is selected, use only that relay
   // If "agoras" is selected, use both agora relays
   // Otherwise, use all enabled relays
   const relaysToUse = $derived(
     getRelaysToUse(
-      settings.selectedRelay,
+      relayParam || settings.selectedRelay,
       settings.relays.filter(r => r.enabled && r.read).map(r => r.url)
     )
   );
@@ -269,6 +281,15 @@
   const headerTitle = $derived.by(() => {
     // If showing hashtag filters, return null to show hashtags instead
     if (hashtagInterests.interests.length > 0) return null;
+
+    // If a relay URL parameter is present, show relay name
+    if (relayParam) {
+      const relayInfo = useRelayInfoCached(relayParam);
+      return {
+        type: 'text' as const,
+        text: relayInfo.info?.name || relayParam.replace('wss://', '').replace('ws://', '')
+      };
+    }
 
     // If Following is selected, show Agora logo
     if (!settings.selectedRelay) {

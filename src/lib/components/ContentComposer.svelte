@@ -45,6 +45,10 @@
   let mentionStartIndex = $state(0);
   let mentionPickerPosition = $state({ top: 0, left: 0 });
 
+  // Track mention markers to nostr entity mapping
+  // Key: marker (e.g., "@jackmallers@primal.net"), Value: nostr entity (e.g., "nostr:nprofile1...")
+  let mentionMarkers = $state<Map<string, string>>(new Map());
+
   async function handleFileSelect(file: File) {
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
@@ -248,20 +252,36 @@
     showMentionPicker = false;
   }
 
-  function insertMention(nprofile: string) {
+  async function insertMention(nprofile: string) {
     const textarea = textareaElement;
     if (!textarea) return;
 
     const cursorPosition = textarea.selectionStart;
 
-    // Replace from @ to cursor with the nprofile
+    // Extract pubkey from nprofile to get user's profile
+    const pubkeyMatch = nprofile.match(/nostr:nprofile1([a-z0-9]+)/);
+    if (!pubkeyMatch) return;
+
+    // Fetch user to get their NIP-05
+    const user = ndk.getUser({ nprofile: nprofile.replace('nostr:', '') });
+    await user.fetchProfile();
+
+    // Create a readable marker using NIP-05 or fallback to display name
+    const marker = user.profile?.nip05
+      ? `@${user.profile.nip05}`
+      : `@${user.profile?.displayName || user.profile?.name || user.npub.slice(0, 12)}`;
+
+    // Store the mapping from marker to nostr entity
+    mentionMarkers.set(marker, nprofile);
+
+    // Replace from @ to cursor with the readable marker
     const beforeMention = value.substring(0, mentionStartIndex);
     const afterMention = value.substring(cursorPosition);
 
-    value = beforeMention + nprofile + ' ' + afterMention;
+    value = beforeMention + marker + ' ' + afterMention;
 
     // Set cursor position after the mention
-    const newCursorPos = mentionStartIndex + nprofile.length + 1;
+    const newCursorPos = mentionStartIndex + marker.length + 1;
     setTimeout(() => {
       textarea.selectionStart = textarea.selectionEnd = newCursorPos;
       textarea.focus();
@@ -276,7 +296,42 @@
     mentionSearchQuery = '';
   }
 
+  /**
+   * Replaces all tracked mention markers with their corresponding nostr entities
+   * Call this function before publishing to convert readable markers to nostr entities
+   */
+  export function getContentWithNostrEntities(): string {
+    let result = value;
+
+    // Replace each marker with its nostr entity
+    for (const [marker, entity] of mentionMarkers) {
+      // Use a while loop to replace all occurrences of this marker
+      while (result.includes(marker)) {
+        result = result.replace(marker, entity);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Clears all mention markers and resets the composer state
+   * Call this after successfully publishing
+   */
+  export function reset() {
+    value = '';
+    mentionMarkers.clear();
+    uploadedImages = [];
+    showMentionPicker = false;
+    mentionSearchQuery = '';
+  }
+
   function handleKeyDown(event: KeyboardEvent) {
+    // If mention picker is open, don't interfere with its keyboard handling
+    if (showMentionPicker) {
+      return;
+    }
+
     // Stop Enter key from bubbling up to prevent triggering actions on NoteCards
     if (event.key === 'Enter') {
       event.stopPropagation();

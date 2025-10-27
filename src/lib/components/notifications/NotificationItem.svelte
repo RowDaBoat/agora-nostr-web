@@ -8,6 +8,7 @@
   import RepostNotification from './RepostNotification.svelte';
   import ZapNotification from './ZapNotification.svelte';
   import InviteAcceptanceNotification from './InviteAcceptanceNotification.svelte';
+  import { onMount, onDestroy } from 'svelte';
 
   interface Props {
     notification: NotificationGroup;
@@ -16,14 +17,31 @@
 
   const { notification, targetEventsCache }: Props = $props();
 
+  console.log('[NotificationItem] Rendering notification:', notification.type, notification.id);
+
+  onMount(() => {
+    console.log('[NotificationItem] Mounted:', notification.type, notification.id);
+  });
+
+  onDestroy(() => {
+    console.log('[NotificationItem] Destroyed:', notification.type, notification.id);
+  });
+
   // Get target event from cache
   const targetEvent = $derived.by(() => {
+    console.log('[NotificationItem] Computing targetEvent for:', notification.type, notification.id);
     if (notification.type === 'reply') {
-      return targetEventsCache.get(notification.replyToEventId);
+      const event = targetEventsCache.get(notification.replyToEventId);
+      console.log('[NotificationItem] Reply target event:', event ? 'found' : 'not found');
+      return event;
     } else if (notification.type === 'quote') {
-      return targetEventsCache.get(notification.quotedEventId);
+      const event = targetEventsCache.get(notification.quotedEventId);
+      console.log('[NotificationItem] Quote target event:', event ? 'found' : 'not found');
+      return event;
     } else if (notification.type === 'reaction' || notification.type === 'repost' || notification.type === 'zap') {
-      return targetEventsCache.get(notification.targetEventId);
+      const event = targetEventsCache.get(notification.targetEventId);
+      console.log('[NotificationItem]', notification.type, 'target event:', event ? 'found' : 'not found');
+      return event;
     }
     return undefined;
   });

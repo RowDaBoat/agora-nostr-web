@@ -197,17 +197,6 @@
         <RelaySelector active={path === '/'} collapsed={sidebarCollapsed} />
 
         <a
-          href="/notifications"
-          class="flex items-center {sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'} rounded-lg transition-colors {path.startsWith('/notifications') ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'}"
-          title={sidebarCollapsed ? 'Notifications' : undefined}
-        >
-          <Icon name="bell" size="lg" />
-          {#if !sidebarCollapsed}
-            <span class="font-medium">Notifications</span>
-          {/if}
-        </a>
-
-        <a
           href="/messages"
           class="flex items-center {sidebarCollapsed ? 'justify-center p-3' : 'justify-between px-4 py-3'} rounded-lg transition-colors {path.startsWith('/messages') ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'} relative"
           title={sidebarCollapsed ? $t('navigation.messages') : undefined}
@@ -228,6 +217,46 @@
                 {messagesStore.totalUnreadCount > 99 ? '99+' : messagesStore.totalUnreadCount}
               </Badge>
             {/if}
+          {/if}
+        </a>
+
+        <a
+          href="/notifications"
+          class="flex items-center {sidebarCollapsed ? 'justify-center p-3' : 'justify-between px-4 py-3'} rounded-lg transition-colors {path.startsWith('/notifications') ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'} relative"
+          title={sidebarCollapsed ? 'Notifications' : undefined}
+        >
+          <div class="flex items-center {sidebarCollapsed ? '' : 'gap-3'}">
+            <Icon name="bell" size="lg" />
+            {#if !sidebarCollapsed}
+              <span class="font-medium">Notifications</span>
+            {/if}
+          </div>
+          {#if notificationsManager.counts.all > 0}
+            {#if sidebarCollapsed}
+              <Badge size="xs" class="absolute top-1.5 right-1.5">
+                {notificationsManager.counts.all > 9 ? '9+' : notificationsManager.counts.all}
+              </Badge>
+            {:else}
+              <Badge size="sm">
+                {notificationsManager.counts.all > 99 ? '99+' : notificationsManager.counts.all}
+              </Badge>
+            {/if}
+          {/if}
+        </a>
+
+        <a
+          href="/wallet"
+          class="flex items-center {sidebarCollapsed ? 'justify-center p-3' : 'justify-between px-4 py-3'} rounded-lg transition-colors {path.startsWith('/wallet') ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'}"
+          title={sidebarCollapsed ? 'Wallet' : undefined}
+        >
+          <div class="flex items-center {sidebarCollapsed ? '' : 'gap-3'}">
+            <Icon name="wallet" size="lg" />
+            {#if !sidebarCollapsed}
+              <span class="font-medium">Wallet</span>
+            {/if}
+          </div>
+          {#if !sidebarCollapsed && wallet.balance > 0}
+            <span class="text-xs text-muted-foreground font-medium">{formatBalance(wallet.balance)}</span>
           {/if}
         </a>
 
@@ -275,22 +304,6 @@
             {/if}
           </a>
         {/if}
-
-        <a
-          href="/wallet"
-          class="flex items-center {sidebarCollapsed ? 'justify-center p-3' : 'justify-between px-4 py-3'} rounded-lg transition-colors {path === '/wallet' ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'}"
-          title={sidebarCollapsed ? $t('navigation.wallet') : undefined}
-        >
-          <div class="flex items-center {sidebarCollapsed ? '' : 'gap-3'}">
-            <Icon name="wallet" size="lg" />
-            {#if !sidebarCollapsed}
-              <span class="font-medium">{$t('navigation.wallet')}</span>
-            {/if}
-          </div>
-          {#if !sidebarCollapsed}
-            <Badge variant="secondary" size="sm">{formatBalanceLong(wallet.balance)}</Badge>
-          {/if}
-        </a>
 
         <a
           href="/trades"
@@ -424,33 +437,6 @@
                   {#if headerStore.headerConfig.actions}
                     {@render headerStore.headerConfig.actions()}
                   {/if}
-
-                  <!-- Mobile-only: Wallet and Notifications -->
-                  <div class="lg:hidden flex items-center gap-2">
-                    <!-- Notifications -->
-                    <a
-                      href="/notifications"
-                      class="relative flex items-center justify-center p-2 rounded-lg hover:bg-muted transition-colors text-foreground"
-                      aria-label="Notifications"
-                    >
-                      <Icon name="bell" size="lg" />
-                      {#if notificationsManager.counts.all > 0}
-                        <Badge size="xs" class="absolute -top-1 -right-1">
-                          {notificationsManager.counts.all > 9 ? '9+' : notificationsManager.counts.all}
-                        </Badge>
-                      {/if}
-                    </a>
-
-                    <!-- Wallet -->
-                    <a
-                      href="/wallet"
-                      class="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-muted transition-colors text-foreground"
-                      aria-label="Wallet"
-                    >
-                      <Icon name="wallet" size="md" />
-                      <span class="text-xs font-medium">{formatBalance(wallet.balance)}</span>
-                    </a>
-                  </div>
                 </div>
               </div>
             </div>

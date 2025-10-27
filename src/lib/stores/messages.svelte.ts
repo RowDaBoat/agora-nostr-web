@@ -1,4 +1,4 @@
-import { NDKMessenger, type NDKConversation, type NDKMessage } from '@nostr-dev-kit/messages';
+import { NDKMessenger, CacheModuleStorage, type NDKConversation, type NDKMessage } from '@nostr-dev-kit/messages';
 import { ndk } from '../ndk.svelte';
 
 /**
@@ -12,11 +12,12 @@ class MessagesStore {
 
   // Lazy-start messenger when first accessed
   private async ensureStarted() {
-    if (!this.isStarted && ndk.activeUser && ndk.signer) {
+    if (!this.isStarted && ndk.$currentUser) {
       this.isStarted = true;
 
-      // Create messenger instance
-      this.messenger = new NDKMessenger(ndk);
+      // Create messenger instance with persistent storage
+      const storage = new CacheModuleStorage(ndk.cacheAdapter!, ndk.$currentUser.pubkey);
+      this.messenger = new NDKMessenger({ ndk, storage });
 
       // Listen for new messages
       this.messenger.on('message', (message: NDKMessage) => {
@@ -98,8 +99,10 @@ class MessagesStore {
   }
 
   get conversations() {
-    // Trigger lazy initialization when accessed
-    this.ensureStarted();
+    // Only trigger lazy initialization if we have a user
+    if (ndk.$currentUser) {
+      this.ensureStarted();
+    }
 
     // Sort by last message timestamp (most recent first)
     return [...this._conversations].sort((a, b) => {
@@ -110,7 +113,10 @@ class MessagesStore {
   }
 
   get totalUnreadCount() {
-    this.ensureStarted();
+    // Only trigger lazy initialization if we have a user
+    if (ndk.$currentUser) {
+      this.ensureStarted();
+    }
     return this._totalUnreadCount;
   }
 

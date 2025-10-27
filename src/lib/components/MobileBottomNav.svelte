@@ -9,10 +9,14 @@
   import { goto } from '$app/navigation';
   import { t } from 'svelte-i18n';
   import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
+  import { createNotificationsManager } from '$lib/utils/useNotifications.svelte';
+  import { formatBalance } from '$lib/utils/formatBalance';
   import Icon from './Icon.svelte';
   import Badge from './Badge.svelte';
 
   const currentPath = $derived($page.url.pathname);
+  const wallet = ndk.$wallet;
+  const notificationsManager = createNotificationsManager(ndk);
 
   const isActive = (path: string) => {
     if (path === '/') return currentPath === '/';
@@ -125,10 +129,29 @@
     >
       <Icon name="message" size="lg" />
       {#if messagesStore.totalUnreadCount > 0}
-        <Badge size="xs" class="absolute top-1.5 right-1.5">
-          {messagesStore.totalUnreadCount > 9 ? '9+' : messagesStore.totalUnreadCount}
-        </Badge>
+        <Badge indicator class="absolute top-1.5 right-1.5" />
       {/if}
+    </a>
+
+    <!-- Notifications -->
+    <a
+      href="/notifications"
+      class="flex items-center justify-center p-3 rounded-lg transition-colors {isActive('/notifications') ? 'text-primary' : 'text-muted-foreground'} relative"
+      aria-label="Notifications"
+    >
+      <Icon name="bell" size="lg" />
+      {#if notificationsManager.counts.all > 0}
+        <Badge indicator class="absolute top-1.5 right-1.5" />
+      {/if}
+    </a>
+
+    <!-- Wallet -->
+    <a
+      href="/wallet"
+      class="flex items-center justify-center p-3 rounded-lg transition-colors {isActive('/wallet') ? 'text-primary' : 'text-muted-foreground'}"
+      aria-label="Wallet"
+    >
+      <Icon name="wallet" size="lg" />
     </a>
 
     <!-- Profile / User Menu -->
