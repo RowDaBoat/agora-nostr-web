@@ -43,7 +43,7 @@ export const ndk = createNDK({
       mutes: true,
       wallet: true,
       relayList: true,
-      eventConstructors: [NDKBlossomList, NDKInterestList, NDKRelayFeedList],
+      monitor: [NDKBlossomList, NDKInterestList, NDKRelayFeedList],
     }
   }
 })
