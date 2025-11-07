@@ -31,6 +31,7 @@ interface OnboardingState {
   selectedCommunity: string | null;
   selectedPacks: string[];
   profileData: ProfileData;
+  introductionText?: string;
   hasPublishedInviteConfirmation: boolean;
   hasCompletedInviteSetup: boolean;
 }
@@ -48,6 +49,7 @@ const DEFAULT_STATE: OnboardingState = {
     picture: undefined,
     nip05: '',
   },
+  introductionText: undefined,
   hasPublishedInviteConfirmation: false,
   hasCompletedInviteSetup: false,
 };
@@ -63,7 +65,13 @@ function loadState(): OnboardingState {
     if (stored) {
       const parsed = JSON.parse(stored);
       console.log('[Store] Loaded state from sessionStorage:', parsed);
-      return { ...DEFAULT_STATE, ...parsed };
+      // Only restore if there's an active invite, otherwise start fresh at step 1
+      if (parsed.invite) {
+        return { ...DEFAULT_STATE, ...parsed };
+      } else {
+        console.log('[Store] No active invite, ignoring stored state and starting fresh');
+        return DEFAULT_STATE;
+      }
     } else {
       console.log('[Store] No stored state found, using DEFAULT_STATE');
     }
@@ -105,6 +113,10 @@ class OnboardingStore {
 
   get profileData() {
     return this.state.profileData;
+  }
+
+  get introductionText() {
+    return this.state.introductionText;
   }
 
   get hasInvite() {
@@ -168,6 +180,11 @@ class OnboardingStore {
 
   setProfileData(data: Partial<ProfileData>) {
     this.state.profileData = { ...this.state.profileData, ...data };
+    saveState(this.state);
+  }
+
+  setIntroductionText(text: string) {
+    this.state.introductionText = text;
     saveState(this.state);
   }
 

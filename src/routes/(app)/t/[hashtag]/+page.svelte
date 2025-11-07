@@ -3,8 +3,8 @@
   import { ndk } from '$lib/ndk.svelte';
   import { settings } from '$lib/stores/settings.svelte';
   import { sidebarStore } from '$lib/stores/sidebar.svelte';
-  import { NDKKind, type NDKEvent, NDKArticle } from '@nostr-dev-kit/ndk';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { NDKKind, type NDKEvent, NDKArticle, type NDKFilter } from '@nostr-dev-kit/ndk';
+  import { User } from '$lib/ndk/ui/user';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import ArticlePreviewCard from '$lib/components/ArticlePreviewCard.svelte';
   import MediaGrid from '$lib/components/MediaGrid.svelte';
@@ -62,7 +62,7 @@
 
   const articlesFeed = createLazyFeed(ndk, () => {
     const currentHashtag = hashtag;
-    const filter: any = {
+    const filter: NDKFilter = {
       kinds: [NDKKind.Article],
       '#t': [currentHashtag.toLowerCase()],
       limit: 100
@@ -169,7 +169,9 @@
             href={getProfileUrl(pubkey)}
             class="flex items-center gap-3 hover:bg-muted/50 rounded-lg p-2 transition-colors"
           >
-            <Avatar {ndk} {pubkey} class="w-10 h-10 rounded-full flex-shrink-0" />
+            <User.Root {ndk} {pubkey}>
+              <User.Avatar class="w-10 h-10 rounded-full flex-shrink-0" />
+            </User.Root>
             <div class="flex-1 min-w-0">
               <div class="text-sm font-medium text-foreground truncate">
                 {pubkey.slice(0, 16)}...

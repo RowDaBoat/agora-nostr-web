@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { NDKSvelte, NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
 
   interface Props {
     ndk: NDKSvelte;
@@ -58,7 +58,9 @@
     class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 hover:bg-primary/15 text-primary font-medium transition-colors no-underline {className}"
     onclick={handleClick}
   >
-    <Avatar {ndk} pubkey={user.pubkey} size={16} class="flex-shrink-0" />
+    <User.Root {ndk} pubkey={user.pubkey}>
+      <User.Avatar size={16} class="flex-shrink-0" />
+    </User.Root>
     <span class="text-sm">{displayName}</span>
   </a>
 {/if}

@@ -23,20 +23,11 @@
   const selectedPacks = $derived(onboardingStore.selectedPacks);
   const profileData = $derived(onboardingStore.profileData);
 
-  // Generate key and login (runs once)
+  // Generate key (but don't login yet - that happens at completion)
   $effect(() => {
       if (signer) return;
-
-      (async () => {
-        try {
-          signer = NDKPrivateKeySigner.generate();
-          console.log('[Onboarding] Attempting login with signer...');
-          await ndk.$sessions?.login(signer);
-          console.log('[Onboarding] ✓ Logged in with new keypair, pubkey:', signer.pubkey);
-        } catch (err) {
-          console.error('[Onboarding] ✗ Error logging in with new keypair:', err);
-        }
-      })();
+      signer = NDKPrivateKeySigner.generate();
+      console.log('[Onboarding] ✓ Generated new keypair, pubkey:', signer.pubkey);
   });
 
   // NOTE: completeInviteSetup is now called explicitly in handleStep4Next for invite flow
@@ -56,44 +47,72 @@
   }
 
   async function handleStep2Next() {
-    // Publish kind:3 contact list when follow packs are selected
-    if (selectedPacks.length > 0) {
-      try {
-        await followPackUsers(ndk, selectedPacks);
-        console.log(`Published kind:3 with follows from ${selectedPacks.length} packs`);
-      } catch (err) {
-        console.error('Error publishing contact list:', err);
-      }
-    }
+    // Just store the packs - they'll be published at completion
     goToStep(3);
   }
 
   async function handleStep4Next() {
-    console.log('[Onboarding] handleStep4Next called');
-    if (!signer) {
-      console.error('[Onboarding] ✗ No signer available');
-      return;
-    }
-    try {
-      // Check if this is an invite flow or regular onboarding
-      if (inviteData && !hasCompletedInviteSetup) {
-        console.log('[Onboarding] Invite flow: calling completeInviteSetup');
-        await onboardingStore.completeInviteSetup(signer);
-        console.log('[Onboarding] ✓ Invite setup complete');
-      } else {
-        console.log('[Onboarding] Regular flow: calling publishProfileAndSetup');
-        await onboardingStore.publishProfileAndSetup(signer);
-        console.log('[Onboarding] ✓ Profile published and setup complete');
-      }
-    } catch (err) {
-      console.error('[Onboarding] ✗ Error during onboarding:', err);
-    }
+    // Just move to the next step - no publishing yet
     goToStep(5);
   }
 
   async function completeOnboarding() {
-    onboardingStore.clear();
-    goto('/');
+    if (!signer) {
+      console.error('[Onboarding] ✗ No signer available');
+      return;
+    }
+
+    try {
+      console.log('[Onboarding] Starting onboarding completion...');
+
+      // 1. Login first
+      console.log('[Onboarding] Logging in...');
+      await ndk.$sessions?.login(signer);
+      console.log('[Onboarding] ✓ Logged in with pubkey:', signer.pubkey);
+
+      // 2. Check if this is an invite flow or regular onboarding
+      if (inviteData && !hasCompletedInviteSetup) {
+        console.log('[Onboarding] Invite flow: completing invite setup');
+        await onboardingStore.completeInviteSetup(signer);
+      } else {
+        console.log('[Onboarding] Regular flow: publishing profile and setup');
+        await onboardingStore.publishProfileAndSetup(signer);
+      }
+
+      // 3. Publish follow packs if selected
+      if (selectedPacks.length > 0) {
+        console.log('[Onboarding] Publishing kind:3 from', selectedPacks.length, 'packs');
+        await followPackUsers(ndk, selectedPacks);
+      }
+
+      // 4. Publish introduction if provided
+      const introText = onboardingStore.introductionText;
+      if (introText) {
+        console.log('[Onboarding] Publishing introduction post');
+        try {
+          const introData = JSON.parse(introText);
+          const event = new NDKEvent(ndk);
+          event.kind = 1;
+          event.content = introData.content;
+          event.tags = introData.hashtags.map((tag: string) => ['t', tag]);
+
+          if (introData.mentionInviter) {
+            event.tags.push(['p', introData.mentionInviter]);
+          }
+
+          await event.publish();
+          console.log('[Onboarding] ✓ Published introduction');
+        } catch (err) {
+          console.error('[Onboarding] ✗ Error publishing introduction:', err);
+        }
+      }
+
+      console.log('[Onboarding] ✓ Onboarding complete');
+      onboardingStore.clear();
+      goto('/');
+    } catch (err) {
+      console.error('[Onboarding] ✗ Error during onboarding completion:', err);
+    }
   }
 </script>
 

@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
+  import { createReactionAction } from '@nostr-dev-kit/svelte';
   import { ndk } from '$lib/ndk.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { clickOutside } from '$lib/utils/clickOutside';
   import ComposeDialog from './ComposeDialog.svelte';
   import ZapButton from './ZapButton.svelte';
   import Icon from './Icon.svelte';
+  import ReactionButton from '$lib/ndk/components/reaction/reaction-button.svelte';
 
   interface Props {
     event: NDKEvent;
@@ -20,7 +22,7 @@
 
   const interactions = ndk.$subscribe(() => ({
     filters: [{
-      kinds: [1, 1111, 6, 16, 7],
+      kinds: [1, 1111, 6, 16],
       ...event.filter()
     }],
     subId: 'interactions'
@@ -34,24 +36,16 @@
     Array.from(interactions.events ?? []).filter(e => e.kind === 6 || e.kind === 16).length
   );
 
-  const reactionCount = $derived.by(() =>
-    Array.from(interactions.events ?? []).filter(e => e.kind === 7).length
-  );
+  // TikTok variant uses createReactionAction for state management
+  const tiktokReactionState = $derived.by(() => {
+    if (variant !== 'tiktok') return null;
+    return createReactionAction(() => ({ event }), ndk);
+  });
 
-  async function handleReact(emoji: string) {
-    if (!ndk.signer) {
-      toast.error('Please login to react');
-      return;
-    }
-
-    try {
-      await event.react(emoji);
-      toast.success('Reaction added');
-    } catch (err) {
-      console.error('Failed to react:', err);
-      toast.error('Failed to add reaction');
-    }
-  }
+  const tiktokReactionStats = $derived.by(() => {
+    if (!tiktokReactionState) return { count: 0, hasReacted: false };
+    return tiktokReactionState.get('❤️') ?? { count: 0, hasReacted: false, pubkeys: [], emoji: '❤️' };
+  });
 
   async function handleRepost() {
     if (!ndk.signer) {
@@ -131,13 +125,21 @@
 
     <button
       type="button"
-      onclick={(e) => { e.stopPropagation(); handleReact('❤️'); }}
+      onclick={(e) => {
+        e.stopPropagation();
+        if (tiktokReactionState) {
+          tiktokReactionState.react('❤️').catch(err => {
+            console.error('Failed to react:', err);
+            toast.error('Failed to add reaction');
+          });
+        }
+      }}
       class="flex flex-col items-center gap-1 hover:scale-110 transition-transform group"
     >
-      <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-red-400">
-        <Icon name="heart-filled" size="lg" />
+      <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-red-400 transition-colors {tiktokReactionStats.hasReacted ? 'bg-red-400/30' : ''}">
+        <Icon name="heart-filled" size="lg" class={tiktokReactionStats.hasReacted ? 'animate-[heartbeat_0.3s_ease-in-out]' : ''} />
       </div>
-      <span class="text-xs font-semibold">{reactionCount}</span>
+      <span class="text-xs font-semibold">{tiktokReactionStats.count}</span>
     </button>
 
     <ZapButton {event} variant="tiktok" />
@@ -193,14 +195,11 @@
     {/if}
   </div>
 
-  <button
-    type="button"
-    onclick={(e) => { e.stopPropagation(); handleReact('❤️'); }}
-    class="flex items-center gap-2 hover:text-red-400 transition-colors group"
-  >
-    <Icon name="heart" size="md" />
-    <span class="text-sm group-hover:underline">{reactionCount}</span>
-  </button>
+  <ReactionButton
+    {event}
+    emoji="❤️"
+    class="hover:text-red-400 transition-colors group [&>span]:text-sm [&>span]:group-hover:underline"
+  />
 
   <ZapButton {event} />
   </div>

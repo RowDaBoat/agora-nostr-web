@@ -13,15 +13,16 @@
   import TikTokVideoFeed from '$lib/components/TikTokVideoFeed.svelte';
   import LoadMoreTrigger from '$lib/components/LoadMoreTrigger.svelte';
   import { createLazyFeed } from '$lib/utils/lazyFeed.svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import FeedHeader from '$lib/components/headers/FeedHeader.svelte';
   import { getRelaysToUse } from '$lib/utils/relayUtils';
   import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';
-  import { sub } from 'date-fns';
   import CreateMediaPostModal from '$lib/components/CreateMediaPostModal.svelte';
   import { createMediaPostModal } from '$lib/stores/createMediaPostModal.svelte';
   import { homePageFilter } from '$lib/stores/homePageFilter.svelte';
   import { page } from '$app/stores';
+    import { EventCard } from '$lib/ndk/components/event-card';
+    import EventCardClassic from '$lib/ndk/components/event-card/event-card-classic.svelte';
 
   type MediaFilter = 'conversations' | 'images' | 'videos' | 'articles';
   let selectedFilter = $state<MediaFilter>('conversations');
@@ -96,26 +97,31 @@
   console.log('[HomePage] Creating subscriptions');
 
   const notesFeed = createLazyFeed(ndk, () => {
-    const filter: NDKFilter = {
+    const filters: NDKFilter[] = [{
 					kinds: [NDKKind.Text, 9802],
 					limit: 200,
-				};
+      }];
 
     // Add hashtag filters if any are selected
     if (hashtagFilter.hasFilters) {
-      filter['#t'] = hashtagFilter.selectedHashtags;
+      filters[0]['#t'] = hashtagFilter.selectedHashtags;
     }
 
     // When in Following mode or Follow Pack mode, filter by authors
     const isFollowingOrPackMode = !settings.selectedRelay || isFollowPackSelection(settings.selectedRelay);
     if (isFollowingOrPackMode && authorsArray.length > 0) {
-      filter.authors = authorsArray;
+      filters[0].authors = authorsArray;
     }
 
-    console.log('relays to use for notes', relaysToUse);
+    if (!isFollowPackSelection && ndk.$currentPubkey) {
+      console.log('adding a filter for self')
+      filters.push({ ...filters[0], authors: [ndk.$currentPubkey] });
+    } else {
+      console.log('not adding filter for self', isFollowPackSelection, !!ndk.$currentPubkey)
+    }
 
     return {
-					filters: [filter],
+					filters,
 					relayUrls: relaysToUse.length > 0 ? relaysToUse : undefined,
 					subId: "notes",
 					cacheUnconstrainFilter: [],
@@ -451,7 +457,9 @@
             <!-- Avatars -->
             <div class="flex -space-x-2">
               {#each pendingAuthors.slice(0, 3) as pubkey (pubkey)}
-                <Avatar {ndk} {pubkey} class="w-6 h-6 rounded-full border-2 border-foreground" />
+                <User.Root {ndk} {pubkey}>
+                  <User.Avatar class="w-6 h-6 rounded-full border-2 border-foreground" />
+                </User.Root>
               {/each}
             </div>
             <!-- Text -->
@@ -471,7 +479,7 @@
           {#if event.kind === 9802}
             <HighlightCard {event} variant="feed" />
           {:else}
-            <NoteCard {event} />
+            <EventCardClassic {ndk} {event} />
           {/if}
         {/each}
       {/if}

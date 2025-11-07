@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
   interface Props {
@@ -19,7 +19,9 @@
 </script>
 
 <div class="flex items-center gap-3 p-2 rounded-lg bg-card/50">
-  <Avatar {ndk} {pubkey} class="w-8 h-8 flex-shrink-0" />
+  <User.Root {ndk} {pubkey}>
+    <User.Avatar class="w-8 h-8 flex-shrink-0" />
+  </User.Root>
   <div class="flex-1 min-w-0">
     <div class="text-sm font-medium text-foreground truncate">
       {profile?.displayName || profile?.name || `${pubkey.slice(0, 8)}...`}

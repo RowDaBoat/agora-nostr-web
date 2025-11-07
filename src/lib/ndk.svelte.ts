@@ -6,7 +6,6 @@ import { browser } from '$app/environment';
 import { createAuthPolicyWithConfirmation } from './relayAuthPolicy.svelte';
 import { createHashtagInterestsStore } from './stores/hashtagInterests.svelte';
 import { createRelayFeedsStore } from './stores/relayFeeds.svelte';
-import { initializeCache } from './utils/clearCache';
 import { CACHE_WORKER_VERSION } from './worker-version';
 
 const DEFAULT_RELAYS = [
@@ -16,7 +15,7 @@ const DEFAULT_RELAYS = [
 
 // Initialize SQLite WASM cache (worker-only, browser only)
 const cacheAdapter = new NDKCacheSqliteWasm({
-  dbName: "voces-cache",
+  dbName: "agora",
   workerUrl: `/worker-${CACHE_WORKER_VERSION}.js`,
   wasmUrl: "/sql-wasm.wasm",
 });
@@ -35,6 +34,7 @@ export const ndk = createNDK({
   lowestValidationRatio: 0.1,
   aiGuardrails: false,
   futureTimestampGrace: 30,
+  clientName: 'Agora',
   session: {
     storage: new LocalStorage(),
     autoSave: true,
@@ -51,11 +51,6 @@ export const ndk = createNDK({
 // Set the relay authentication policy (browser only)
 if (browser) {
   ndk.relayAuthDefaultPolicy = createAuthPolicyWithConfirmation({ ndk });
-
-  // Initialize cache and clear if version mismatch
-  initializeCache("voces-cache").catch(err => {
-    console.error('Failed to initialize cache:', err);
-  });
 }
 
 // Initialize the cache and connect

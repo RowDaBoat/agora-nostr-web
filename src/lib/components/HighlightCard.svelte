@@ -1,9 +1,10 @@
 <script lang="ts">
   import { type NDKEvent, NDKArticle } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import EventCardHeader from './EventCardHeader.svelte';
   import EventActions from './EventActions.svelte';
+  import TimeAgo from './TimeAgo.svelte';
   import { getArticleUrl } from '$lib/utils/articleUrl';
   import { fetchUrlMetadata, type UrlMetadata } from '$lib/utils/urlMetadata';
 
@@ -340,7 +341,9 @@
 
     <!-- Author info below -->
     <div class="flex items-center gap-2 mt-2 px-1">
-      <Avatar {ndk} pubkey={event.pubkey} class="w-5 h-5 rounded-full" />
+      <User.Root {ndk} pubkey={event.pubkey}>
+        <User.Avatar class="w-5 h-5 rounded-full" />
+      </User.Root>
       <span class="text-xs text-muted-foreground truncate">{authorName}</span>
     </div>
   </article>

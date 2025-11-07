@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import { formatTimeAgo } from '$lib/utils/formatTime';
-	import Avatar from '$lib/components/ndk/avatar.svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import type { NDKEvent, NDKUserProfile } from '@nostr-dev-kit/ndk';
 
 	interface Props {
@@ -15,10 +15,12 @@
 	let inviterProfile = $state<NDKUserProfile | null>(null);
 
 	$effect(() => {
+		console.log('[IntroductionCard] $effect running for author:', event.pubkey);
 		event.author.fetchProfile().then(p => { profile = p; });
 	});
 
 	$effect(() => {
+		console.log('[IntroductionCard] $effect running for invitedBy:', invitedBy);
 		if (!invitedBy) {
 			inviterProfile = null;
 			return;
@@ -32,7 +34,9 @@
 <div class="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors">
 	<!-- Author Header -->
 	<div class="flex items-center gap-3 mb-3">
-		<Avatar {ndk} pubkey={event.pubkey} class="w-12 h-12 rounded-full" />
+		<User.Root {ndk} pubkey={event.pubkey}>
+		  <User.Avatar class="w-12 h-12 rounded-full" />
+		</User.Root>
 		<div class="flex-1 min-w-0">
 			<div class="flex items-center gap-2">
 				<span class="text-lg">👋</span>

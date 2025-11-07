@@ -1,7 +1,8 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import { NDKFollowPack, NDKSubscriptionCacheUsage, type NDKFilter } from '@nostr-dev-kit/ndk';
-  import { COMMUNITY_RELAYS, FOLLOW_PACK_KIND, COMMUNITY_METADATA } from '$lib/config/followPacks';
+  import { NDKFollowPack, NDKSubscriptionCacheUsage, type NDKFilter, filterFromId } from '@nostr-dev-kit/ndk';
+  import { COMMUNITY_RELAYS, FOLLOW_PACK_KIND, COMMUNITY_METADATA, HARDCODED_COMMUNITY_PACKS } from '$lib/config/followPacks';
+  import { FollowPackCompact } from '$lib/ndk/components/follow-pack-compact';
 
   interface Props {
     selectedCommunity: string | null;
@@ -12,64 +13,66 @@
 
   let { selectedCommunity, selectedPacks, onSelectPacks, onNext }: Props = $props();
 
-  let followPacks = $state<NDKFollowPack[]>([]);
-  let loading = $state(true);
+  const communityKey = $derived(selectedCommunity || 'venezuela');
+  const hardcodedNaddrs = $derived(HARDCODED_COMMUNITY_PACKS[communityKey]);
 
-  $effect(() => {
-    const communityKey = selectedCommunity || 'venezuela';
-    const relayUrls = COMMUNITY_RELAYS[communityKey];
+  const followPacksSubscription = $derived.by(() => {
+    if (hardcodedNaddrs && hardcodedNaddrs.length > 0) {
+      // Use hardcoded packs with subscription
+      const filters = hardcodedNaddrs.map(naddr => filterFromId(naddr));
+      return ndk.$subscribe(() => ({
+        filters,
+        subId: 'followpacks',
+        closeOnEose: true
+      }));
+    } else {
+      // Fallback: fetch from relay if no hardcoded packs
+      const relayUrls = COMMUNITY_RELAYS[communityKey];
+      if (!relayUrls || relayUrls.length === 0) {
+        console.warn(`No relay configured for community: ${communityKey}`);
+        return null;
+      }
 
-    if (!relayUrls || relayUrls.length === 0) {
-      console.warn(`No relay configured for community: ${communityKey}`);
-      loading = false;
-      return;
-    }
-
-    loading = true;
-    const packs: NDKFollowPack[] = [];
-
-    const filter: NDKFilter = {
-      kinds: [FOLLOW_PACK_KIND]
-    };
-
-    const sub = ndk.subscribe(
-      filter,
-      {
+      return ndk.$subscribe(() => ({
+        filters: [{ kinds: [FOLLOW_PACK_KIND] }],
+        subId: 'followpacks',
         closeOnEose: true,
-        cacheUsage: NDKSubscriptionCacheUsage.ONLY_RELAY
-      },
-      relayUrls
-    );
-
-    sub.on('event', (event) => {
-      const pack = NDKFollowPack.from(event);
-      packs.push(pack);
-    });
-
-    sub.on('eose', () => {
-      followPacks = packs;
-      loading = false;
-    });
-
-    return () => {
-      sub.stop();
-    };
+        relayUrls,
+        exclusiveRelay: true
+      }));
+    }
   });
 
-  const communityKey = selectedCommunity || 'venezuela';
-  const communityInfo = COMMUNITY_METADATA[communityKey] || COMMUNITY_METADATA.venezuela;
+  const followPacks = $derived.by(() => {
+    if (!followPacksSubscription) return [];
+    const events = Array.from(followPacksSubscription.events ?? []);
+    return events.map(event => NDKFollowPack.from(event));
+  });
+
+  const loading = $derived(followPacksSubscription?.eoseReceived === false);
+
+  const communityInfo = $derived(COMMUNITY_METADATA[communityKey] || COMMUNITY_METADATA.venezuela);
 
   function handlePackClick(pack: NDKFollowPack) {
     const packId = pack.encode();
+    console.log('[Step2] Pack clicked:', pack.title, 'packId:', packId);
     if (selectedPacks.includes(packId)) {
+      console.log('[Step2] Deselecting pack');
       onSelectPacks(selectedPacks.filter(id => id !== packId));
     } else {
+      console.log('[Step2] Selecting pack');
       onSelectPacks([...selectedPacks, packId]);
     }
+    console.log('[Step2] Selected packs count:', selectedPacks.length);
   }
 
   function handleNext() {
-    if (selectedPacks.length === 0) return;
+    console.log('[Step2] handleNext called, selectedPacks:', selectedPacks.length);
+    if (selectedPacks.length === 0) {
+      console.log('[Step2] No packs selected, returning');
+      return;
+    }
+    console.log('[Step2] Calling onNext');
     onNext();
   }
 </script>
@@ -124,53 +127,23 @@
           <div class="space-y-2 mb-6 lg:mb-8 max-h-[50vh] lg:max-h-[60vh] overflow-y-auto p-2 -m-2">
             {#each followPacks.slice(0, 6) as pack (pack.id)}
               {@const isSelected = selectedPacks.includes(pack.encode())}
-              <button
-                onclick={() => handlePackClick(pack)}
-                class={`
-                  relative w-full cursor-pointer rounded-xl transition-all text-left
-                  flex gap-3 sm:gap-4 p-3 sm:p-4 bg-card hover:bg-accent border border dark:border
-                  ${isSelected ? 'ring-2 ring-orange-500 bg-primary-50 dark:bg-primary-950/20' : ''}
-                `}
-              >
-                <!-- Image -->
-                {#if pack.image}
-                  <img
-                    src={pack.image}
-                    alt={pack.title}
-                    class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover flex-shrink-0"
-                  />
-                {:else}
-                  <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center flex-shrink-0">
-                    <span class="text-xl sm:text-2xl">📦</span>
-                  </div>
-                {/if}
-
-                <!-- Content -->
-                <div class="flex-1 min-w-0">
-                  <h4 class="font-semibold text-sm sm:text-base text-foreground truncate">
-                    {pack.title}
-                  </h4>
-                  {#if pack.description}
-                    <p class="text-xs sm:text-sm text-muted-foreground line-clamp-1 sm:truncate">
-                      {pack.description}
-                    </p>
-                  {/if}
-                  <div class="flex items-center gap-2 sm:gap-3 mt-1 sm:mt-2">
-                    <span class="text-[10px] sm:text-xs text-muted-foreground">
-                      {pack.pubkeys?.length || 0} members
-                    </span>
-                  </div>
-                </div>
+              <div class="relative">
+                <FollowPackCompact
+                  {ndk}
+                  followPack={pack}
+                  onclick={() => handlePackClick(pack)}
+                  class={isSelected ? 'ring-2 ring-orange-500 bg-primary-50 dark:bg-primary-950/20' : ''}
+                />
 
                 <!-- Selection checkmark -->
                 {#if isSelected}
-                  <div class="absolute top-1/2 right-4 -translate-y-1/2 bg-primary text-foreground rounded-full p-1.5 z-10">
+                  <div class="absolute top-1/2 right-4 -translate-y-1/2 bg-primary text-foreground rounded-full p-1.5 z-10 pointer-events-none">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                     </svg>
                   </div>
                 {/if}
-              </button>
+              </div>
             {/each}
           </div>
         {/if}
@@ -186,7 +159,7 @@
           }
         `}
       >
-        Continue →
+        Continue {selectedPacks.length > 0 ? `(${selectedPacks.length} selected)` : '→'}
       </button>
     </div>
   </div>

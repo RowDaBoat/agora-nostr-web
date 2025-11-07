@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { ndk } from '$lib/ndk.svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import { loginModal } from '$lib/stores/loginModal.svelte';
   import { settings } from '$lib/stores/settings.svelte';
   import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';
@@ -162,7 +162,9 @@
       aria-label="Profile"
     >
       {#if ndk.$currentUser}
-        <Avatar {ndk} pubkey={ndk.$currentUser.pubkey} class="w-8 h-8 rounded-full" />
+        <User.Root {ndk} pubkey={ndk.$currentUser.pubkey}>
+          <User.Avatar class="w-8 h-8 rounded-full" />
+        </User.Root>
       {:else}
         <Icon name="user" size="lg" class="text-muted-foreground" />
       {/if}
@@ -184,7 +186,9 @@
           onclick={navigateToProfile}
           class="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
         >
-          <Avatar {ndk} pubkey={ndk.$currentUser.pubkey} class="w-12 h-12" />
+          <User.Root {ndk} pubkey={ndk.$currentUser.pubkey}>
+            <User.Avatar class="w-12 h-12" />
+          </User.Root>
           <div class="flex-1 min-w-0">
             <p class="font-medium text-sm truncate text-popover-foreground">
               {displayName}

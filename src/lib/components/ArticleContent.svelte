@@ -1,7 +1,7 @@
 <script lang="ts">
   import { marked } from 'marked';
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import { ndk } from '$lib/ndk.svelte';
   import { SvelteMap } from 'svelte/reactivity';
 
@@ -245,7 +245,9 @@
       class="highlight-avatar"
       style="position: absolute; top: {top}px; right: {right};"
     >
-      <Avatar {ndk} {pubkey} class="w-8 h-8 rounded-full ring-2 ring-background shadow-lg" />
+      <User.Root {ndk} {pubkey}>
+        <User.Avatar class="w-8 h-8 rounded-full ring-2 ring-background shadow-lg" />
+      </User.Root>
     </div>
   {/each}
 </div>

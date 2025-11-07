@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
   import { navigateToProfile } from '$lib/utils/navigation';
-  import Name from '$ndk/name.svelte';
+  import { User } from '$lib/ndk/ui/user';
 
   interface Props {
     pubkeys: string[];
@@ -26,7 +26,7 @@
       onclick={(e) => handleProfileClick(pubkey, e)}
       class="font-semibold hover:underline text-foreground"
     >
-      <Name {ndk} {pubkey} />{#if i < visiblePubkeys.length - 1 || othersCount > 0},{/if}
+      <User.Root {ndk} {pubkey}><User.Name /></User.Root>{#if i < visiblePubkeys.length - 1 || othersCount > 0},{/if}
     </button>
   {/each}
   {#if othersCount > 0}

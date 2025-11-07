@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
   import { NDKEvent, NDKRelaySet } from '@nostr-dev-kit/ndk';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import { toast } from '$lib/stores/toast.svelte';
   import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';
   import { clickOutside } from '$lib/utils/clickOutside';
@@ -196,7 +196,9 @@
       {#if replyTo && replyToProfile}
         <div class="-mx-6 px-4 py-3 mb-4 border-b border-border bg-card/50">
           <div class="flex gap-3">
-            <Avatar {ndk} pubkey={replyTo.pubkey} class="w-10 h-10" />
+            <User.Root {ndk} pubkey={replyTo.pubkey}>
+              <User.Avatar class="w-10 h-10" />
+            </User.Root>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <span class="font-semibold text-foreground text-sm">
@@ -337,7 +339,9 @@
       {#if replyTo && replyToProfile}
         <div class="px-4 py-3 mb-4 border-b border-border bg-card/50 shrink-0">
           <div class="flex gap-3">
-            <Avatar {ndk} pubkey={replyTo.pubkey} class="w-10 h-10" />
+            <User.Root {ndk} pubkey={replyTo.pubkey}>
+              <User.Avatar class="w-10 h-10" />
+            </User.Root>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <span class="font-semibold text-foreground text-sm">

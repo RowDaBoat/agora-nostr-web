@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import Avatar from '$lib/components/ndk/avatar.svelte';
-	import FollowButton from './FollowButton.svelte';
+	import { User } from '$lib/ndk/ui/user';
+	import { FollowButton } from '$lib/ndk/components/actions';
 	import { formatTimeAgo } from '$lib/utils/formatTime';
 	import type { NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
 
@@ -51,7 +51,9 @@
 </script>
 
 <div class="flex items-start gap-3 p-4 bg-card rounded-lg border border-border hover:border-primary/30 transition-colors {className}">
-	<Avatar {ndk} {pubkey} class="w-12 h-12 rounded-full" />
+	<User.Root {ndk} {pubkey}>
+		<User.Avatar class="w-12 h-12 rounded-full" />
+	</User.Root>
 
 	<div class="flex-1 min-w-0">
 		<div class="flex items-start justify-between gap-2">
@@ -106,7 +108,7 @@
 
 			{#if showFollow}
 				<div class="flex-shrink-0">
-					<FollowButton {pubkey} iconOnly={true} />
+					<FollowButton {ndk} target={pubkey} />
 				</div>
 			{/if}
 		</div>

@@ -3,7 +3,7 @@
   import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';
   import { isAgoraRelay } from '$lib/utils/relayUtils';
   import RelayIcon from './RelayIcon.svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
 
   interface Props {
     relayUrl: string;
@@ -57,7 +57,9 @@
       {#if pubkeys.length > 0}
         <div class="flex -space-x-1.5 mb-2 items-center">
           {#each pubkeys.slice(0, 5) as pubkey (pubkey)}
-            <Avatar {ndk} {pubkey} class="rounded-full border-2 border-background" size={32} />
+            <User.Root {ndk} {pubkey}>
+              <User.Avatar class="rounded-full border-2 border-background" size={32} />
+            </User.Root>
           {/each}
           {#if pubkeys.length > 5}
             <div class="w-5 h-5 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">

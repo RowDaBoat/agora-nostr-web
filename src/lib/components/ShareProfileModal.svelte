@@ -1,6 +1,6 @@
 <script lang="ts">
   import { MediaQuery } from 'svelte/reactivity';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import { ndk } from '$lib/ndk.svelte';
   import QRCode from './wallet/QRCode.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
@@ -88,7 +88,9 @@
         <div class="bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl p-6 mb-6">
           <div class="flex flex-col items-center text-foreground">
             <div class="relative mb-4">
-              <Avatar {ndk} {pubkey} class="w-20 h-20 ring-4 ring-white/20" />
+              <User.Root {ndk} {pubkey}>
+                <User.Avatar class="w-20 h-20 ring-4 ring-white/20" />
+              </User.Root>
             </div>
             <h3 class="text-xl font-bold mb-1">{profile?.name || 'Anonymous'}</h3>
             {#if profile?.nip05}
@@ -211,7 +213,9 @@
         <div class="bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl p-6 mb-6">
           <div class="flex flex-col items-center text-foreground">
             <div class="relative mb-4">
-              <Avatar {ndk} {pubkey} class="w-20 h-20 ring-4 ring-white/20" />
+              <User.Root {ndk} {pubkey}>
+                <User.Avatar class="w-20 h-20 ring-4 ring-white/20" />
+              </User.Root>
             </div>
             <h3 class="text-xl font-bold mb-1">{profile?.name || 'Anonymous'}</h3>
             {#if profile?.nip05}

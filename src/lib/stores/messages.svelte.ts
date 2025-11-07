@@ -12,12 +12,13 @@ class MessagesStore {
 
   // Lazy-start messenger when first accessed
   private async ensureStarted() {
-    if (!this.isStarted && ndk.$currentUser) {
+    console.log('ensurestrated running')
+    if (!this.isStarted && ndk.$currentUser && ndk.signer) {
       this.isStarted = true;
 
       // Create messenger instance with persistent storage
       const storage = new CacheModuleStorage(ndk.cacheAdapter!, ndk.$currentUser.pubkey);
-      this.messenger = new NDKMessenger({ ndk, storage });
+      this.messenger = new NDKMessenger(ndk, storage);
 
       // Listen for new messages
       this.messenger.on('message', (message: NDKMessage) => {

@@ -6,6 +6,7 @@
   import { locale, t } from 'svelte-i18n';
   import { getIntroductionHashtags } from '$lib/constants/introductions';
   import ContentComposer from '$lib/components/ContentComposer.svelte';
+  import { onboardingStore } from '$lib/stores/onboarding.svelte';
 
   interface Props {
     profileData: {
@@ -44,7 +45,7 @@
 
   const { introductionPosts } = createIntroductionPostsManager(ndk, inviteRelay);
 
-  async function publishIntroduction() {
+  async function saveIntroduction() {
     if (!hasValidIntro) return;
 
     publishing = true;
@@ -60,20 +61,19 @@
         }
       }
 
-      const event = new NDKEvent(ndk);
-      event.kind = 1;
-      event.content = content;
-      event.tags = hashtags.map(tag => ['t', tag]);
+      // Store the introduction with metadata for later publishing
+      const introData = {
+        content,
+        hashtags,
+        mentionInviter: mentionInviter && inviterPubkey ? inviterPubkey : undefined
+      };
 
-      // Add p-tag for inviter if enabled
-      if (mentionInviter && inviterPubkey) {
-        event.tags.push(['p', inviterPubkey]);
-      }
+      // Store as JSON string in the store
+      onboardingStore.setIntroductionText(JSON.stringify(introData));
 
-      await event.publish();
       onNext();
     } catch (error) {
-      console.error('Error publishing introduction:', error);
+      console.error('Error saving introduction:', error);
       publishing = false;
     }
   }
@@ -153,7 +153,7 @@
               {$t('onboarding.step5Introduction.skipForNow')}
             </button>
             <button
-              onclick={publishIntroduction}
+              onclick={saveIntroduction}
               disabled={!hasValidIntro || publishing}
               class={`
                 flex-1 py-3 px-6 rounded-lg font-medium transition-all
@@ -199,7 +199,7 @@
         {$t('onboarding.step5Introduction.skipForNow')}
       </button>
       <button
-        onclick={publishIntroduction}
+        onclick={saveIntroduction}
         disabled={!hasValidIntro || publishing}
         class={`
           flex-1 py-3 px-6 rounded-lg font-medium transition-all

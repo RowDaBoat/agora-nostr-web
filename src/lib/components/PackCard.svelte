@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
   import { goto } from '$app/navigation';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import { getPackUrl } from '$lib/utils/packUrl';
   import { getProfileUrl } from '$lib/utils/navigation';
   import type { NDKUser } from '@nostr-dev-kit/ndk';
@@ -85,7 +85,9 @@
           class="relative cursor-pointer"
           style="z-index: {4 - index}"
         >
-          <Avatar {ndk} {pubkey} class="w-8 h-8 rounded-full ring-2 ring-neutral-900 hover:opacity-80 transition-opacity" />
+          <User.Root {ndk} {pubkey}>
+            <User.Avatar class="w-8 h-8 rounded-full ring-2 ring-neutral-900 hover:opacity-80 transition-opacity" />
+          </User.Root>
         </button>
       {/each}
       {#if pack.pubkeys.length > 4}

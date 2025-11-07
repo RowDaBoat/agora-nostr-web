@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import type { NDKConversation } from '@nostr-dev-kit/messages';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import TimeAgo from '../TimeAgo.svelte';
   import { ndk } from '$lib/ndk.svelte';
   import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
@@ -39,7 +39,9 @@
 >
   <!-- Avatar -->
   {#if participant}
-    <Avatar {ndk} pubkey={participant.pubkey} class="w-12 h-12 flex-shrink-0" />
+    <User.Root {ndk} pubkey={participant.pubkey}>
+      <User.Avatar class="w-12 h-12 flex-shrink-0" />
+    </User.Root>
   {/if}
 
   <!-- Content -->

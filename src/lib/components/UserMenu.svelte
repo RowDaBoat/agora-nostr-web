@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import { goto } from '$app/navigation';
   import { t } from 'svelte-i18n';
   import { settings } from '$lib/stores/settings.svelte';
@@ -92,7 +92,9 @@
     class="w-full flex items-center {collapsed ? 'justify-center p-3' : 'gap-3 px-2 py-2'} rounded-lg hover:bg-muted transition-colors cursor-pointer"
     title={collapsed ? displayName : undefined}
   >
-    <Avatar {ndk} pubkey={ndk.$currentUser.pubkey} class="w-10 h-10" />
+    <User.Root {ndk} pubkey={ndk.$currentUser.pubkey}>
+      <User.Avatar class="w-10 h-10" />
+    </User.Root>
     {#if !collapsed}
       <div class="flex-1 min-w-0 text-left">
         <p class="font-medium text-sm truncate text-foreground">
@@ -119,7 +121,9 @@
           onclick={navigateToProfile}
           class="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
         >
-          <Avatar {ndk} pubkey={ndk.$currentUser.pubkey} class="w-12 h-12" />
+          <User.Root {ndk} pubkey={ndk.$currentUser.pubkey}>
+            <User.Avatar class="w-12 h-12" />
+          </User.Root>
           <div class="flex-1 min-w-0">
             <p class="font-medium text-sm truncate text-popover-foreground">
               {displayName}

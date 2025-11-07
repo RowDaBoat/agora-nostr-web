@@ -9,6 +9,16 @@ export const COMMUNITY_RELAYS: Record<string, string[]> = {
   // Other communities can be added here as they get their own relays
 };
 
+// Hardcoded follow pack naddr lists per community
+// Communities with hardcoded packs will use these instead of fetching from relays
+// Communities not listed here will fetch from their configured relay
+export const HARDCODED_COMMUNITY_PACKS: Record<string, string[]> = {
+	venezuela: [
+		"naddr1qvzqqqyckypzp75v7yjjc7h7lzaf3gfvpck39mvcjmylz7aleup9mtutd5yrlxv7qythwumn8ghj7un9d3shjtnswf5k6ctv9ehx2ap0qythwumn8ghj7un9d3shjtnwdaehgu3wvfskuep0qqv4qmmv946xjcmp94tx2mn90f6k2mrp945kwart09hsc909n2",
+	],
+	// Other communities can be added here as needed
+};
+
 // Follow pack kind for subscription filters
 export const FOLLOW_PACK_KIND = NDKKind.FollowPack; // 39089
 

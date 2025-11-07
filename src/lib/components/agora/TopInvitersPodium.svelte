@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import Avatar from '$lib/components/ndk/avatar.svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import { getProfileUrl } from '$lib/utils/navigation';
 	import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
@@ -31,14 +31,29 @@
 	const maxSuccess = $derived(Math.max(...stats.map(s => s.successfulInvites), 1));
 
 	let profiles = $state<Map<string, NDKUserProfile | null>>(new Map());
+	let profilesVersion = $state(0);
 
 	$effect(() => {
-		profiles.clear();
+		console.log('[TopInvitersPodium] $effect running, stats count:', stats.length);
+		const newProfiles = new Map<string, NDKUserProfile | null>();
+		let loaded = 0;
+		const total = stats.length;
+
+		if (total === 0) {
+			profiles = newProfiles;
+			return;
+		}
+
 		stats.forEach(stat => {
 			ndk.fetchUser(stat.pubkey).then(u => {
 				u?.fetchProfile().then(p => {
-					profiles.set(stat.pubkey, p || null);
-					profiles = new Map(profiles);
+					console.log('[TopInvitersPodium] Setting profile for', stat.pubkey);
+					newProfiles.set(stat.pubkey, p || null);
+					loaded++;
+					if (loaded === total) {
+						profiles = newProfiles;
+						profilesVersion++;
+					}
 				});
 			});
 		});
@@ -68,7 +83,9 @@
 
 					<!-- Avatar -->
 					<div class="flex justify-center mt-6 mb-4">
-						<Avatar {ndk} pubkey={stat.pubkey} class="w-24 h-24 rounded-full ring-4 ring-primary/20" />
+						<User.Root {ndk} pubkey={stat.pubkey}>
+						  <User.Avatar class="w-24 h-24 rounded-full ring-4 ring-primary/20" />
+						</User.Root>
 					</div>
 
 					<!-- Name -->
@@ -134,7 +151,11 @@
 						<div class="flex items-center gap-3 flex-1">
 							<span class="text-lg font-semibold text-muted-foreground w-8">{stat.rank}.</span>
 
-							<Avatar {ndk} pubkey={stat.pubkey} class="w-10 h-10 rounded-full" />
+							<User.Root {ndk} pubkey={stat.pubkey}>
+
+							  <User.Avatar class="w-10 h-10 rounded-full" />
+
+							</User.Root>
 
 							<div class="flex-1 min-w-0">
 								<div class="font-medium text-foreground truncate">

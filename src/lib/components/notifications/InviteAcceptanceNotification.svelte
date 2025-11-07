@@ -2,7 +2,7 @@
 	import type { InviteAcceptanceNotification } from '$lib/utils/useNotifications.svelte';
 	import { ndk } from '$lib/ndk.svelte';
 	import User from '../User.svelte';
-	import FollowButton from '../FollowButton.svelte';
+	import { FollowButton } from '$lib/ndk/components/actions';
 	import NotificationBase from './NotificationBase.svelte';
 	import TimeAgo from '../TimeAgo.svelte';
 	import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
@@ -72,7 +72,7 @@
 
 		<div class="flex items-center gap-2 mt-2 ml-[54px]">
 			{#if !isFollowing}
-				<FollowButton pubkey={notification.inviteePubkey} variant="outline" />
+				<FollowButton {ndk} target={notification.inviteePubkey} />
 			{/if}
 		</div>
 	{/snippet}

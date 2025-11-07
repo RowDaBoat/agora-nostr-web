@@ -1,4 +1,5 @@
 import { ndk } from '$lib/ndk.svelte';
+import { settings } from '$lib/stores/settings.svelte';
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
 
 interface CurrencyInfo {
@@ -103,10 +104,21 @@ const currencyMetadata: Record<string, { name: string; flag: string }> = {
 };
 
 export function useAvailableCurrencies() {
-  const subscription = ndk.$subscribe(() => ({
-    filters: [{ kinds: [38383], limit: 100 }],
-    closeOnEose: false,
-  }));
+  const selectedRelay = $derived(settings.selectedRelay);
+
+  const subscription = ndk.$subscribe(() => {
+    const opts: any = {
+      filters: [{ kinds: [38383], limit: 100 }],
+      closeOnEose: false,
+    };
+
+    if (selectedRelay) {
+      opts.relayUrls = [selectedRelay];
+      opts.exclusiveRelay = true;
+    }
+
+    return opts;
+  });
 
   const currencies = $derived.by(() => {
     const currencySet = new Set<string>();

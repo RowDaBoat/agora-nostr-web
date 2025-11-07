@@ -5,7 +5,7 @@
   import { portal } from '$lib/utils/portal.svelte';
   import CommentCard from './CommentCard.svelte';
   import CommentForm from './CommentForm.svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import { nip19 } from 'nostr-tools';
   import TimeAgo from './TimeAgo.svelte';
 
@@ -162,7 +162,9 @@
           <div class="border-b border-neutral-800 p-4">
             <div class="flex items-start gap-3">
               <button type="button" onclick={navigateToProfile} class="flex-shrink-0">
-                <Avatar {ndk} pubkey={event.pubkey} class="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity" />
+                <User.Root {ndk} pubkey={event.pubkey}>
+                  <User.Avatar class="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity" />
+                </User.Root>
               </button>
               <div class="flex-1 min-w-0">
                 <button type="button" onclick={navigateToProfile} class="hover:underline">
@@ -261,7 +263,9 @@
         <div class="absolute top-16 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent">
           <div class="flex items-start gap-3">
             <button type="button" onclick={navigateToProfile} class="flex-shrink-0">
-              <Avatar {ndk} pubkey={event.pubkey} class="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity" />
+              <User.Root {ndk} pubkey={event.pubkey}>
+                <User.Avatar class="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity" />
+              </User.Root>
             </button>
             <div class="flex-1 min-w-0">
               <button type="button" onclick={navigateToProfile} class="hover:underline">

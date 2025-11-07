@@ -4,7 +4,7 @@
 	import { ndk } from '$lib/ndk.svelte';
 	import { decryptInvitePayload } from '$lib/utils/inviteEncryption';
 	import { AGORA_RELAYS } from '$lib/utils/relayUtils';
-	import Avatar from '$lib/components/ndk/avatar.svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import type { NDKEvent } from '@nostr-dev-kit/ndk';
 	import { NDKKind, NDKSubscriptionCacheUsage } from '@nostr-dev-kit/ndk';
 	import { onboardingStore } from '$lib/stores/onboarding.svelte';
@@ -212,7 +212,9 @@
 					<div class="flex flex-col items-center mb-8 -mt-20">
 						<div class="relative mb-4">
 							<div class="w-24 h-24 rounded-full ring-4 ring-white dark:ring-neutral-900 overflow-hidden bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center">
-								<Avatar {ndk} pubkey={inviteData.inviter} class="w-full h-full object-cover [&>*]:w-full [&>*]:h-full [&>*]:object-cover" />
+								<User.Root {ndk} pubkey={inviteData.inviter}>
+									<User.Avatar class="w-full h-full object-cover [&>*]:w-full [&>*]:h-full [&>*]:object-cover" />
+								</User.Root>
 							</div>
 						</div>
 						<div class="text-center">

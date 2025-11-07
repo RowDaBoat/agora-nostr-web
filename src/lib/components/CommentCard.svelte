@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { NDKEvent, NDKUserProfile } from '@nostr-dev-kit/ndk';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
-import EventContent from '$lib/components/ndk/event-content.svelte';
+  import { User } from '$lib/ndk/ui/user';
+import EventContent from '$lib/ndk/ui/event-content.svelte';
   import { ndk } from '$lib/ndk.svelte';
   import { navigateToProfile } from '$lib/utils/navigation';
   import TimeAgo from './TimeAgo.svelte';
@@ -28,7 +28,9 @@ import EventContent from '$lib/components/ndk/event-content.svelte';
 <div class="group">
   <div class="flex gap-3 items-start">
     <button type="button" onclick={handleProfileClick} class="flex-shrink-0">
-      <Avatar {ndk} pubkey={event.pubkey} class="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity" />
+      <User.Root {ndk} pubkey={event.pubkey}>
+        <User.Avatar class="w-10 h-10 cursor-pointer hover:opacity-80 transition-opacity" />
+      </User.Root>
     </button>
     <div class="flex-1 min-w-0">
       <div class="flex items-baseline gap-2 mb-1">

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
-  import EventContent from '$lib/components/ndk/event-content.svelte';
-  import FollowButton from './FollowButton.svelte';
+  import { User } from '$lib/ndk/ui/user';
+  import EventContent from '$lib/ndk/ui/event-content.svelte';
+  import { FollowButton } from '$lib/ndk/components/actions';
   import { generateBannerGradient } from '$lib/utils/bannerGradient';
   import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
@@ -75,11 +75,9 @@
         <div class="relative px-5 pb-5 -mt-10">
           <!-- Avatar -->
           <div class="relative inline-block mb-3">
-            <Avatar
-              {ndk}
-              {pubkey}
-              class="w-20 h-20 rounded-full border-4 border-foreground shadow-xl"
-            />
+            <User.Root {ndk} {pubkey}>
+              <User.Avatar class="w-20 h-20 rounded-full border-4 border-foreground shadow-xl" />
+            </User.Root>
           </div>
 
           <!-- Name and username -->
@@ -129,7 +127,7 @@
 
           <!-- Follow button -->
           {#if !isOwnProfile}
-            <FollowButton {pubkey} />
+            <FollowButton {ndk} target={pubkey} />
           {/if}
         </div>
       </div>

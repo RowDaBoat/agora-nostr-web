@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import { KIND_INVITE_ACCEPTANCE } from '$lib/constants/nostr';
   import type { NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
 
@@ -51,7 +51,9 @@
       <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
       </svg>
-      <Avatar {ndk} pubkey={inviterPubkey} size="xs" class="w-6 h-6 rounded-full" />
+      <User.Root {ndk} pubkey={inviterPubkey}>
+        <User.Avatar size="xs" class="w-6 h-6 rounded-full" />
+      </User.Root>
     </div>
     <span class="text-gray-400 group-hover:text-gray-300 transition-colors">
       Invited by <span class="font-medium text-gray-200">{inviterProfile?.name || inviterProfile?.displayName || 'Anonymous'}</span>

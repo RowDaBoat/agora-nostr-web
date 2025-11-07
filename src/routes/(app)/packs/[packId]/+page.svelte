@@ -7,7 +7,7 @@
   import { createPackModal } from '$lib/stores/createPackModal.svelte';
   import { mockFollowPacks } from '$lib/data/mockFollowPacks';
   import { NDKKind, NDKFollowPack } from '@nostr-dev-kit/ndk';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import CreateFollowPackDialog from '$lib/components/CreateFollowPackDialog.svelte';
   import UserCard from '$lib/components/UserCard.svelte';
@@ -205,7 +205,9 @@
             onclick={() => goto(getProfileUrl(pack.pubkey))}
             class="flex-shrink-0"
           >
-            <Avatar {ndk} pubkey={pack.pubkey} class="w-10 h-10 rounded-full cursor-pointer hover:opacity-80 transition-opacity" />
+            <User.Root {ndk} pubkey={pack.pubkey}>
+              <User.Avatar class="w-10 h-10 rounded-full cursor-pointer hover:opacity-80 transition-opacity" />
+            </User.Root>
           </button>
           <div>
             <p class="text-sm text-muted-foreground">Created by</p>

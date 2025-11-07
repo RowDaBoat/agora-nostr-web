@@ -38,7 +38,7 @@ export const AGORA_LANGUAGE_MAP: Record<string, SupportedLanguage> = {
  */
 export function isAgoraRelay(url: string | null | undefined): boolean {
   if (!url) return false;
-  return url.includes('agorawlc.com') || url.includes('ngrok.app');
+  return url.includes('agorawlc.com');
 }
 
 /**

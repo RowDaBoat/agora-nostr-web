@@ -139,33 +139,7 @@
       onUpdateProfile({ ...profileData, nip05: fullNip05 });
     }
 
-    // Publish kind:10002 relay list
-    try {
-      const relays = new Set<string>();
-
-      // Add agora relay from invite if present
-      if (inviteRelay) {
-        relays.add(inviteRelay);
-        console.log('Including agora relay from invite:', inviteRelay);
-      }
-
-      // Add default relays
-      relays.add('wss://purplepag.es');
-      relays.add('wss://relay.primal.net');
-
-      console.log('Building kind:10002 relay list with relays:', Array.from(relays));
-
-      const relayListEvent = new NDKEvent(ndk);
-      relayListEvent.kind = 10002;
-      relayListEvent.tags = Array.from(relays).map(url => ['r', url]);
-
-      console.log('Publishing kind:10002 relay list...');
-      await relayListEvent.publish();
-      console.log('Published kind:10002 relay list');
-    } catch (err) {
-      console.error('Error publishing relay list:', err);
-    }
-
+    // Relay list will be published at completion
     onNext();
   }
 

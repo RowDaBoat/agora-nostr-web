@@ -1,8 +1,7 @@
 <script lang="ts">
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
-  import { EventCard } from './ndk/event-card';
-  import ReplyIndicator from './ReplyIndicator.svelte';
+  import { EventCard } from '$lib/ndk/components/event-card';
   import EventActions from './EventActions.svelte';
 
   interface Props {
@@ -51,10 +50,6 @@
   onclick={onNavigate}
   class="p-3 sm:p-4 flex flex-col max-sm:max-w-screen {cardClass} transition-colors min-w-0"
 >
-  {#if showThreadLine}
-    <EventCard.ThreadLine forceShow />
-  {/if}
-
   <!-- Header Row: Avatar + Name/Handle/Time -->
   <div class={spacingClass}>
     <EventCard.Header
@@ -65,7 +60,7 @@
 
   <!-- Reply indicator -->
   {#if variant === 'default'}
-    <ReplyIndicator {event} />
+    <!-- TODO: ReplyIndicator component not found in registry -->
   {/if}
 
   <!-- Content -->

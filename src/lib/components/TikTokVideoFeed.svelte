@@ -2,7 +2,7 @@
   import type { NDKEvent, NDKImetaTag } from '@nostr-dev-kit/ndk';
   import { mapImetaTag } from '@nostr-dev-kit/ndk';
   import { onMount } from 'svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import { ndk } from '$lib/ndk.svelte';
   import EventActions from './EventActions.svelte';
 
@@ -149,7 +149,9 @@
           <!-- Top gradient with author info -->
           <div class="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 via-black/20 to-transparent p-4 pointer-events-auto">
             <div class="flex items-center gap-3">
-              <Avatar {ndk} pubkey={event.pubkey} class="w-10 h-10 rounded-full border-2 border-white" />
+              <User.Root {ndk} pubkey={event.pubkey}>
+                <User.Avatar class="w-10 h-10 rounded-full border-2 border-white" />
+              </User.Root>
               <div class="flex-1 min-w-0">
                 <div class="text-white font-semibold text-sm truncate">
                   {event.author?.profile?.name || event.author?.npub?.substring(0, 8)}

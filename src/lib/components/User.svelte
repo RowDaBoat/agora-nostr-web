@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { ndk } from '$lib/ndk.svelte';
-	import Avatar from '$lib/components/ndk/avatar.svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import UserHoverCard from './UserHoverCard.svelte';
     import type { NDKUserProfile, NDKUser } from '@nostr-dev-kit/ndk';
 
@@ -111,7 +111,9 @@
 		onmouseleave={handleMouseLeave}
 		class="flex-shrink-0 {className}"
 	>
-		<Avatar {ndk} {pubkey} class="{avatarSize} cursor-pointer hover:opacity-80 transition-opacity" />
+		<User.Root {ndk} {pubkey}>
+		  <User.Avatar class="{avatarSize} cursor-pointer hover:opacity-80 transition-opacity" />
+		</User.Root>
 	</button>
 {:else if variant === 'avatar-name'}
 	<button
@@ -122,7 +124,9 @@
 		onmouseleave={handleMouseLeave}
 		class="flex items-center gap-3 cursor-pointer {className}"
 	>
-		<Avatar {ndk} {pubkey} class="{avatarSize} hover:opacity-80 transition-opacity" />
+		<User.Root {ndk} {pubkey}>
+		  <User.Avatar class="{avatarSize} hover:opacity-80 transition-opacity" />
+		</User.Root>
 		<p class="{nameSize} text-foreground truncate hover:underline flex-1 min-w-0 text-left">{displayName}</p>
 	</button>
 {:else if variant === 'avatar-name-handle'}
@@ -134,7 +138,9 @@
 		onmouseleave={handleMouseLeave}
 		class="flex items-center gap-3 cursor-pointer text-left w-full {className}"
 	>
-		<Avatar {ndk} {pubkey} class="{avatarSize} hover:opacity-80 transition-opacity flex-shrink-0" />
+		<User.Root {ndk} {pubkey}>
+		  <User.Avatar class="{avatarSize} hover:opacity-80 transition-opacity flex-shrink-0" />
+		</User.Root>
 		<div class="flex-1 min-w-0 flex flex-col">
 			<p class="{nameSize} text-foreground truncate hover:underline">{displayName}</p>
 			<p class="{handleSize} truncate">@{handle}</p>
@@ -149,7 +155,9 @@
 		onmouseleave={handleMouseLeave}
 		class="flex items-center gap-3 cursor-pointer text-left w-full {className}"
 	>
-		<Avatar {ndk} {pubkey} class="{avatarSize} hover:opacity-80 transition-opacity flex-shrink-0" />
+		<User.Root {ndk} {pubkey}>
+		  <User.Avatar class="{avatarSize} hover:opacity-80 transition-opacity flex-shrink-0" />
+		</User.Root>
 		<div class="flex-1 min-w-0">
 			<p class="{nameSize} text-foreground truncate hover:underline">{displayName}</p>
 			{#if profile?.about}
@@ -169,7 +177,9 @@
 			onclick={handleClick}
 			class="flex-shrink-0"
 		>
-			<Avatar {ndk} {pubkey} class="{avatarSize} cursor-pointer hover:opacity-80 transition-opacity" />
+			<User.Root {ndk} {pubkey}>
+			  <User.Avatar class="{avatarSize} cursor-pointer hover:opacity-80 transition-opacity" />
+			</User.Root>
 		</button>
 		<div class="flex-1 min-w-0">
 			<button

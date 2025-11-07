@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
-  import EventContent from '$lib/components/ndk/event-content.svelte';
-  import FollowButton from '$lib/components/FollowButton.svelte';
+  import { User } from '$lib/ndk/ui/user';
+  import EventContent from '$lib/ndk/ui/event-content.svelte';
+  import { FollowButton } from '$lib/ndk/components/actions';
   import UserDropdown from '$lib/components/UserDropdown.svelte';
   import InvitedByBadge from '$lib/components/InvitedByBadge.svelte';
   import { generateBannerGradient } from '$lib/utils/bannerGradient';
@@ -75,7 +75,9 @@
     <div class="flex gap-4 items-start -mt-12 sm:-mt-20 mb-4">
       <!-- Avatar -->
       <div class="shrink-0">
-        <Avatar {ndk} {pubkey} size="sm" class="w-24 h-24 sm:w-48 sm:h-48 rounded-full border-4 border-black" />
+        <User.Root {ndk} {pubkey}>
+          <User.Avatar size="sm" class="w-24 h-24 sm:w-48 sm:h-48 rounded-full border-4 border-black" />
+        </User.Root>
       </div>
 
       <!-- Name, NIP-05, and Actions -->
@@ -117,7 +119,7 @@
                 {$t('profile.editProfile')}
               </button>
             {:else}
-              <FollowButton {pubkey} variant="primary" showIcon={false} class="px-4 py-2 rounded-full font-medium transition-colors bg-accent text-accent-foreground hover:bg-accent/90 text-sm" />
+              <FollowButton ndk={ndk} target={pubkey} showIcon={false} class="px-4 py-2 rounded-full font-medium transition-colors bg-accent text-accent-foreground hover:bg-accent/90 text-sm" />
             {/if}
             {#if !isOwnProfile && ndk.$currentUser && onOpenCreatePack}
               <div class="relative" data-user-dropdown>

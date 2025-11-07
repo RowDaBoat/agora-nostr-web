@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
   interface Props {
@@ -25,7 +25,9 @@
   onclick={() => onRemove(pubkey)}
   class="inline-flex items-center gap-1 px-2 py-1 bg-primary/20 hover:bg-primary/30 text-foreground rounded-full text-xs transition-colors"
 >
-  <Avatar {ndk} {pubkey} size={14} class="flex-shrink-0" />
+  <User.Root {ndk} {pubkey}>
+    <User.Avatar size={14} class="flex-shrink-0" />
+  </User.Root>
   <span class="max-w-[100px] truncate">
     {displayName}
   </span>

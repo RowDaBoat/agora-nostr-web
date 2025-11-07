@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import User from '../User.svelte';
-	import FollowButton from '../FollowButton.svelte';
+	import { FollowButton } from '$lib/ndk/components/actions';
 	import { formatTimeAgo } from '$lib/utils/formatTime';
 	import type { NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
 
@@ -17,6 +17,7 @@
 	let inviterProfile = $state<NDKUserProfile | null>(null);
 
 	$effect(() => {
+		console.log('[NewMemberCard] $effect running for inviterPubkey:', inviterPubkey);
 		if (!inviterPubkey) {
 			inviterUser = undefined;
 			inviterProfile = null;
@@ -57,7 +58,7 @@
 		</div>
 
 		<div class="flex-shrink-0">
-			<FollowButton pubkey={memberPubkey} iconOnly={true} />
+			<FollowButton {ndk} target={memberPubkey} />
 		</div>
 	</div>
 </div>

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
-	import Avatar from '$lib/components/ndk/avatar.svelte';
+	import { User } from '$lib/ndk/ui/user';
 	import type { NDKUserProfile } from '@nostr-dev-kit/ndk';
 
 	interface InviterStats {
@@ -54,7 +54,11 @@
 						<span class="text-2xl w-8 text-center">{getRankEmoji(stat.rank)}</span>
 						<span class="text-lg font-semibold text-muted-foreground w-8">{stat.rank}.</span>
 
-						<Avatar {ndk} pubkey={stat.pubkey} class="w-10 h-10 rounded-full" />
+						<User.Root {ndk} pubkey={stat.pubkey}>
+
+						  <User.Avatar class="w-10 h-10 rounded-full" />
+
+						</User.Root>
 
 						<div class="flex-1 min-w-0">
 							<div class="font-medium text-foreground truncate">

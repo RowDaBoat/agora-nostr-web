@@ -16,6 +16,7 @@
 
 	// Subscribe to kind 514 (redemption events) - these have all the info we need
 	const redemptionsSubscription = $derived.by(() => {
+		console.log('[INVITES] redemptionsSubscription $derived.by running', { selectedRelay, isAgora });
 		if (!selectedRelay || !isAgora) return null;
 		return ndk.$subscribe(() => ({
 			filters: [{ kinds: [514] }],
@@ -28,6 +29,7 @@
 
 	// Subscribe to introduction posts
 	const introductionsSubscription = $derived.by(() => {
+		console.log('[INVITES] introductionsSubscription $derived.by running', { selectedRelay, isAgora });
 		if (!selectedRelay || !isAgora) return null;
 		return ndk.$subscribe(() => ({
 			filters: [{ kinds: [1], '#t': ['introduction'], limit: 20 }],
@@ -40,6 +42,7 @@
 
 	// Calculate inviter stats from redemptions
 	const inviterStats = $derived.by(() => {
+		console.log('[INVITES] inviterStats $derived.by running', redemptionsSubscription?.events.length);
 		if (!redemptionsSubscription) return [];
 
 		const redemptions = redemptionsSubscription.events;
@@ -71,6 +74,7 @@
 
 	// Map introductions with inviter info
 	const introductions = $derived.by(() => {
+		console.log('[INVITES] introductions $derived.by running', introductionsSubscription?.events.length, redemptionsSubscription?.events.length);
 		if (!introductionsSubscription || !redemptionsSubscription) return [];
 
 		const intros = introductionsSubscription.events;
@@ -96,6 +100,7 @@
 
 	// Extract new members from redemption events
 	const newMembers = $derived.by(() => {
+		console.log('[INVITES] newMembers $derived.by running', redemptionsSubscription?.events.length);
 		if (!redemptionsSubscription) return [];
 
 		const redemptions = redemptionsSubscription.events;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ndk, hashtagInterests } from '$lib/ndk.svelte';
-  import Avatar from '$ndk/avatar.svelte';
-  import EventContent from '$ndk/event-content.svelte';
+  import { User } from '$lib/ndk/ui/user';
+  import EventContent from '$lib/ndk/ui/event-content.svelte';
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
 
   interface Props {
@@ -179,11 +179,9 @@
               <div class="bg-muted/50 rounded-lg p-3 border border-border">
                 <!-- Author info -->
                 <div class="flex items-center gap-2 mb-2">
-                  <Avatar
-                    {ndk}
-                    pubkey={recentNoteFromFollowing.pubkey}
-                    class="w-6 h-6 rounded-full"
-                  />
+                  <User.Root {ndk} pubkey={recentNoteFromFollowing.pubkey}>
+                    <User.Avatar class="w-6 h-6 rounded-full" />
+                  </User.Root>
                   <div class="flex-1 min-w-0">
                     <div class="text-xs font-medium text-foreground truncate">
                       {recentNoteAuthorProfile?.displayName || recentNoteAuthorProfile?.name || 'Anonymous'}

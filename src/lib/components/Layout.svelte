@@ -32,6 +32,7 @@
   import MobileComposeFAB from './MobileComposeFAB.svelte';
   import Icon from './Icon.svelte';
   import Badge from './Badge.svelte';
+  import UserSearchModal from './UserSearchModal.svelte';
   import type { Snippet } from 'svelte';
 
   interface Props {
@@ -39,6 +40,8 @@
   }
 
   const { children }: Props = $props();
+
+  let isSearchModalOpen = $state(false);
 
   // Set NDK in Svelte context for child components
   setContext('ndk', ndk);
@@ -197,6 +200,18 @@
 
       <!-- Navigation -->
       <nav class="flex-1 space-y-2">
+        <!-- Search Button -->
+        <button
+          onclick={() => isSearchModalOpen = true}
+          class="w-full flex items-center {sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'} rounded-lg transition-colors text-foreground hover:bg-muted"
+          title={sidebarCollapsed ? 'Search Users' : undefined}
+        >
+          <Icon name="search" size="lg" />
+          {#if !sidebarCollapsed}
+            <span class="font-medium">Search</span>
+          {/if}
+        </button>
+
         <!-- Following / Relay Selector -->
         <RelaySelector active={path === '/'} collapsed={sidebarCollapsed} />
 
@@ -558,3 +573,6 @@
     <MobileComposeFAB onclick={() => createInviteModal.open()} />
   {/if}
 </div>
+
+<!-- User Search Modal -->
+<UserSearchModal isOpen={isSearchModalOpen} onClose={() => isSearchModalOpen = false} />

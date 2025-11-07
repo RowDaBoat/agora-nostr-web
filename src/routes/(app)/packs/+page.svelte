@@ -5,7 +5,7 @@
   import { createPackModal } from '$lib/stores/createPackModal.svelte';
   import { mockFollowPacks } from '$lib/data/mockFollowPacks';
   import { NDKKind, type NDKEvent } from '@nostr-dev-kit/ndk';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import CreateFollowPackDialog from '$lib/components/CreateFollowPackDialog.svelte';
   import LoadMoreTrigger from '$lib/components/LoadMoreTrigger.svelte';
   import { createLazyFeed } from '$lib/utils/lazyFeed.svelte';
@@ -303,7 +303,9 @@
                     class="relative cursor-pointer"
                     style="z-index: {4 - index}"
                   >
-                    <Avatar {ndk} {pubkey} class="w-8 h-8 rounded-full ring-2 ring-neutral-900 hover:opacity-80 transition-opacity" />
+                    <User.Root {ndk} {pubkey}>
+                      <User.Avatar class="w-8 h-8 rounded-full ring-2 ring-neutral-900 hover:opacity-80 transition-opacity" />
+                    </User.Root>
                   </button>
                 {/each}
                 {#if pack.pubkeys.length > 4}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { NDKEvent, NDKFilter } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
+  import { settings } from '$lib/stores/settings.svelte';
   import OrderCard from './OrderCard.svelte';
 
   interface Order {
@@ -33,10 +34,22 @@
 
   let { filters }: Props = $props();
 
-  const subscription = ndk.$subscribe(() => ({
-    filters: [{ kinds: [38383], limit: 100 }],
-    closeOnEose: false,
-  }));
+  const selectedRelay = $derived(settings.selectedRelay);
+
+  const subscription = ndk.$subscribe(() => {
+    const opts: any = {
+      filters: [{ kinds: [38383], limit: 100 }],
+      closeOnEose: false,
+      subId: 'p2p'
+    };
+
+    if (selectedRelay) {
+      opts.relayUrls = [selectedRelay];
+      opts.exclusiveRelay = true;
+    }
+
+    return opts;
+  });
   const events = $derived(subscription.events);
 
   const orders = $derived.by(() => {

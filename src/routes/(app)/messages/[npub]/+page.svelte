@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { ndk } from '$lib/ndk.svelte';
   import { messagesStore } from '$lib/stores/messages.svelte';
-  import Avatar from '$lib/components/ndk/avatar.svelte';
+  import { User } from '$lib/ndk/ui/user';
   import ConversationThread from '$lib/components/messages/ConversationThread.svelte';
   import MessageComposer from '$lib/components/messages/MessageComposer.svelte';
   import type { NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
@@ -110,7 +110,9 @@
 
       {#if participant}
         <!-- Avatar -->
-        <Avatar {ndk} pubkey={participant.pubkey} class="w-10 h-10" />
+        <User.Root {ndk} pubkey={participant.pubkey}>
+          <User.Avatar class="w-10 h-10" />
+        </User.Root>
 
         <!-- Name -->
         <div class="flex-1 min-w-0">
