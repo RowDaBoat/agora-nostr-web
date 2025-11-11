@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { NDKEvent, NDKUser } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
-  import { createReactionAction } from '$lib/ndk/builders/reaction-action.svelte';
-  import { createFollowAction } from '$lib/ndk/builders/follow-action.svelte';
+  import { createReactionAction } from '$lib/ndk/builders/reaction-action/index.svelte';
+  import { createFollowAction } from '$lib/ndk/builders/follow-action/index.svelte';
   import { createZapAction } from '$lib/ndk/builders/zap-action/zap-action.svelte';
 
   interface Props {
@@ -177,15 +177,29 @@
 
 <style>
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors;
-    @apply bg-muted hover:bg-accent text-foreground;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+    background-color: var(--muted);
+    color: var(--foreground);
+  }
+
+  .btn:hover {
+    background-color: var(--accent);
   }
 
   .btn-primary {
-    @apply bg-primary hover:bg-primary/80 text-primary-foreground;
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  .btn-primary:hover {
+    opacity: 0.8;
   }
 
   .btn-sm {
-    @apply px-3 py-1.5 text-sm;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
   }
 </style>

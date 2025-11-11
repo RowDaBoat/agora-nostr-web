@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import type { NDKUser } from '@nostr-dev-kit/ndk';
   import type { NDKSvelte } from '@nostr-dev-kit/svelte';
@@ -11,6 +15,8 @@
     pubkeys: string[];
 
     skipCurrentUser?: boolean;
+
+    onlyFollows?: boolean;
 
     max?: number;
 
@@ -35,6 +41,7 @@
     ndk,
     pubkeys = [],
     skipCurrentUser = false,
+    onlyFollows = false,
     max = 5,
     size = 40,
     spacing = 'normal',
@@ -49,7 +56,8 @@
   // Use the builder to get prioritized user list
   const avatarGroup = createAvatarGroup(() => ({
     pubkeys,
-    skipCurrentUser
+    skipCurrentUser,
+    onlyFollows
   }), ndk);
 
   // Visible avatars and overflow count

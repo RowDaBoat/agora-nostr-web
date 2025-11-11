@@ -189,13 +189,13 @@
     </div>
   </div>
 
-  <div class="flex items-center gap-2">
+  <div class="flex justify-end items-center gap-2">
     {#if order.source}
       <a
         href={order.source}
         target="_blank"
         rel="noopener noreferrer"
-        class="flex-1 flex items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-primary text-foreground rounded-lg hover:bg-primary-700 transition-colors text-sm md:text-base"
+        class="flex items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-primary text-foreground rounded-lg hover:bg-primary-700 transition-colors text-sm md:text-base"
         title="View on {order.platform || 'external site'}"
       >
         <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -207,7 +207,7 @@
     {:else}
       <button
         onclick={() => showTakeModal = true}
-        class="flex-1 flex items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-primary text-foreground rounded-lg hover:bg-primary-700 transition-colors text-sm md:text-base"
+        class="flex items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-primary text-foreground rounded-lg hover:bg-primary-700 transition-colors text-sm md:text-base"
       >
         <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
@@ -216,19 +216,9 @@
         <span class="md:hidden">{order.type === 'buy' ? 'Sell' : 'Buy'}</span>
       </button>
     {/if}
-    <button class="p-1.5 md:p-2 border border rounded-lg hover:bg-accent transition-colors">
-      <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-      </svg>
-    </button>
-    <button class="p-1.5 md:p-2 border border rounded-lg hover:bg-accent transition-colors hidden md:block">
-      <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-      </svg>
-    </button>
   </div>
 </div>
 
 {#if showTakeModal}
-  <TakeOrderModal {order} onClose={() => showTakeModal = false} />
+  <TakeOrderModal open={true} {order} onClose={() => showTakeModal = false} />
 {/if}

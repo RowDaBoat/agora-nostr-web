@@ -16,10 +16,6 @@ export function generateEncryptionKey(): string {
 	}
 	return result;
 }
-
-/**
- * Generate a random d-tag (12 alphanumeric characters)
- */
 export function generateDTag(): string {
 	const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
 	let result = '';

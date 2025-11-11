@@ -5,13 +5,13 @@
   import { toast } from '$lib/stores/toast.svelte';
   import { followPacksStore } from '$lib/stores/followPacks.svelte';
   import { createPackModal } from '$lib/stores/createPackModal.svelte';
-  import { mockFollowPacks } from '$lib/data/mockFollowPacks';
   import { NDKKind, NDKFollowPack } from '@nostr-dev-kit/ndk';
   import { User } from '$lib/ndk/ui/user';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import CreateFollowPackDialog from '$lib/components/CreateFollowPackDialog.svelte';
   import UserCard from '$lib/components/UserCard.svelte';
   import { getProfileUrl } from '$lib/utils/navigation';
+  import FollowPackHero from '$lib/ndk/components/follow-pack-hero/follow-pack-hero.svelte';
 
   const packId = $derived($page.params.packId);
 
@@ -31,9 +31,6 @@
       ndk.fetchEvent(packId).then(event => {
         if (event) {
           pack = NDKFollowPack.from(event);
-        } else {
-          // Fallback to mock data only if pack ID matches exactly
-          pack = mockFollowPacks.find(p => p.encode() === packId) || null;
         }
         isLoading = false;
       }).catch(err => {
@@ -43,7 +40,7 @@
     }
   });
 
-  let pubkeys = $derived(pack?.pubkeys || []);
+  let pubkeys = $derived(pack?.tags.filter(t => t[0] === 'p').map(t => t[1]) || []);
 
   let packCreatorProfile = $state<import('@nostr-dev-kit/ndk').NDKUserProfile | null>(null);
 
@@ -105,119 +102,67 @@
 
   function handleEdit() {
     if (pack) {
-      createPackModal.open(pack);
+      createPackModal.show = true;
+      createPackModal.data = pack;
     }
   }
 </script>
 
 <div class="pack-detail-container">
-  <!-- Header -->
+  <!-- Back Button -->
   <div class="pack-header">
     <button class="back-btn" onclick={handleBack}>
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
       </svg>
+      <span>Back to Packs</span>
     </button>
-    <h1>{pack?.title || 'Follow Pack'}</h1>
   </div>
 
   <!-- Content -->
   <div class="pack-content">
   {#if pack}
-    <!-- Pack Header -->
-    <div class="bg-card border border-border rounded-xl overflow-hidden mb-6">
-      {#if pack.image}
-        <div class="h-48 w-full">
-          <img
-            src={pack.image}
-            alt={pack.title}
-            class="w-full h-full object-cover"
-          />
-        </div>
-      {/if}
+    <!-- Follow Pack Hero -->
+    <FollowPackHero {ndk} followPack={pack} class="mb-6" />
 
-      <div class="p-6">
-        <div class="flex items-start justify-between mb-4">
-          <div>
-            <h1 class="text-2xl font-bold text-foreground mb-2">
-              {pack.title}
-            </h1>
-            <p class="text-muted-foreground">
-              {pack.description || 'A curated list of accounts to follow'}
-            </p>
-          </div>
-          <div class="flex items-center gap-2">
-            {#if isMyPack}
-              <button
-                onclick={handleEdit}
-                class="flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted text-foreground font-medium rounded-lg transition-colors whitespace-nowrap"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Edit
-              </button>
-            {:else}
-              <button
-                onclick={handleFollowAll}
-                disabled={isFollowingAll}
-                class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-muted text-foreground font-medium rounded-lg transition-colors whitespace-nowrap"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                {isFollowingAll ? 'Following...' : 'Follow All'}
-              </button>
-            {/if}
-            <button
-              onclick={handleFavorite}
-              class="p-2.5 rounded-lg transition-colors {isFavorite ? 'bg-red-500/10 text-red-500' : 'bg-muted text-muted-foreground hover:text-foreground'}"
-            >
-              <svg class="w-5 h-5 {isFavorite ? 'fill-current' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
+    <!-- Action Bar -->
+    <div class="action-bar bg-card border border-border rounded-xl p-4 mb-6">
+      <div class="flex items-center justify-between">
         <!-- Stats -->
-        <div class="flex items-center gap-6 mb-6 text-sm">
-          <div class="flex items-center gap-2 text-muted-foreground">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-            <span>{pubkeys.length} members</span>
-          </div>
-          {#if pack.created_at}
-            <div class="flex items-center gap-2 text-muted-foreground">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span>Updated {new Date(pack.created_at * 1000).toLocaleDateString()}</span>
-            </div>
-          {/if}
-        </div>
 
-        <!-- Creator -->
-        <div class="flex items-center gap-3">
-          <button
-            type="button"
-            onclick={() => goto(getProfileUrl(pack.pubkey))}
-            class="flex-shrink-0"
-          >
-            <User.Root {ndk} pubkey={pack.pubkey}>
-              <User.Avatar class="w-10 h-10 rounded-full cursor-pointer hover:opacity-80 transition-opacity" />
-            </User.Root>
-          </button>
-          <div>
-            <p class="text-sm text-muted-foreground">Created by</p>
+        <!-- Action Buttons -->
+        <div class="flex items-center gap-2">
+          {#if isMyPack}
             <button
-              onclick={() => goto(getProfileUrl(pack.pubkey))}
-              class="font-medium text-foreground hover:text-primary transition-colors"
+              onclick={handleEdit}
+              class="flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-lg transition-colors whitespace-nowrap"
             >
-              {packCreatorProfile?.name || 'Anonymous'}
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Edit Pack
             </button>
-          </div>
+          {:else}
+            <button
+              onclick={handleFollowAll}
+              disabled={isFollowingAll}
+              class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-muted text-primary-foreground font-medium rounded-lg transition-colors whitespace-nowrap"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              {isFollowingAll ? 'Following...' : 'Follow All'}
+            </button>
+          {/if}
+          <button
+            onclick={handleFavorite}
+            class="p-2.5 rounded-lg transition-colors {isFavorite ? 'bg-red-500/10 text-red-500' : 'bg-muted text-muted-foreground hover:text-foreground'}"
+            title="{isFavorite ? 'Remove from favorites' : 'Add to favorites'}"
+          >
+            <svg class="w-5 h-5 {isFavorite ? 'fill-current' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -300,52 +245,41 @@
   }
 
   .pack-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
     padding: 1rem;
     border-bottom: 1px solid var(--color-border);
-    background: var(--color-background);
-    position: sticky;
-    top: 0;
-    z-index: 10;
   }
 
   .back-btn {
-    padding: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
     background: transparent;
     border: none;
-    color: var(--color-foreground);
+    color: var(--color-muted-foreground);
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     transition: all 0.2s;
     border-radius: 8px;
+    font-size: 0.875rem;
   }
 
   .back-btn:hover {
     background: var(--color-muted);
-  }
-
-  .back-btn svg {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-
-  h1 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin: 0;
     color: var(--color-foreground);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .pack-content {
     padding: 1rem;
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto;
+  }
+
+  .action-bar {
+    @media (max-width: 768px) {
+      .flex {
+        flex-direction: column;
+        gap: 1rem;
+      }
+    }
   }
 </style>

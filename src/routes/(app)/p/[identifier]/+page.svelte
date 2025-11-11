@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { ndk } from '$lib/ndk.svelte';
-  import { NDKKind, NDKArticle, type NDKEvent, type NDKUser, type NDKUserProfile } from '@nostr-dev-kit/ndk';
+  import { NDKKind, NDKArticle, type NDKEvent, type NDKFollowPack, type NDKUser, type NDKUserProfile } from '@nostr-dev-kit/ndk';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import ProfileHeader from '$lib/components/ProfileHeader.svelte';
   import ShareProfileModal from '$lib/components/ShareProfileModal.svelte';
@@ -120,45 +120,8 @@
   const articles = $derived.by(() => articlesFeed.events.map(e => NDKArticle.from(e)));
   const highlights = $derived(highlightsFeed.events);
 
-  interface Pack {
-    id: string;
-    title: string;
-    description?: string;
-    image?: string;
-    pubkeys: string[];
-    encode: () => string;
-    kind: number;
-    pubkey: string;
-    created_at: number;
-  }
-
-  const createdPacks = $derived.by((): Pack[] => {
-    return createdPacksFeed.events.map(event => ({
-      id: event.id || '',
-      title: event.tagValue('title') || 'Untitled Pack',
-      description: event.tagValue('description'),
-      image: event.tagValue('image'),
-      pubkeys: event.tags.filter(t => t[0] === 'p').map(t => t[1]),
-      encode: () => event.encode(),
-      kind: event.kind || 39089,
-      pubkey: event.pubkey,
-      created_at: event.created_at || 0,
-    }));
-  });
-
-  const appearsPacks = $derived.by((): Pack[] => {
-    return appearsPacksFeed.events.map(event => ({
-      id: event.id || '',
-      title: event.tagValue('title') || 'Untitled Pack',
-      description: event.tagValue('description'),
-      image: event.tagValue('image'),
-      pubkeys: event.tags.filter(t => t[0] === 'p').map(t => t[1]),
-      encode: () => event.encode(),
-      kind: event.kind || 39089,
-      pubkey: event.pubkey,
-      created_at: event.created_at || 0,
-    }));
-  });
+  const createdPacks = $derived(createdPacksFeed.events as NDKFollowPack[]);
+  const appearsPacks = $derived(appearsPacksFeed.events as NDKFollowPack[]);
 
   const allPacks = $derived.by(() => [...createdPacks, ...appearsPacks]);
 

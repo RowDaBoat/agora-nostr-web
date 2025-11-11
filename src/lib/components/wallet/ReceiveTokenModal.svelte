@@ -51,7 +51,7 @@
 </script>
 
 {#if isDesktop.current}
-  <Dialog.Root open={isOpen} onOpenChange={(newOpen) => {
+  <Dialog.Root open={isOpen} onOpenChange={(newOpen: boolean) => {
       isOpen = newOpen;
       if (!newOpen) close();
     }}>
@@ -112,7 +112,7 @@
     </Dialog.Content>
   </Dialog.Root>
 {:else}
-  <Drawer.Root open={isOpen} onOpenChange={(newOpen) => {
+  <Drawer.Root open={isOpen} onOpenChange={(newOpen: boolean) => {
       isOpen = newOpen;
       if (!newOpen) close();
     }}>

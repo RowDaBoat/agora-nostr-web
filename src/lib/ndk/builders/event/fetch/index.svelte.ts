@@ -1,15 +1,19 @@
-import type { NDKEvent } from '@nostr-dev-kit/ndk';
-import type { NDKSvelte } from '@nostr-dev-kit/svelte';
-import { resolveNDK } from '../../resolve-ndk/index.svelte.js';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import type { NDKEvent } from "@nostr-dev-kit/ndk";
+import type { NDKSvelte } from "@nostr-dev-kit/svelte";
+import { resolveNDK } from "../../resolve-ndk/index.svelte.js";
 
 export interface FetchEventState {
-    event: NDKEvent | null;
-    loading: boolean;
-    error: string | null;
+	event: NDKEvent | null;
+	loading: boolean;
+	error: string | null;
 }
 
 export interface FetchEventConfig {
-    bech32: string;
+	bech32: string;
 }
 
 /**
@@ -44,46 +48,47 @@ export interface FetchEventConfig {
  * ```
  */
 export function createFetchEvent(
-    config: () => FetchEventConfig,
-    ndk?: NDKSvelte
+	config: () => FetchEventConfig,
+	ndk?: NDKSvelte,
 ): FetchEventState {
-    const resolvedNDK = resolveNDK(ndk);
-    let fetchedEvent = $state<NDKEvent | null>(null);
-    let loading = $state(true);
-    let error = $state<string | null>(null);
+	const resolvedNDK = resolveNDK(ndk);
+	let fetchedEvent = $state<NDKEvent | null>(null);
+	let loading = $state(true);
+	let error = $state<string | null>(null);
 
-    $effect(() => {
-        const { bech32: currentBech32 } = config();
-        if (!currentBech32) return;
+	$effect(() => {
+		const { bech32: currentBech32 } = config();
+		if (!currentBech32) return;
 
-        loading = true;
-        error = null;
+		loading = true;
+		error = null;
 
-        resolvedNDK.fetchEvent(currentBech32)
-            .then(event => {
-                if (event) {
-                    fetchedEvent = event;
-                } else {
-                    error = 'Event not found';
-                }
-                loading = false;
-            })
-            .catch(err => {
-                console.error('Failed to fetch event:', err);
-                error = 'Failed to load event';
-                loading = false;
-            });
-    });
+		resolvedNDK
+			.fetchEvent(currentBech32)
+			.then((event) => {
+				if (event) {
+					fetchedEvent = event;
+				} else {
+					error = "Event not found";
+				}
+				loading = false;
+			})
+			.catch((err) => {
+				console.error("Failed to fetch event:", err);
+				error = "Failed to load event";
+				loading = false;
+			});
+	});
 
-    return {
-        get event() {
-            return fetchedEvent;
-        },
-        get loading() {
-            return loading;
-        },
-        get error() {
-            return error;
-        },
-    };
+	return {
+		get event() {
+			return fetchedEvent;
+		},
+		get loading() {
+			return loading;
+		},
+		get error() {
+			return error;
+		},
+	};
 }

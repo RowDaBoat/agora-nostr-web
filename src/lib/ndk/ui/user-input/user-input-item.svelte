@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { mergeProps } from '../../utils/merge-props.js';
   import { getContext } from 'svelte';

@@ -26,5 +26,7 @@
 	{...restProps}
 >
 	{@render children?.()}
-	<HugeiconsIcon icon={ArrowDown01Icon} class="size-4 opacity-50" />
+	<span class="opacity-50">
+		<HugeiconsIcon icon={ArrowDown01Icon} />
+	</span>
 </SelectPrimitive.Trigger>

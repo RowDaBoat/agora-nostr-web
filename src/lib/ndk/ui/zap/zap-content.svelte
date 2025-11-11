@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import type { ProcessedZap } from '@nostr-dev-kit/svelte';
 

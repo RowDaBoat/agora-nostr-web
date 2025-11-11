@@ -121,7 +121,7 @@
 </script>
 
 {#if isDesktop.current}
-  <Dialog.Root {open} onOpenChange={(newOpen) => { if (!newOpen) handleClose(); }}>
+  <Dialog.Root {open} onOpenChange={(newOpen: boolean) => { if (!newOpen) handleClose(); }}>
     <Dialog.Content class="max-w-2xl max-h-[90vh] flex flex-col p-0">
       <Dialog.Header class="px-6 py-4 border-b border-border">
         <Dialog.Title>Browse Mints</Dialog.Title>
@@ -282,7 +282,7 @@
     </Dialog.Content>
   </Dialog.Root>
 {:else}
-  <Drawer.Root {open} onOpenChange={(newOpen) => { if (!newOpen) handleClose(); }}>
+  <Drawer.Root {open} onOpenChange={(newOpen: boolean) => { if (!newOpen) handleClose(); }}>
     <Drawer.Content class="max-h-[90vh] flex flex-col">
       <Drawer.Header class="text-left">
         <Drawer.Title>Browse Mints</Drawer.Title>

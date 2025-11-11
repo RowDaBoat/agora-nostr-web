@@ -1,6 +1,10 @@
-import type { NDKEvent } from '@nostr-dev-kit/ndk';
-import type { NDKSvelte } from '@nostr-dev-kit/svelte';
-import { getContext } from 'svelte';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import type { NDKEvent } from "@nostr-dev-kit/ndk";
+import type { NDKSvelte } from "@nostr-dev-kit/svelte";
+import { getContext } from "svelte";
 
 interface HashtagStatsConfig {
 	hashtags: string[];
@@ -19,9 +23,9 @@ interface HashtagStatsState {
 
 export function createHashtagStats(
 	config: () => HashtagStatsConfig | undefined,
-	ndk?: NDKSvelte
+	ndk?: NDKSvelte,
 ): HashtagStatsState {
-	const ndkInstance = ndk ?? getContext<NDKSvelte>('ndk');
+	const ndkInstance = ndk ?? getContext<NDKSvelte>("ndk");
 
 	const configValue = $derived(config());
 	const hashtags = $derived(configValue?.hashtags ?? []);
@@ -30,29 +34,33 @@ export function createHashtagStats(
 	const hashtagCap = $derived(configValue?.hashtagCap ?? 6);
 
 	// Subscribe to notes with hashtags
-	const hashtagNotesSubscription = ndkInstance.$subscribe(
-		() => hashtags.length > 0 ? ({
-			filters: [{
-				kinds: [1],
-				'#t': hashtags,
-				since
-			}],
-			bufferMs: 100,
-			...(relayUrls ? { relayUrls } : {})
-		}) : undefined
+	const hashtagNotesSubscription = ndkInstance.$subscribe(() =>
+		hashtags.length > 0
+			? {
+					filters: [
+						{
+							kinds: [1],
+							"#t": hashtags,
+							since,
+						},
+					],
+					bufferMs: 100,
+					...(relayUrls ? { relayUrls } : {}),
+				}
+			: undefined,
 	);
 
 	// Filter events to exclude those with too many hashtags
 	const filteredEvents = $derived.by(() => {
-		return hashtagNotesSubscription.events.filter(event => {
-			const hashtagCount = event.tags.filter(tag => tag[0] === 't').length;
+		return hashtagNotesSubscription.events.filter((event) => {
+			const hashtagCount = event.tags.filter((tag) => tag[0] === "t").length;
 			return hashtagCount <= hashtagCap;
 		});
 	});
 
 	// Compute unique pubkeys
 	const pubkeys = $derived.by(() => {
-		return new Set(filteredEvents.map(event => event.pubkey));
+		return new Set(filteredEvents.map((event) => event.pubkey));
 	});
 
 	// Compute note count
@@ -64,7 +72,7 @@ export function createHashtagStats(
 	const topContributor = $derived.by(() => {
 		const counts = new Map<string, number>();
 
-		filteredEvents.forEach(event => {
+		filteredEvents.forEach((event) => {
 			counts.set(event.pubkey, (counts.get(event.pubkey) || 0) + 1);
 		});
 
@@ -78,7 +86,7 @@ export function createHashtagStats(
 		const now = Math.floor(Date.now() / 1000);
 		const dayInSeconds = 24 * 60 * 60;
 
-		filteredEvents.forEach(event => {
+		filteredEvents.forEach((event) => {
 			const daysAgo = Math.floor((now - event.created_at!) / dayInSeconds);
 			if (daysAgo >= 0 && daysAgo < 7) {
 				days[6 - daysAgo]++;
@@ -103,6 +111,6 @@ export function createHashtagStats(
 		},
 		get dailyDistribution() {
 			return dailyDistribution;
-		}
+		},
 	};
 }

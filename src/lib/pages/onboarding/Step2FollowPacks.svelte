@@ -2,7 +2,8 @@
   import { ndk } from '$lib/ndk.svelte';
   import { NDKFollowPack, NDKSubscriptionCacheUsage, type NDKFilter, filterFromId } from '@nostr-dev-kit/ndk';
   import { COMMUNITY_RELAYS, FOLLOW_PACK_KIND, COMMUNITY_METADATA, HARDCODED_COMMUNITY_PACKS } from '$lib/config/followPacks';
-  import { FollowPackCompact } from '$lib/ndk/components/follow/packs/compact';
+  import { FollowPackCompact } from '$lib/ndk/components/follow-pack-compact';
+  import { t } from 'svelte-i18n';
 
   interface Props {
     selectedCommunity: string | null;
@@ -67,11 +68,6 @@
   }
 
   function handleNext() {
-    console.log('[Step2] handleNext called, selectedPacks:', selectedPacks.length);
-    if (selectedPacks.length === 0) {
-      console.log('[Step2] No packs selected, returning');
-      return;
-    }
     console.log('[Step2] Calling onNext');
     onNext();
   }
@@ -89,7 +85,7 @@
     <div class="absolute bottom-0 left-0 right-0 p-12">
       <div class="mb-8">
         <p class="text-3xl text-foreground/90 italic leading-relaxed">
-          "We're not just surviving—we're building the future our community deserves. One voice at a time."
+          "{$t('onboarding.step2FollowPacks.quote')}"
         </p>
       </div>
       <div class="flex items-center gap-4">
@@ -97,8 +93,8 @@
           MR
         </div>
         <div class="text-foreground">
-          <div class="font-semibold">María Rodríguez</div>
-          <div class="text-sm opacity-75">Community Organizer · Caracas</div>
+          <div class="font-semibold">{$t('onboarding.step2FollowPacks.quoteName')}</div>
+          <div class="text-sm opacity-75">{$t('onboarding.step2FollowPacks.quoteTitle')}</div>
         </div>
       </div>
     </div>
@@ -108,20 +104,20 @@
   <div class="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 lg:p-12">
     <div class="max-w-xl w-full">
       <div class="mb-6 lg:mb-8">
-        <h1 class="text-2xl lg:text-3xl font-bold mb-2 lg:mb-3">Build Your Network</h1>
+        <h1 class="text-2xl lg:text-3xl font-bold mb-2 lg:mb-3">{$t('onboarding.step2FollowPacks.title')}</h1>
         <p class="text-sm lg:text-base text-muted-foreground">
-          Follow curated packs from the {communityInfo.name} community
+          {$t('onboarding.step2FollowPacks.subtitle', { values: { community: communityInfo.name } })}
         </p>
       </div>
 
         {#if loading}
           <div class="text-center py-12">
             <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <p class="mt-4 text-sm text-muted-foreground">Loading follow packs...</p>
+            <p class="mt-4 text-sm text-muted-foreground">{$t('onboarding.step2FollowPacks.loading')}</p>
           </div>
         {:else if followPacks.length === 0}
           <div class="text-center py-8 text-muted-foreground">
-            No follow packs available for this community yet
+            {$t('onboarding.step2FollowPacks.noPacksAvailable')}
           </div>
         {:else}
           <div class="space-y-2 mb-6 lg:mb-8 max-h-[50vh] lg:max-h-[60vh] overflow-y-auto p-2 -m-2">
@@ -150,16 +146,13 @@
 
       <button
         onclick={handleNext}
-        disabled={selectedPacks.length === 0 || loading}
         class={`
           w-full py-3 lg:py-4 px-6 rounded-lg font-medium transition-all text-sm lg:text-base
-          ${selectedPacks.length > 0 && !loading
-            ? 'bg-background dark:bg-white text-foreground dark:text-black hover:bg-muted dark:hover:bg-neutral-200'
-            : 'bg-neutral-100 dark:bg-background text-muted-foreground cursor-not-allowed'
+          bg-primary/80 text-primary-foreground dark:text-foreground hover:bg-primary
           }
         `}
       >
-        Continue {selectedPacks.length > 0 ? `(${selectedPacks.length} selected)` : '→'}
+        {selectedPacks.length > 0 ? $t('onboarding.step2FollowPacks.continue') : $t('onboarding.step2FollowPacks.skip')} →
       </button>
     </div>
   </div>

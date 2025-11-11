@@ -316,7 +316,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if isDesktop.current}
-  <Dialog.Root {open} onOpenChange={(newOpen) => {
+  <Dialog.Root {open} onOpenChange={(newOpen: boolean) => {
       open = newOpen;
       if (!newOpen) handleClose();
     }}>
@@ -681,7 +681,7 @@
     </Dialog.Content>
   </Dialog.Root>
 {:else}
-  <Drawer.Root {open} onOpenChange={(newOpen) => {
+  <Drawer.Root {open} onOpenChange={(newOpen: boolean) => {
       open = newOpen;
       if (!newOpen) handleClose();
     }}>

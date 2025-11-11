@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ndk } from '$lib/ndk.svelte';
 	import { User } from '$lib/ndk/ui/user';
-	import FollowButton from '$lib/ndk/components/follow/buttons/basic/follow-button.svelte';
+	import FollowButton from '$lib/ndk/components/follow-button/follow-button.svelte';
 	import { formatTimeAgo } from '$lib/utils/formatTime';
 	import type { NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
 
@@ -24,6 +24,8 @@
 		clickable = true,
 		class: className = ''
 	}: Props = $props();
+
+	console.log('called usercard with', {pubkey})
 
 	let user = $state<NDKUser | undefined>(undefined);
 	let profile = $state<NDKUserProfile | null>(null);

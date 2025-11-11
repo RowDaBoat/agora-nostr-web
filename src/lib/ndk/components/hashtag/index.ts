@@ -1,10 +1,12 @@
-import { defaultContentRenderer } from '../../ui/content-renderer';
-import Hashtag from './hashtag.svelte';
+/*
+	Installed from @ndk/svelte@latest
+*/
 
-// Self-register when this file is imported
-if (!defaultContentRenderer.hashtagComponent) {
-	defaultContentRenderer.hashtagComponent = Hashtag;
-}
+import { defaultContentRenderer } from "../../ui/content-renderer";
+import Hashtag from "./hashtag.svelte";
+
+// Self-register with priority 1 (basic)
+defaultContentRenderer.setHashtagComponent(Hashtag, 1);
 
 export { Hashtag };
 export default Hashtag;

@@ -45,7 +45,7 @@
   }
 </script>
 
-<div class="bg-card rounded-2xl p-5 border border-border backdrop-blur-sm">
+{#if recentListings.length > 0}
   <div class="flex items-center justify-between mb-4">
     <div class="flex items-center gap-2">
       <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,9 +67,6 @@
   </div>
 
   <div class="space-y-3">
-    {#if recentListings.length === 0}
-      <EmptyState icon="marketplace" title="No marketplace items yet" size="sm" />
-    {:else}
       {#each recentListings as listing (listing.id)}
         {@const price = getListingPrice(listing)}
         <button
@@ -99,6 +96,6 @@
           </div>
         </button>
       {/each}
-    {/if}
   </div>
-</div>
+
+{/if}

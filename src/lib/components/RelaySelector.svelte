@@ -22,21 +22,6 @@
   let buttonElement: HTMLElement | null = $state(null);
   let dropdownPosition = $state({ top: 0, left: 0, width: 0 });
 
-  // Get relays from NDK session's relay list (kind 10002)
-  const sessionRelays = $derived.by(() => {
-    const relayList = ndk.$sessions?.relayList;
-    if (!relayList) return [];
-
-    return Array.from(relayList.keys());
-  });
-
-  // Filter out agoras and favorite relays
-  const otherRelays = $derived.by(() => {
-    return sessionRelays.filter(url =>
-      !isAgoraRelay(url) && !relayFeeds.isFavorite(url)
-    );
-  });
-
   // Get follows and check if user has any
   const follows = $derived(ndk.$sessions?.follows || []);
   const hasFollows = $derived(follows.size > 0);
@@ -176,8 +161,8 @@
     class="{iconOnly
       ? 'flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted/50 transition-colors'
       : collapsed
-        ? 'flex items-center justify-center p-3 rounded-lg transition-colors w-full ' + (active ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:bg-muted/50')
-        : 'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full ' + (active ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:bg-muted/50')
+        ? 'flex items-center justify-center p-3 rounded-lg transition-colors w-full ' + (active ? 'text-primary bg-primary/10 text-primary' : 'text-foreground hover:bg-muted/50')
+        : 'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full ' + (active ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted/50')
     }"
     aria-label={settings.selectedRelay ? 'Change filter' : 'Change following filter'}
     title={collapsed ? displayName : undefined}
@@ -392,40 +377,6 @@
           </button>
         {/each}
       </div>
-
-      <!-- Other relays section (from kind 10002) -->
-      {#if otherRelays.length > 0}
-        <div class="border-t border-border my-1"></div>
-        <div class="px-2 py-1">
-          <div class="text-xs text-muted-foreground px-2 py-1 font-medium">Other relays</div>
-          {#each otherRelays as relayUrl (relayUrl)}
-            {@const relayInfo = useRelayInfoCached(relayUrl)}
-            <button
-              onclick={() => selectRelay(relayUrl)}
-              class="w-full px-3 py-2.5 rounded-lg hover:bg-muted transition-colors text-left flex items-center gap-3 {settings.selectedRelay === relayUrl ? 'bg-muted/50' : ''}"
-            >
-              <RelayIcon {relayUrl} size="md" />
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5">
-                  <div class="text-sm font-medium text-foreground truncate">
-                    {relayInfo.info?.name || relayUrl.replace('wss://', '').replace('ws://', '')}
-                  </div>
-                </div>
-                {#if relayInfo.info?.description}
-                  <div class="text-xs text-muted-foreground truncate">
-                    {relayInfo.info.description}
-                  </div>
-                {/if}
-              </div>
-              {#if settings.selectedRelay === relayUrl}
-                <svg class="w-5 h-5 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-              {/if}
-            </button>
-          {/each}
-        </div>
-      {/if}
 
       <!-- Manage relays link -->
       <div class="border-t border-border mt-1">

@@ -1,18 +1,21 @@
 <script lang="ts">
   import { NDKBlossom } from '@nostr-dev-kit/blossom';
   import { createBlossomUpload } from '@nostr-dev-kit/svelte';
-  import type { NDK } from '@nostr-dev-kit/ndk';
+  import type NDK from '@nostr-dev-kit/ndk';
+  import type { NDKSigner } from '@nostr-dev-kit/ndk';
+  import { t } from 'svelte-i18n';
 
   interface Props {
     ndk: NDK;
+    signer?: NDKSigner;
     onUploadComplete: (url: string) => void;
     currentImageUrl?: string;
     fallbackInitials?: string;
   }
 
-  let { ndk, onUploadComplete, currentImageUrl, fallbackInitials }: Props = $props();
+  let { ndk, signer, onUploadComplete, currentImageUrl, fallbackInitials }: Props = $props();
 
-  const blossom = new NDKBlossom(ndk);
+  const blossom = new NDKBlossom(ndk, signer);
   const upload = createBlossomUpload(blossom);
 
   let fileInput: HTMLInputElement;
@@ -21,7 +24,7 @@
 
   async function handleFileSelect(file: File) {
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      alert($t('onboarding.pictureUpload.invalidFile'));
       return;
     }
 
@@ -145,7 +148,7 @@
 
   {#if upload.status === 'error'}
     <p class="text-xs text-red-600 dark:text-red-400 mt-2 text-center">
-      {upload.error?.message || 'Upload failed'}
+      {upload.error?.message || $t('onboarding.pictureUpload.uploadFailed')}
     </p>
   {/if}
 </div>

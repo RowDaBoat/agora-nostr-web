@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { getContext } from 'svelte';
   import { USER_CONTEXT_KEY, type UserContext } from './user.context.js';
@@ -32,6 +36,6 @@
   const displayText = $derived(showAt ? `@${handle}` : handle);
 </script>
 
-<span class={cn(className)}>
+<span data-user-handle="" class={cn(className)}>
   {displayText}
 </span>

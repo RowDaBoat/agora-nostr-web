@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { getContext } from 'svelte';
   import { NEGENTROPY_SYNC_CONTEXT_KEY, type NegentropySyncContext } from './negentropy-sync.context.js';

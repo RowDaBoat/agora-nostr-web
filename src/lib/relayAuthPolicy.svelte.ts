@@ -59,7 +59,8 @@ if (typeof window !== 'undefined') {
 // Prompt user for confirmation
 async function promptUserForAuth(relay: NDKRelay): Promise<boolean> {
   return new Promise((resolve) => {
-    relayAuthModal.open({
+    relayAuthModal.show = true;
+    relayAuthModal.request = {
       relayUrl: relay.url,
       onConfirm: () => {
         authDecisionsCache.set(relay.url, true);
@@ -71,7 +72,7 @@ async function promptUserForAuth(relay: NDKRelay): Promise<boolean> {
         saveAuthDecisions(authDecisionsCache);
         resolve(false);
       }
-    });
+    };
   });
 }
 

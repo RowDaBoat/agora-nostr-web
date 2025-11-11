@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
-  import { createReactionAction } from '@nostr-dev-kit/svelte';
+  import { createReactionAction } from '$lib/ndk/builders/reaction-action';
   import { ndk } from '$lib/ndk.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { clickOutside } from '$lib/utils/clickOutside';
   import ComposeDialog from './ComposeDialog.svelte';
   import ZapButton from './ZapButton.svelte';
   import Icon from './Icon.svelte';
-  import ReactionButton from '$lib/ndk/components/reaction/buttons/basic/reaction-button.svelte';
+  import ReactionButton from '$lib/ndk/components/reaction-button/reaction-button.svelte';
 
   interface Props {
     event: NDKEvent;

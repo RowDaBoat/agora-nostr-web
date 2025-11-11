@@ -1,3 +1,7 @@
+/*
+	Installed from @ndk/svelte@latest
+*/
+
 /**
  * Relay.Selector - Headless relay selection primitives
  *
@@ -41,19 +45,19 @@
  * ```
  */
 
-import Root from './relay-selector-root.svelte';
-import Trigger from './relay-selector-trigger.svelte';
+import Root from "./relay-selector-root.svelte";
+import Trigger from "./relay-selector-trigger.svelte";
 
 // Export as namespace for dot notation
 export const Selector = {
-  Root,
-  Trigger,
+	Root,
+	Trigger,
 };
 
 // Export block components
-export { default as RelaySelector } from './relay-selector.svelte';
-export { default as RelaySelectorPopover } from './relay-selector-popover.svelte';
+export { default as RelaySelector } from "./relay-selector.svelte";
+export { default as RelaySelectorPopover } from "./relay-selector-popover.svelte";
 
 // Export types
-export type { RelaySelectorContext } from './relay-selector.context.js';
-export { RELAY_SELECTOR_CONTEXT_KEY } from './relay-selector.context.js';
+export type { RelaySelectorContext } from "./relay-selector.context.js";
+export { RELAY_SELECTOR_CONTEXT_KEY } from "./relay-selector.context.js";

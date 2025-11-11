@@ -4,9 +4,9 @@
   import { getArticleUrl } from '$lib/utils/articleUrl';
 
   // Import registry components based on variant
-  import ArticleCardMedium from '$lib/ndk/components/article/cards/basic/article-card-medium.svelte';
-  import ArticleCardHero from '$lib/ndk/components/article/cards/hero/article-card-hero.svelte';
-  import ArticleCardPortrait from '$lib/ndk/components/article/cards/portrait/article-card-portrait.svelte';
+  import ArticleCardMedium from '$lib/ndk/components/article-card/article-card-medium.svelte';
+  import ArticleCardHero from '$lib/ndk/components/article-card-hero/article-card-hero.svelte';
+  import ArticleCardPortrait from '$lib/ndk/components/article-card-portrait/article-card-portrait.svelte';
 
   interface Props {
     article: NDKArticle;

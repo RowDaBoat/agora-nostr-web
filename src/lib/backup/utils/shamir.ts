@@ -21,6 +21,21 @@ export const SHARD_CONSTANTS = {
   MAX_TOTAL_SHARDS: 10,
 } as const;
 
+// Browser-compatible hex conversion utilities
+function hexToUint8Array(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+function uint8ArrayToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 function validateShardConfig(config: ShardConfig): void {
   const { threshold, totalShards } = config;
 
@@ -52,9 +67,9 @@ function splitSecret(
   totalShards: number
 ): string[] {
   try {
-    const secretBuffer = Buffer.from(secret, 'hex');
-    const shardBuffers = split(secretBuffer, { shares: totalShards, threshold });
-    return shardBuffers.map(buffer => buffer.toString('hex'));
+    const secretBytes = hexToUint8Array(secret);
+    const shardBuffers = split(secretBytes, { shares: totalShards, threshold });
+    return shardBuffers.map(buffer => uint8ArrayToHex(buffer));
   } catch (error) {
     throw BackupError.from(error, BackupErrorCode.SHAMIR_SPLIT_FAILED, 'Failed to split secret into shards');
   }
@@ -108,9 +123,9 @@ async function decryptShard(
 
 function joinShards(shards: string[]): string {
   try {
-    const shardBuffers = shards.map(shard => Buffer.from(shard, 'hex'));
-    const secretBuffer = combine(shardBuffers);
-    return secretBuffer.toString('hex');
+    const shardBuffers = shards.map(shard => hexToUint8Array(shard));
+    const secretBytes = combine(shardBuffers);
+    return uint8ArrayToHex(secretBytes);
   } catch (error) {
     throw BackupError.from(error, BackupErrorCode.SHAMIR_JOIN_FAILED, 'Failed to reconstruct secret from shards');
   }

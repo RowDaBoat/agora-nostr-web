@@ -1,4 +1,8 @@
 <!--
+	Installed from @ndk/svelte@latest
+-->
+
+<!--
   @component Relay.BookmarkedBy
   Headless component that exposes bookmark data via snippet.
 

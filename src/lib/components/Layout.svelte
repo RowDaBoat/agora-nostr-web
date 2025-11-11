@@ -128,10 +128,10 @@
   });
 </script>
 
-<div class="h-screen bg-background flex justify-center overflow-hidden">
-  <div class="flex w-full max-w-full lg:max-w-[1400px] relative">
+<div class="bg-background">
+  <div class="flex w-full max-w-full relative {sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'} {hideRightSidebar ? '' : 'xl:pr-80'} transition-all duration-300">
     <!-- Left Sidebar - Navigation -->
-    <aside class="hidden lg:flex {sidebarCollapsed ? 'w-20' : 'w-64'} flex-col border-r border-border p-4 fixed left-0 top-0 bottom-0 overflow-y-auto overflow-x-visible transition-all duration-300 ease-in-out bg-background">
+    <aside class="hidden lg:flex {sidebarCollapsed ? 'w-16' : 'w-64'} p-2 flex-col border-r border-border fixed left-0 top-0 bottom-0 overflow-y-auto overflow-x-visible transition-all duration-300 ease-in-out bg-background">
       <!-- Header: Logo and Toggle -->
       <div class="mb-6 flex items-center {sidebarCollapsed ? 'justify-center' : 'justify-between'} gap-2">
         <!-- Agora Branding -->
@@ -200,18 +200,6 @@
 
       <!-- Navigation -->
       <nav class="flex-1 space-y-2">
-        <!-- Search Button -->
-        <button
-          onclick={() => isSearchModalOpen = true}
-          class="w-full flex items-center {sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'} rounded-lg transition-colors text-foreground hover:bg-muted"
-          title={sidebarCollapsed ? 'Search Users' : undefined}
-        >
-          <Icon name="search" size="lg" />
-          {#if !sidebarCollapsed}
-            <span class="font-medium">Search</span>
-          {/if}
-        </button>
-
         <!-- Following / Relay Selector -->
         <RelaySelector active={path === '/'} collapsed={sidebarCollapsed} />
 
@@ -238,6 +226,18 @@
             {/if}
           {/if}
         </a>
+
+        <!-- Search Button -->
+        <button
+          onclick={() => isSearchModalOpen = true}
+          class="w-full flex items-center {sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'} rounded-lg transition-colors text-foreground hover:bg-muted"
+          title={sidebarCollapsed ? 'Search Users' : undefined}
+        >
+          <Icon name="search" size="lg" />
+          {#if !sidebarCollapsed}
+            <span class="font-medium">Search</span>
+          {/if}
+        </button>
 
         <a
           href="/notifications"
@@ -346,18 +346,19 @@
           {/if}
         </a>
 
+        {#if ndk.$currentPubkey}
         <button
           onclick={() => {
             if (path === '/marketplace') {
-              createListingModal.open();
+              createListingModal.show = true;
             } else if (path === '/trades') {
-              createTradeModal.open();
+              createTradeModal.show = true;
             } else if (path.startsWith('/packs')) {
-              createPackModal.open();
+              createPackModal.show = true;
             } else if (path === '/agora/invites') {
-              createInviteModal.open();
+              createInviteModal.show = true;
             } else if (path === '/' && homePageFilter.selected === 'images') {
-              createMediaPostModal.open();
+              createMediaPostModal.show = true;
             } else {
               goto('/compose');
             }
@@ -397,6 +398,7 @@
             {/if}
           {/if}
         </button>
+        {/if}
       </nav>
 
       <!-- Login/User Section -->
@@ -410,11 +412,10 @@
     </aside>
 
     <!-- Main Content Container -->
-    <div class="flex-1 flex {sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} transition-all duration-300 ease-in-out h-full">
       <!-- Center column - Main content -->
-      <div class={`w-full lg:flex-1 ${hideRightSidebar ? 'lg:max-w-[900px]' : 'lg:max-w-[600px]'} min-w-0 flex flex-col h-full border-x border-border`}>
+      <div class={`w-full lg:flex-1 min-w-0 flex flex-col h-full`}>
         <!-- Page content -->
-        <main class="flex-1 pb-20 lg:pb-0 bg-background max-w-screen overflow-y-auto">
+        <main class="flex-1 pb-20 lg:pb-0 bg-background max-w-3xl 2xl:max-w-3xl w-full mx-auto border-x border-border min-h-screen">
           <!-- Structured Header Config - rendered by Layout for consistency -->
           {#if headerStore.headerConfig}
             <div class="border-b border-border bg-background">
@@ -504,8 +505,8 @@
 
       <!-- Right Sidebar - Widgets -->
       {#if !hideRightSidebar}
-        <aside class="hidden lg:block w-80 p-4 space-y-4">
-          <div class="sticky top-4 space-y-4">
+        <aside class="hidden xl:block w-80 border-l border-border fixed top-0 right-0 bottom-0">
+          <div class="flex flex-col divide-border divide-y">
             {#if sidebarStore.rightSidebar}
               {@render sidebarStore.rightSidebar()}
             {:else}
@@ -513,7 +514,7 @@
               <NewMembersWidget />
 
               <!-- Recent Articles Widget -->
-              <div class="p-4 bg-card rounded-lg border border-border">
+              <div class="p-4">
                 <div class="flex items-center gap-2 mb-4">
                   <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -543,22 +544,10 @@
 
               <!-- Marketplace Widget -->
               <MarketplaceSidebar />
-
-              <!-- Footer -->
-              <div class="text-xs text-muted-foreground space-y-2">
-                <div class="flex flex-wrap gap-3">
-                  <a href="#" class="hover:text-foreground transition-colors">Terms</a>
-                  <a href="#" class="hover:text-foreground transition-colors">Privacy</a>
-                  <a href="#" class="hover:text-foreground transition-colors">About</a>
-                  <a href="#" class="hover:text-foreground transition-colors">Help</a>
-                </div>
-                <p>© 2024 Agora</p>
-              </div>
             {/if}
           </div>
         </aside>
       {/if}
-    </div>
   </div>
 
   <!-- Mobile Bottom Navigation -->

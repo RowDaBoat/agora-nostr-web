@@ -1,3 +1,10 @@
-import { createModalStore } from './modalFactory.svelte';
+let show = $state(false);
 
-export const createListingModal = createModalStore();
+export const createListingModal = {
+  get show() {
+    return show;
+  },
+  set show(value: boolean) {
+    show = value;
+  }
+};

@@ -3,14 +3,14 @@
   import type { Snippet } from 'svelte';
 
   let {
-    asChild = false,
     children
   }: {
-    asChild?: boolean;
-    children: Snippet<[{ builder: any }]>;
+    children: Snippet<[{ props: Record<string, unknown> }]>;
   } = $props();
 </script>
 
-<TooltipPrimitive.Trigger {asChild} let:builder>
-  {@render children({ builder })}
+<TooltipPrimitive.Trigger>
+  {#snippet child({ props })}
+    {@render children({ props })}
+  {/snippet}
 </TooltipPrimitive.Trigger>

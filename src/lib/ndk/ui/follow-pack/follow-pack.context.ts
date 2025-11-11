@@ -1,5 +1,9 @@
-import type { NDKSvelte } from '@nostr-dev-kit/svelte';
-import type { NDKFollowPack } from '@nostr-dev-kit/ndk';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import type { NDKSvelte } from "@nostr-dev-kit/svelte";
+import type { NDKFollowPack } from "@nostr-dev-kit/ndk";
 
 export interface FollowPackContext {
 	ndk: NDKSvelte;
@@ -7,4 +11,4 @@ export interface FollowPackContext {
 	onclick?: (e: MouseEvent) => void;
 }
 
-export const FOLLOW_PACK_CONTEXT_KEY = Symbol('follow-pack');
+export const FOLLOW_PACK_CONTEXT_KEY = Symbol("follow-pack");

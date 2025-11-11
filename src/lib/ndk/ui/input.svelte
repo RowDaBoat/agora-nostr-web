@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
 	import { cn } from '../utils/cn.js';
 	import type { HTMLInputAttributes } from 'svelte/elements';

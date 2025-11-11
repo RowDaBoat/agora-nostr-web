@@ -48,7 +48,10 @@
   </button>
 {:else}
   <button
-    onclick={() => loginModal.open('signup')}
+    onclick={() => {
+      loginModal.show = true;
+      loginModal.state = 'signup';
+    }}
     class={className}
   >
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

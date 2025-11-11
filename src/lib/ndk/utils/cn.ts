@@ -1,3 +1,7 @@
+/*
+	Installed from @ndk/svelte@latest
+*/
+
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 

@@ -1,9 +1,11 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { ndk } from '$lib/ndk.svelte';
-	import { User } from '$lib/ndk/ui/user';
-	import UserHoverCard from './UserHoverCard.svelte';
-    import type { NDKUserProfile, NDKUser } from '@nostr-dev-kit/ndk';
+	import { User as UserUI } from '$lib/ndk/ui/user';
+	import UserCardClassic from '$lib/ndk/components/user-card-classic/user-card-classic.svelte';
+	import { Popover } from 'bits-ui';
+	import { cn } from '$lib/utils';
+	import type { NDKUserProfile, NDKUser } from '@nostr-dev-kit/ndk';
 
 	interface Props {
 		pubkey: string;
@@ -33,180 +35,147 @@
 
 	let user = $state<NDKUser | undefined>(undefined);
 	let profile = $state<NDKUserProfile | null>(null);
-	$effect(() => { ndk.fetchUser(pubkey).then(u => {
-		user = u;
-		u?.fetchProfile().then(p => { profile = p; });
-	}) });
 
-	let showUserHoverCard = $state(false);
-	let hoverCardPosition = $state({ x: 0, y: 0 });
-	let hoverTimer: ReturnType<typeof setTimeout> | null = null;
-	let containerElement = $state<HTMLElement | null>(null);
+	$effect(() => {
+		ndk.fetchUser(pubkey).then(u => {
+			user = u;
+			u?.fetchProfile().then(p => { profile = p; });
+		});
+	});
 
-	function handleClick(e: MouseEvent) {
-		if (onclick) {
-			onclick(e);
-		} else {
-			window.location.href = `/p/${user?.npub}`;
-		}
-	}
+	let open = $state(false);
+	let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	function handleMouseEnter() {
 		if (!showHoverCard) return;
-		if (hoverTimer) clearTimeout(hoverTimer);
-
-		hoverTimer = setTimeout(() => {
-			if (containerElement) {
-				const rect = containerElement.getBoundingClientRect();
-				const viewportWidth = window.innerWidth;
-				const cardWidth = 320; // w-80 = 320px
-				const spacing = 16;
-
-				let x = rect.right + spacing;
-
-				if (x + cardWidth > viewportWidth - spacing) {
-					x = rect.left - cardWidth - spacing;
-				}
-
-				const y = rect.top;
-
-				hoverCardPosition = { x, y };
-				showUserHoverCard = true;
-			}
+		if (hoverTimeout) clearTimeout(hoverTimeout);
+		hoverTimeout = setTimeout(() => {
+			open = true;
 		}, 500);
 	}
 
 	function handleMouseLeave() {
-		if (hoverTimer) {
-			clearTimeout(hoverTimer);
-			hoverTimer = null;
-		}
-
-		hoverTimer = setTimeout(() => {
-			showUserHoverCard = false;
+		if (hoverTimeout) clearTimeout(hoverTimeout);
+		hoverTimeout = setTimeout(() => {
+			open = false;
 		}, 100);
 	}
 
-	function handleHoverCardMouseEnter() {
-		if (hoverTimer) {
-			clearTimeout(hoverTimer);
-			hoverTimer = null;
+	function handleClick(e: MouseEvent) {
+		if (onclick) {
+			onclick(e);
+		} else if (user?.npub) {
+			window.location.href = `/p/${user.npub}`;
 		}
-	}
-
-	function handleHoverCardMouseLeave() {
-		showUserHoverCard = false;
 	}
 
 	const displayName = $derived(profile?.displayName || profile?.name || `${pubkey?.slice(0, 8)}...`);
 	const handle = $derived(profile?.name || pubkey?.slice(0, 8));
 </script>
 
-{#if variant === 'avatar'}
-	<button
-		bind:this={containerElement}
-		type="button"
-		onclick={handleClick}
-		onmouseenter={handleMouseEnter}
-		onmouseleave={handleMouseLeave}
-		class="flex-shrink-0 {className}"
-	>
-		<User.Root {ndk} {pubkey}>
-		  <User.Avatar class="{avatarSize} cursor-pointer hover:opacity-80 transition-opacity" />
-		</User.Root>
-	</button>
-{:else if variant === 'avatar-name'}
-	<button
-		bind:this={containerElement}
-		type="button"
-		onclick={handleClick}
-		onmouseenter={handleMouseEnter}
-		onmouseleave={handleMouseLeave}
-		class="flex items-center gap-3 cursor-pointer {className}"
-	>
-		<User.Root {ndk} {pubkey}>
-		  <User.Avatar class="{avatarSize} hover:opacity-80 transition-opacity" />
-		</User.Root>
-		<p class="{nameSize} text-foreground truncate hover:underline flex-1 min-w-0 text-left">{displayName}</p>
-	</button>
-{:else if variant === 'avatar-name-handle'}
-	<button
-		bind:this={containerElement}
-		type="button"
-		onclick={handleClick}
-		onmouseenter={handleMouseEnter}
-		onmouseleave={handleMouseLeave}
-		class="flex items-center gap-3 cursor-pointer text-left w-full {className}"
-	>
-		<User.Root {ndk} {pubkey}>
-		  <User.Avatar class="{avatarSize} hover:opacity-80 transition-opacity flex-shrink-0" />
-		</User.Root>
-		<div class="flex-1 min-w-0 flex flex-col">
-			<p class="{nameSize} text-foreground truncate hover:underline">{displayName}</p>
-			<p class="{handleSize} truncate">@{handle}</p>
-		</div>
-	</button>
-{:else if variant === 'avatar-name-bio'}
-	<button
-		bind:this={containerElement}
-		type="button"
-		onclick={handleClick}
-		onmouseenter={handleMouseEnter}
-		onmouseleave={handleMouseLeave}
-		class="flex items-center gap-3 cursor-pointer text-left w-full {className}"
-	>
-		<User.Root {ndk} {pubkey}>
-		  <User.Avatar class="{avatarSize} hover:opacity-80 transition-opacity flex-shrink-0" />
-		</User.Root>
-		<div class="flex-1 min-w-0">
-			<p class="{nameSize} text-foreground truncate hover:underline">{displayName}</p>
-			{#if profile?.about}
-				<p class="{bioSize} truncate line-clamp-2">{profile.about}</p>
-			{/if}
-		</div>
-	</button>
-{:else if variant === 'avatar-name-meta'}
-	<div
-		bind:this={containerElement}
-		onmouseenter={handleMouseEnter}
-		onmouseleave={handleMouseLeave}
-		class="flex items-center gap-3 {className}"
-	>
-		<button
+<Popover.Root bind:open>
+	{#if variant === 'avatar'}
+		<Popover.Trigger
 			type="button"
 			onclick={handleClick}
-			class="flex-shrink-0"
+			onmouseenter={handleMouseEnter}
+			onmouseleave={handleMouseLeave}
+			class={cn("flex-shrink-0", className)}
 		>
-			<User.Root {ndk} {pubkey}>
-			  <User.Avatar class="{avatarSize} cursor-pointer hover:opacity-80 transition-opacity" />
-			</User.Root>
-		</button>
-		<div class="flex-1 min-w-0">
-			<button
+			<UserUI.Root {ndk} {pubkey}>
+				<UserUI.Avatar class={cn(avatarSize, "cursor-pointer hover:opacity-80 transition-opacity")} />
+			</UserUI.Root>
+		</Popover.Trigger>
+	{:else if variant === 'avatar-name'}
+		<Popover.Trigger
+			type="button"
+			onclick={handleClick}
+			onmouseenter={handleMouseEnter}
+			onmouseleave={handleMouseLeave}
+			class={cn("flex items-center gap-3 cursor-pointer", className)}
+		>
+			<UserUI.Root {ndk} {pubkey}>
+				<UserUI.Avatar class={cn(avatarSize, "hover:opacity-80 transition-opacity")} />
+			</UserUI.Root>
+			<p class={cn(nameSize, "text-foreground truncate hover:underline flex-1 min-w-0 text-left")}>{displayName}</p>
+		</Popover.Trigger>
+	{:else if variant === 'avatar-name-handle'}
+		<Popover.Trigger
+			type="button"
+			onclick={handleClick}
+			onmouseenter={handleMouseEnter}
+			onmouseleave={handleMouseLeave}
+			class={cn("flex items-center gap-3 cursor-pointer text-left w-full", className)}
+		>
+			<UserUI.Root {ndk} {pubkey}>
+				<UserUI.Avatar class={cn(avatarSize, "hover:opacity-80 transition-opacity flex-shrink-0")} />
+			</UserUI.Root>
+			<div class="flex-1 min-w-0 flex flex-col">
+				<p class={cn(nameSize, "text-foreground truncate hover:underline")}>{displayName}</p>
+				<p class={cn(handleSize, "truncate")}>@{handle}</p>
+			</div>
+		</Popover.Trigger>
+	{:else if variant === 'avatar-name-bio'}
+		<Popover.Trigger
+			type="button"
+			onclick={handleClick}
+			onmouseenter={handleMouseEnter}
+			onmouseleave={handleMouseLeave}
+			class={cn("flex items-center gap-3 cursor-pointer text-left w-full", className)}
+		>
+			<UserUI.Root {ndk} {pubkey}>
+				<UserUI.Avatar class={cn(avatarSize, "hover:opacity-80 transition-opacity flex-shrink-0")} />
+			</UserUI.Root>
+			<div class="flex-1 min-w-0">
+				<p class={cn(nameSize, "text-foreground truncate hover:underline")}>{displayName}</p>
+				{#if profile?.about}
+					<p class={cn(bioSize, "truncate line-clamp-2")}>{profile.about}</p>
+				{/if}
+			</div>
+		</Popover.Trigger>
+	{:else if variant === 'avatar-name-meta'}
+		<div
+			onmouseenter={handleMouseEnter}
+			onmouseleave={handleMouseLeave}
+			class={cn("flex items-center gap-3", className)}
+		>
+			<Popover.Trigger
 				type="button"
 				onclick={handleClick}
-				class="text-left w-full min-w-0"
+				class="flex-shrink-0"
 			>
-				<p class="{nameSize} text-foreground truncate hover:underline">{displayName}</p>
-			</button>
-			{#if meta}
-				{@render meta()}
-			{/if}
+				<UserUI.Root {ndk} {pubkey}>
+					<UserUI.Avatar class={cn(avatarSize, "cursor-pointer hover:opacity-80 transition-opacity")} />
+				</UserUI.Root>
+			</Popover.Trigger>
+			<div class="flex-1 min-w-0">
+				<Popover.Trigger
+					type="button"
+					onclick={handleClick}
+					class="text-left w-full min-w-0"
+				>
+					<p class={cn(nameSize, "text-foreground truncate hover:underline")}>{displayName}</p>
+				</Popover.Trigger>
+				{#if meta}
+					{@render meta()}
+				{/if}
+			</div>
 		</div>
-	</div>
-{/if}
+	{/if}
 
-<!-- User Hover Card -->
-<div
-	onmouseenter={handleHoverCardMouseEnter}
-	onmouseleave={handleHoverCardMouseLeave}
->
-	<UserHoverCard
-		{pubkey}
-		isVisible={showUserHoverCard}
-		position={hoverCardPosition}
-	/>
-</div>
+	{#if showHoverCard}
+		<Popover.Portal>
+			<Popover.Content
+				class="z-50"
+				sideOffset={8}
+				onmouseenter={handleMouseEnter}
+				onmouseleave={handleMouseLeave}
+			>
+				<UserCardClassic {ndk} {pubkey} />
+			</Popover.Content>
+		</Popover.Portal>
+	{/if}
+</Popover.Root>
 
 <style>
 	.line-clamp-2 {

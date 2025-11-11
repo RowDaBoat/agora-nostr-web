@@ -1,6 +1,10 @@
-import type { NDKUser } from '@nostr-dev-kit/ndk';
-import type { NDKSvelte } from '@nostr-dev-kit/svelte';
-import { getContext } from 'svelte';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import type { NDKUser } from "@nostr-dev-kit/ndk";
+import type { NDKSvelte } from "@nostr-dev-kit/svelte";
+import { getContext } from "svelte";
 
 interface UserStatsConfig {
 	user: NDKUser;
@@ -18,9 +22,9 @@ interface UserStatsState {
 
 export function createUserStats(
 	config: () => UserStatsConfig | undefined,
-	ndk?: NDKSvelte
+	ndk?: NDKSvelte,
 ): UserStatsState {
-	const ndkInstance = ndk ?? getContext<NDKSvelte>('ndk');
+	const ndkInstance = ndk ?? getContext<NDKSvelte>("ndk");
 
 	const configValue = $derived(config());
 	const user = $derived(configValue?.user);
@@ -29,34 +33,36 @@ export function createUserStats(
 	const recentNotesEnabled = $derived(configValue?.recentNotes ?? false);
 
 	// Subscribe to user's contact list (kind 3) for follow count
-	const contactListSubscription = ndkInstance.$subscribe(
-		() => followsEnabled && user ? ({
-			filters: [{ kinds: [3], authors: [user.pubkey], limit: 1 }],
-			bufferMs: 100,
-		}) : undefined
+	const contactListSubscription = ndkInstance.$subscribe(() =>
+		followsEnabled && user
+			? {
+					filters: [{ kinds: [3], authors: [user.pubkey], limit: 1 }],
+					bufferMs: 100,
+				}
+			: undefined,
 	);
 
 	// Subscribe to follow packs that include this user
-	const followPacksSubscription = ndkInstance.$subscribe(
-		() => followPacksEnabled && user ? ({
-			filters: [{ kinds: [39089], '#p': [user.pubkey] }],
-			bufferMs: 100,
-		}) : undefined
+	const followPacksSubscription = ndkInstance.$subscribe(() =>
+		followPacksEnabled && user
+			? {
+					filters: [{ kinds: [39089], "#p": [user.pubkey] }],
+					bufferMs: 100,
+				}
+			: undefined,
 	);
 
 	// Subscribe to user's recent notes (past week)
-	const recentNotesSubscription = ndkInstance.$subscribe(
-		() => {
-			if (!recentNotesEnabled || !user) return undefined;
+	const recentNotesSubscription = ndkInstance.$subscribe(() => {
+		if (!recentNotesEnabled || !user) return undefined;
 
-			const oneWeekAgo = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60);
+		const oneWeekAgo = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
 
-			return {
-				filters: [{ kinds: [1], authors: [user.pubkey], since: oneWeekAgo }],
-				bufferMs: 100,
-			};
-		}
-	);
+		return {
+			filters: [{ kinds: [1], authors: [user.pubkey], since: oneWeekAgo }],
+			bufferMs: 100,
+		};
+	});
 
 	// Compute follow count from contact list
 	const followCount = $derived.by(() => {
@@ -65,7 +71,7 @@ export function createUserStats(
 		const contactList = contactListSubscription.events[0];
 		if (!contactList) return 0;
 
-		return contactList.tags.filter(tag => tag[0] === 'p').length;
+		return contactList.tags.filter((tag) => tag[0] === "p").length;
 	});
 
 	// Compute if current user follows this user
@@ -83,7 +89,9 @@ export function createUserStats(
 	// Compute recent note count (exclude replies)
 	const recentNoteCount = $derived.by(() => {
 		if (!recentNotesEnabled) return 0;
-		return recentNotesSubscription.events.filter(e => !e.tags.some(tag => tag[0] === 'e')).length;
+		return recentNotesSubscription.events.filter(
+			(e) => !e.tags.some((tag) => tag[0] === "e"),
+		).length;
 	});
 
 	return {
@@ -98,6 +106,6 @@ export function createUserStats(
 		},
 		get recentNoteCount() {
 			return recentNoteCount;
-		}
+		},
 	};
 }

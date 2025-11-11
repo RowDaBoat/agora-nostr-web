@@ -1,1 +1,11 @@
-export { createZapAction, type ZapActionConfig, type ZapStats } from './zap-action.svelte.js';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+export {
+	createZapAction,
+	type ZapActionConfig,
+	type ZapStats,
+	type ZapFunction,
+	type ZapIntentCallback,
+} from "./zap-action.svelte.js";

@@ -1,16 +1,22 @@
+/*
+	Installed from @ndk/svelte@latest
+*/
+
 import { NDKEvent, NDKKind, eventIsReply } from "@nostr-dev-kit/ndk";
 import type { NDKSvelte } from "@nostr-dev-kit/svelte";
-import { resolveNDK } from '../resolve-ndk/index.svelte.js';
+import { resolveNDK } from "../resolve-ndk/index.svelte.js";
 
 export interface ReplyStats {
-    count: number;
-    hasReplied: boolean;
-    pubkeys: string[];
+	count: number;
+	hasReplied: boolean;
+	pubkeys: string[];
 }
 
 export interface ReplyActionConfig {
-    event: NDKEvent | undefined;
+	event: NDKEvent | undefined;
 }
+
+export type ReplyIntentCallback = (event: NDKEvent) => void;
 
 /**
  * Creates a reactive reply action state manager
@@ -31,80 +37,82 @@ export interface ReplyActionConfig {
  * ```
  */
 export function createReplyAction(
-    config: () => ReplyActionConfig,
-    ndk?: NDKSvelte
+	config: () => ReplyActionConfig,
+	ndk?: NDKSvelte,
 ) {
-    const resolvedNDK = resolveNDK(ndk);
-    // Subscribe to replies for this event
-    let repliesSub = $state<ReturnType<NDKSvelte["$subscribe"]> | null>(null);
+	const resolvedNDK = resolveNDK(ndk);
+	// Subscribe to replies for this event
+	let repliesSub = $state<ReturnType<NDKSvelte["$subscribe"]> | null>(null);
 
-    $effect(() => {
-        const { event } = config();
-        if (!event?.id) {
-            repliesSub = null;
-            return;
-        }
+	$effect(() => {
+		const { event } = config();
+		if (!event?.id) {
+			repliesSub = null;
+			return;
+		}
 
-        repliesSub = resolvedNDK.$subscribe(() => ({
-            filters: [{
-                kinds: [NDKKind.Text, NDKKind.GenericReply],
-                ...event.filter(),
-            }],
-            closeOnEose: false
-        }));
-    });
+		repliesSub = resolvedNDK.$subscribe(() => ({
+			filters: [
+				{
+					kinds: [NDKKind.Text, NDKKind.GenericReply],
+					...event.filter(),
+				},
+			],
+			closeOnEose: false,
+		}));
+	});
 
-    const stats = $derived.by((): ReplyStats => {
-        const sub = repliesSub;
-        if (!sub) return { count: 0, hasReplied: false, pubkeys: [] };
+	const stats = $derived.by((): ReplyStats => {
+		const sub = repliesSub;
+		if (!sub) return { count: 0, hasReplied: false, pubkeys: [] };
 
-        const { event } = config();
-        if (!event?.id) return { count: 0, hasReplied: false, pubkeys: [] };
+		const { event } = config();
+		if (!event?.id) return { count: 0, hasReplied: false, pubkeys: [] };
 
-        // Use NDK's built-in eventIsReply to filter actual replies
-        const actualReplies = Array.from(sub.events).filter(replyEvent =>
-            eventIsReply(event, replyEvent)
-        );
+		// Use NDK's built-in eventIsReply to filter actual replies
+		const actualReplies = Array.from(sub.events).filter((replyEvent) =>
+			eventIsReply(event, replyEvent),
+		);
 
-        const pubkeys = actualReplies.map(r => r.pubkey);
+		const pubkeys = actualReplies.map((r) => r.pubkey);
 
-        return {
-            count: actualReplies.length,
-            hasReplied: resolvedNDK.$currentPubkey
-                ? actualReplies.some(r => r.pubkey === resolvedNDK.$currentPubkey)
-                : false,
-            pubkeys
-        };
-    });
+		return {
+			count: actualReplies.length,
+			hasReplied: resolvedNDK.$currentPubkey
+				? actualReplies.some((r) => r.pubkey === resolvedNDK.$currentPubkey)
+				: false,
+			pubkeys,
+		};
+	});
 
-    async function reply(content: string): Promise<NDKEvent> {
-        const { event } = config();
+	async function reply(content: string): Promise<NDKEvent> {
+		const { event } = config();
 
-        if (!event?.id) {
-            throw new Error("No event to reply to");
-        }
+		if (!event?.id) {
+			throw new Error("No event to reply to");
+		}
 
-        if (!resolvedNDK.$currentPubkey) {
-            throw new Error("User must be logged in to reply");
-        }
+		if (!resolvedNDK.$currentPubkey) {
+			throw new Error("User must be logged in to reply");
+		}
 
-        const replyEvent = event.reply();
-        replyEvent.content = content;
+		const replyEvent = event.reply();
+		replyEvent.content = content;
 
-        await replyEvent.publish();
-        return replyEvent;
-    }
+		await replyEvent.publish();
+		return replyEvent;
+	}
 
-    return {
-        get count() {
-            return stats.count;
-        },
-        get hasReplied() {
-            return stats.hasReplied;
-        },
-        get pubkeys() {
-            return stats.pubkeys;
-        },
-        reply
-    };
+	return {
+		get count() {
+			return stats.count;
+		},
+		get hasReplied() {
+			return stats.hasReplied;
+		},
+		get pubkeys() {
+			return stats.pubkeys;
+		},
+		reply,
+	};
 }

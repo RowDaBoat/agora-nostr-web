@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { getContext } from 'svelte';
   import { USER_INPUT_CONTEXT_KEY, type UserInputContext } from './user-input.context.js';

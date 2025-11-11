@@ -170,6 +170,7 @@
         onUpdateProfile={(d) => onboardingStore.setProfileData(d)}
         onNext={handleStep4Next}
         inviteRelay={inviteData?.inviteRelay}
+        {signer}
       />
     {/if}
 

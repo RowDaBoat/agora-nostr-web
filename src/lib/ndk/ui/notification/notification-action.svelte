@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts" module>
 	import type { Component } from 'svelte';
 
@@ -13,10 +17,10 @@
 	import type { Snippet } from 'svelte';
 	import type { NotificationContext } from './notification.context';
 	import { NOTIFICATION_CONTEXT_KEY } from './notification.context';
-	import Heart from '../../icons/heart.svelte';
-	import Zap from '../../icons/zap.svelte';
-	import Repeat from '../../icons/repost.svelte';
-	import MessageCircle from '../../icons/reply.svelte';
+	import Heart from '../../icons/heart/heart.svelte';
+	import Zap from '../../icons/zap/zap.svelte';
+	import Repeat from '../../icons/repost/repost.svelte';
+	import MessageCircle from '../../icons/reply/reply.svelte';
 
 	interface Props {
 		snippet?: Snippet<[ActionInfo]>;

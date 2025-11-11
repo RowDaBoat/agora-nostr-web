@@ -74,7 +74,7 @@
 </script>
 
 {#if isDesktop.current}
-  <Dialog.Root open={isOpen} onOpenChange={(newOpen) => {
+  <Dialog.Root open={isOpen} onOpenChange={(newOpen: boolean) => {
       isOpen = newOpen;
       if (!newOpen) onClose();
     }}>
@@ -84,21 +84,6 @@
       </Dialog.Header>
 
       <div class="space-y-4">
-
-        <div class="bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl p-6 mb-6">
-          <div class="flex flex-col items-center text-foreground">
-            <div class="relative mb-4">
-              <User.Root {ndk} {pubkey}>
-                <User.Avatar class="w-20 h-20 ring-4 ring-white/20" />
-              </User.Root>
-            </div>
-            <h3 class="text-xl font-bold mb-1">{profile?.name || 'Anonymous'}</h3>
-            {#if profile?.nip05}
-              <p class="text-foreground/80 text-sm">@{profile.nip05.split('@')[0]}</p>
-            {/if}
-          </div>
-        </div>
-
         <div class="flex justify-center mb-6">
           <QRCode value={profileUrl} size={200} />
         </div>
@@ -199,7 +184,7 @@
     </Dialog.Content>
   </Dialog.Root>
 {:else}
-  <Drawer.Root open={isOpen} onOpenChange={(newOpen) => {
+  <Drawer.Root open={isOpen} onOpenChange={(newOpen: boolean) => {
       isOpen = newOpen;
       if (!newOpen) onClose();
     }}>

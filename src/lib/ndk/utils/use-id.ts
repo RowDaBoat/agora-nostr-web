@@ -1,3 +1,7 @@
+/*
+	Installed from @ndk/svelte@latest
+*/
+
 /**
  * ID generation system for UI components.
  * Based on bits-ui's ID system for accessibility and component coordination.
@@ -18,7 +22,7 @@ declare global {
 	}
 }
 
-if (typeof globalThis !== 'undefined') {
+if (typeof globalThis !== "undefined") {
 	(globalThis as any).__registryIdCounter ??= { current: 0 };
 }
 
@@ -36,7 +40,7 @@ if (typeof globalThis !== 'undefined') {
  * ```
  */
 export function useId(prefix = "bits"): string {
-	if (typeof globalThis === 'undefined') {
+	if (typeof globalThis === "undefined") {
 		// Fallback for SSR - generate random ID
 		return `${prefix}-${Math.random().toString(36).substring(2, 9)}`;
 	}

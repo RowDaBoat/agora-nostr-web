@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import type { Snippet } from 'svelte';

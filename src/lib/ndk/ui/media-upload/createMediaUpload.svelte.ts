@@ -1,6 +1,10 @@
-import type { NDKSvelte } from '@nostr-dev-kit/svelte';
-import { createBlossomUpload } from '@nostr-dev-kit/svelte';
-import { NDKBlossom } from '@nostr-dev-kit/blossom';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import type { NDKSvelte } from "@nostr-dev-kit/svelte";
+import { createBlossomUpload } from "@nostr-dev-kit/svelte";
+import { NDKBlossom } from "@nostr-dev-kit/blossom";
 
 export interface MediaUploadResult {
 	url: string;
@@ -17,11 +21,14 @@ export interface MediaUploadOptions {
 	maxFiles?: number;
 }
 
-export function createMediaUpload(ndk: NDKSvelte, options: MediaUploadOptions = {}) {
+export function createMediaUpload(
+	ndk: NDKSvelte,
+	options: MediaUploadOptions = {},
+) {
 	const {
-		fallbackServer = 'https://blossom.primal.net',
+		fallbackServer = "https://blossom.primal.net",
 		accept,
-		maxFiles
+		maxFiles,
 	} = options;
 
 	const blossom = new NDKBlossom(ndk);
@@ -30,7 +37,7 @@ export function createMediaUpload(ndk: NDKSvelte, options: MediaUploadOptions = 
 	const state = $state({
 		uploads: [] as MediaUploadResult[],
 		uploadingFiles: new Map<File, number>(),
-		uploadErrors: new Map<File, Error>()
+		uploadErrors: new Map<File, Error>(),
 	});
 
 	const isUploading = $derived(state.uploadingFiles.size > 0);
@@ -38,13 +45,11 @@ export function createMediaUpload(ndk: NDKSvelte, options: MediaUploadOptions = 
 	const errors = $derived(state.uploadErrors);
 
 	async function uploadFile(file: File): Promise<void> {
-		console.log('uploadFile called with:', file.name, file.type);
-
 		// Validate file type if accept filter is provided
 		if (accept && !isFileAccepted(file, accept)) {
 			const error = new Error(`File type ${file.type} not accepted`);
 			state.uploadErrors.set(file, error);
-			console.error('File type not accepted:', file.type);
+			console.error("File type not accepted:", file.type);
 			throw error;
 		}
 
@@ -52,7 +57,7 @@ export function createMediaUpload(ndk: NDKSvelte, options: MediaUploadOptions = 
 		if (maxFiles && state.uploads.length >= maxFiles) {
 			const error = new Error(`Maximum ${maxFiles} files allowed`);
 			state.uploadErrors.set(file, error);
-			console.error('Max files reached:', maxFiles);
+			console.error("Max files reached:", maxFiles);
 			throw error;
 		}
 
@@ -60,41 +65,41 @@ export function createMediaUpload(ndk: NDKSvelte, options: MediaUploadOptions = 
 		state.uploadErrors.delete(file);
 
 		try {
-			console.log('Starting upload to:', fallbackServer);
 			await upload.upload(file, { fallbackServer });
-
-			console.log('Upload result:', upload.result);
 
 			if (upload.result?.url) {
 				// Get image dimensions if it's an image
 				let dimensions: { width: number; height: number } | undefined;
-				if (file.type.startsWith('image/')) {
+				if (file.type.startsWith("image/")) {
 					dimensions = await getImageDimensions(file);
 				}
 
 				// Handle url being string or string[] - take first if array
 				const uploadUrl = upload.result.url;
-				const url: string = (Array.isArray(uploadUrl) ? uploadUrl[0]! : uploadUrl) as string;
+				const url: string = (
+					Array.isArray(uploadUrl) ? uploadUrl[0]! : uploadUrl
+				) as string;
 
 				const result: MediaUploadResult = {
 					url: url as string,
-					sha256: (Array.isArray(upload.result.sha256) ? upload.result.sha256[0]! : upload.result.sha256) as string || '',
+					sha256:
+						((Array.isArray(upload.result.sha256)
+							? upload.result.sha256[0]!
+							: upload.result.sha256) as string) || "",
 					blurhash: upload.result.blurhash,
 					mimeType: file.type,
 					dimensions,
-					file
+					file,
 				};
 
-				console.log('Adding upload result:', result);
 				state.uploads.push(result);
-				console.log('Current uploads:', state.uploads.length);
 				state.uploadingFiles.delete(file);
 			} else {
-				console.error('No URL in upload result');
+				console.error("No URL in upload result");
 			}
 		} catch (error) {
-			console.error('Upload error:', error);
-			const err = error instanceof Error ? error : new Error('Upload failed');
+			console.error("Upload error:", error);
+			const err = error instanceof Error ? error : new Error("Upload failed");
 			state.uploadErrors.set(file, err);
 			state.uploadingFiles.delete(file);
 			throw err;
@@ -103,7 +108,7 @@ export function createMediaUpload(ndk: NDKSvelte, options: MediaUploadOptions = 
 
 	async function uploadFiles(files: FileList | File[]): Promise<void> {
 		const fileArray = Array.from(files);
-		await Promise.allSettled(fileArray.map(file => uploadFile(file)));
+		await Promise.allSettled(fileArray.map((file) => uploadFile(file)));
 	}
 
 	function removeUpload(index: number): void {
@@ -145,25 +150,25 @@ export function createMediaUpload(ndk: NDKSvelte, options: MediaUploadOptions = 
 		},
 		get errors() {
 			return errors;
-		}
+		},
 	};
 }
 
 function isFileAccepted(file: File, accept: string): boolean {
-	const acceptTypes = accept.split(',').map(t => t.trim());
+	const acceptTypes = accept.split(",").map((t) => t.trim());
 
 	for (const type of acceptTypes) {
 		// Exact match
 		if (type === file.type) return true;
 
 		// Wildcard match (e.g., "image/*")
-		if (type.endsWith('/*')) {
+		if (type.endsWith("/*")) {
 			const prefix = type.slice(0, -2);
-			if (file.type.startsWith(prefix + '/')) return true;
+			if (file.type.startsWith(prefix + "/")) return true;
 		}
 
 		// Extension match (e.g., ".jpg")
-		if (type.startsWith('.')) {
+		if (type.startsWith(".")) {
 			if (file.name.toLowerCase().endsWith(type.toLowerCase())) return true;
 		}
 	}
@@ -171,7 +176,9 @@ function isFileAccepted(file: File, accept: string): boolean {
 	return false;
 }
 
-function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+function getImageDimensions(
+	file: File,
+): Promise<{ width: number; height: number }> {
 	return new Promise((resolve, reject) => {
 		const img = new Image();
 		const url = URL.createObjectURL(file);
@@ -183,7 +190,7 @@ function getImageDimensions(file: File): Promise<{ width: number; height: number
 
 		img.onerror = () => {
 			URL.revokeObjectURL(url);
-			reject(new Error('Failed to load image'));
+			reject(new Error("Failed to load image"));
 		};
 
 		img.src = url;

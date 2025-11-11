@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import { FOLLOW_PACK_CONTEXT_KEY } from './follow-pack.context.js';

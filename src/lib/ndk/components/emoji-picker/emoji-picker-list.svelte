@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import type { EmojiData } from './createEmojiPicker.svelte.js';
   import { cn } from '../../utils/cn';

@@ -1,10 +1,13 @@
+/*
+	Installed from @ndk/svelte@latest
+*/
+
 import type { NDKUser } from "@nostr-dev-kit/ndk";
 import type { NDKSvelte } from "@nostr-dev-kit/svelte";
-import { resolveNDK } from '../resolve-ndk/index.svelte.js';
+import { resolveNDK } from "../resolve-ndk/index.svelte.js";
 
 export interface MuteActionConfig {
-
-    target: NDKUser | string | undefined;
+	target: NDKUser | string | undefined;
 }
 
 /**
@@ -25,35 +28,35 @@ export interface MuteActionConfig {
  * ```
  */
 export function createMuteAction(
-    config: () => MuteActionConfig,
-    ndk?: NDKSvelte
+	config: () => MuteActionConfig,
+	ndk?: NDKSvelte,
 ) {
-    const resolvedNDK = resolveNDK(ndk);
+	const resolvedNDK = resolveNDK(ndk);
 
-    const isMuted = $derived.by(() => {
-        const { target } = config();
-        if (!target) return false;
+	const isMuted = $derived.by(() => {
+		const { target } = config();
+		if (!target) return false;
 
-        const pubkey = typeof target === 'string' ? target : target.pubkey;
-        return resolvedNDK.$mutes?.has(pubkey) ?? false;
-    });
+		const pubkey = typeof target === "string" ? target : target.pubkey;
+		return resolvedNDK.$mutes?.has(pubkey) ?? false;
+	});
 
-    async function mute(): Promise<void> {
-        const { target } = config();
-        if (!target) return;
+	async function mute(): Promise<void> {
+		const { target } = config();
+		if (!target) return;
 
-        if (!resolvedNDK.$currentPubkey) {
-            throw new Error("User must be logged in to mute");
-        }
+		if (!resolvedNDK.$currentPubkey) {
+			throw new Error("User must be logged in to mute");
+		}
 
-        const pubkey = typeof target === 'string' ? target : target.pubkey;
-        await resolvedNDK.$mutes?.toggle(pubkey);
-    }
+		const pubkey = typeof target === "string" ? target : target.pubkey;
+		await resolvedNDK.$mutes?.toggle(pubkey);
+	}
 
-    return {
-        get isMuted() {
-            return isMuted;
-        },
-        mute
-    };
+	return {
+		get isMuted() {
+			return isMuted;
+		},
+		mute,
+	};
 }

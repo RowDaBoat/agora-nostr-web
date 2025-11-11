@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
 	import type { NDKSvelte } from '@nostr-dev-kit/svelte';
 	import { Relay } from '../relay/index.js';
@@ -154,6 +158,14 @@
 										context.isSelected(relay) && 'bg-accent'
 									)}
 									onclick={() => context.toggleRelay(relay)}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											context.toggleRelay(relay);
+										}
+									}}
+									role="button"
+									tabindex="0"
 								>
 									<Relay.Root relayUrl={relay}>
 										<div class="flex items-center gap-2">

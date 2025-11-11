@@ -2,7 +2,7 @@
   import { ndk } from '$lib/ndk.svelte';
   import { User } from '$lib/ndk/ui/user';
   import EventContent from '$lib/ndk/ui/event-content.svelte';
-  import FollowButton from '$lib/ndk/components/follow/buttons/basic/follow-button.svelte';
+  import FollowButton from '$lib/ndk/components/follow-button/follow-button.svelte';
   import UserDropdown from '$lib/components/UserDropdown.svelte';
   import InvitedByBadge from '$lib/components/InvitedByBadge.svelte';
   import { generateBannerGradient } from '$lib/utils/bannerGradient';
@@ -89,7 +89,7 @@
             </h1>
             <div class="flex items-center gap-2 mt-1">
               <p class="text-muted-foreground">
-                {profile?.nip05 ? `@${profile.nip05.split('@')[0]}` : `${pubkey.slice(0, 12)}...`}
+                {profile?.nip05 ? `@${profile.nip05.split('@')[0]}` : `${user?.npub.slice(0, 12)}...`}
               </p>
               {#if onShareProfile}
                 <button

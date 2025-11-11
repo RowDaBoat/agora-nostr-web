@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { getContext } from 'svelte';
   import { USER_CONTEXT_KEY, type UserContext } from './user.context.js';
@@ -76,7 +80,7 @@
 </script>
 
 {#if showNip05 && nip05}
-  <span class={className}>
+  <span data-user-nip05="" class={className}>
     {displayText}
     {#if showVerified}
       {#if verificationSnippet}

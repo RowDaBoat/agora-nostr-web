@@ -1,6 +1,10 @@
-import type { NDKSvelte } from '@nostr-dev-kit/svelte';
-import type { NDKEvent } from '@nostr-dev-kit/ndk';
-import type { NotificationGroup } from '../../builders/notification/index.svelte';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import type { NDKSvelte } from "@nostr-dev-kit/svelte";
+import type { NDKEvent } from "@nostr-dev-kit/ndk";
+import type { NotificationGroup } from "../../builders/notification/index.svelte";
 
 export interface NotificationContext {
 	ndk: NDKSvelte;
@@ -11,4 +15,4 @@ export interface NotificationContext {
 	actors: string[];
 }
 
-export const NOTIFICATION_CONTEXT_KEY = Symbol('notification');
+export const NOTIFICATION_CONTEXT_KEY = Symbol("notification");

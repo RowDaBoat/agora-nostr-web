@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { getContext } from 'svelte';
   import { USER_CONTEXT_KEY, type UserContext } from './user.context.js';
@@ -51,6 +55,7 @@
 </script>
 
 <div
+  data-user-banner=""
   class="relative w-full h-48 {className}"
   style="{backgroundStyle}"
 >

@@ -15,6 +15,6 @@
   } = $props();
 </script>
 
-<TooltipPrimitive.Root bind:open {openDelay} {closeDelay}>
+<TooltipPrimitive.Root bind:open delayDuration={openDelay}>
   {@render children()}
 </TooltipPrimitive.Root>

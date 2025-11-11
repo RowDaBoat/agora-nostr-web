@@ -7,10 +7,12 @@
 	import { portal } from '$lib/utils/portal.svelte';
 	import { isAgoraRelay } from '$lib/utils/relayUtils';
 	import {
-		generateDTag,
 		generateEncryptionKey,
 		generateInviteCode,
-		encryptInvitePayload
+		encryptInvitePayload,
+
+        generateDTag
+
 	} from '$lib/utils/inviteEncryption';
 	import { MediaQuery } from 'svelte/reactivity';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -104,7 +106,6 @@ Looking forward to connecting with you on the open social web!`;
 
 		try {
 			// Generate d-tag and encryption key
-			const dTag = generateDTag();
 			const encryptionKey = isPersonalized ? generateEncryptionKey() : '';
 
 			// Generate invite codes (one for each max use)
@@ -132,12 +133,10 @@ Looking forward to connecting with you on the open social web!`;
 			inviteEvent.kind = 513;
 			inviteEvent.content = content;
 			inviteEvent.tags = [
-				['d', dTag],
 				...inviteCodes.map(code => ['code', code])
 			];
+			inviteEvent.dTag = generateDTag();
 			inviteEvent.isProtected = true;
-
-			await inviteEvent.sign();
 
 			// Mark as protected before publishing
 			inviteEvent.isProtected = true;
@@ -153,8 +152,18 @@ Looking forward to connecting with you on the open social web!`;
 				}
 			}
 
+			await inviteEvent.sign();
+
 			const relaySet = new NDKRelaySet(relays, ndk);
-			await inviteEvent.publish(relaySet);
+			try {
+				await inviteEvent.publish(relaySet);
+			} catch (e) {
+				console.log('going with the auth hack');
+				// fucking hack
+				await inviteEvent.publish(relaySet);
+			}
+
+			const dTag = inviteEvent.dTag;
 
 			// Generate invite link: /i/{dTag}{encryptionKey}
 			// dTag = 12 chars, encryptionKey = 24 chars (optional)
@@ -227,7 +236,7 @@ Looking forward to connecting with you on the open social web!`;
 </script>
 
 {#if isDesktop.current}
-<Dialog.Root open={isOpen} onOpenChange={(newOpen) => {
+<Dialog.Root open={isOpen} onOpenChange={(newOpen: boolean) => {
     isOpen = newOpen;
     if (!newOpen) handleClose();
   }}>
@@ -495,7 +504,7 @@ Looking forward to connecting with you on the open social web!`;
 	</Dialog.Content>
 </Dialog.Root>
 {:else}
-<Drawer.Root open={isOpen} onOpenChange={(newOpen) => {
+<Drawer.Root open={isOpen} onOpenChange={(newOpen: boolean) => {
     isOpen = newOpen;
     if (!newOpen) handleClose();
   }}>

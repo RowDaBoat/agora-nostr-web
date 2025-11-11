@@ -6,7 +6,7 @@
   import { t } from 'svelte-i18n';
   import { NDKBlossom } from '@nostr-dev-kit/blossom';
   import { createBlossomUpload } from '@nostr-dev-kit/svelte';
-  import { NDKEvent } from '@nostr-dev-kit/ndk';
+  import { NDKEvent, type NDKSigner } from '@nostr-dev-kit/ndk';
 
   interface Props {
     profileData: {
@@ -20,9 +20,10 @@
     onUpdateProfile: (data: { name: string; bio: string; location: string; banner?: string; picture?: string; nip05: string }) => void;
     onNext: () => void;
     inviteRelay?: string;
+    signer?: NDKSigner;
   }
 
-  let { profileData, onUpdateProfile, onNext, inviteRelay }: Props = $props();
+  let { profileData, onUpdateProfile, onNext, inviteRelay, signer }: Props = $props();
 
   // NIP-05 state
   const showNip05 = $derived(inviteRelay && isAgoraRelay(inviteRelay));
@@ -73,7 +74,7 @@
   const user = $derived(ndk.$currentUser);
   const blossom = $derived.by(() => {
     if (!user) return null;
-    return new NDKBlossom(ndk);
+    return new NDKBlossom(ndk, signer);
   });
 
   const bannerUpload = $derived.by(() => {
@@ -90,17 +91,17 @@
     if (!file) return;
 
     if (!bannerUpload) {
-      uploadError = 'Upload not available. Please ensure you are logged in.';
+      uploadError = $t('onboarding.step4Profile.upload.notAvailable');
       return;
     }
 
     if (!file.type.startsWith('image/')) {
-      uploadError = 'Please select an image file';
+      uploadError = $t('onboarding.step4Profile.upload.invalidFile');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      uploadError = 'Image size must be less than 5MB';
+      uploadError = $t('onboarding.step4Profile.upload.sizeTooLarge');
       return;
     }
 
@@ -114,7 +115,7 @@
       }
     } catch (err) {
       console.error('Upload failed:', err);
-      uploadError = 'Failed to upload banner. Please try again.';
+      uploadError = $t('onboarding.step4Profile.upload.failed');
     }
   }
 
@@ -215,6 +216,7 @@
       <div class="relative -mt-14 px-6 pb-6">
         <PictureUpload
           ndk={ndk}
+          signer={signer}
           onUploadComplete={handlePictureUpload}
           currentImageUrl={profileData.picture}
           fallbackInitials={getInitials(profileData.name)}
@@ -227,15 +229,6 @@
               oninput={(e) => updateField('name', e.currentTarget.value)}
               placeholder={$t('onboarding.step4Profile.namePlaceholder')}
               class="text-2xl font-bold bg-transparent border-b-2 border-transparent hover:border !ring-0 outline-none transition-colors w-full text-foreground"
-            />
-          </div>
-          <div>
-            <input
-              type="text"
-              value={profileData.location}
-              oninput={(e) => updateField('location', e.currentTarget.value)}
-              placeholder={$t('onboarding.step4Profile.locationPlaceholder')}
-              class="text-sm text-muted-foreground bg-transparent border-b border-transparent hover:border !ring-0 focus:outline-none transition-colors w-full"
             />
           </div>
           <div>

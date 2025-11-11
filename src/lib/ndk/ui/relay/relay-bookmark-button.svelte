@@ -1,4 +1,8 @@
 <!--
+	Installed from @ndk/svelte@latest
+-->
+
+<!--
   @component Relay.BookmarkButton
   Headless bookmark toggle button (requires bookmarks prop with includesCurrentUser=true).
 

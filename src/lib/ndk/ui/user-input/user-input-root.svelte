@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { setContext } from 'svelte';
   import type { NDKUser } from '@nostr-dev-kit/ndk';

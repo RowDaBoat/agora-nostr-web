@@ -3,8 +3,7 @@
   import { goto } from '$app/navigation';
   import { headerStore } from '$lib/stores/header.svelte';
   import { createPackModal } from '$lib/stores/createPackModal.svelte';
-  import { mockFollowPacks } from '$lib/data/mockFollowPacks';
-  import { NDKKind, type NDKEvent } from '@nostr-dev-kit/ndk';
+  import { type NDKFollowPack } from '@nostr-dev-kit/ndk';
   import { User } from '$lib/ndk/ui/user';
   import CreateFollowPackDialog from '$lib/components/CreateFollowPackDialog.svelte';
   import LoadMoreTrigger from '$lib/components/LoadMoreTrigger.svelte';
@@ -54,40 +53,10 @@
     pageSize: 12
   });
 
-  const packEvents = $derived(packsFeed.allEvents);
+  const packEvents = $derived(packsFeed.allEvents as NDKFollowPack[]);
   const eosed = $derived(packsFeed.eosed);
 
-  // Convert events to pack objects
-  interface Pack {
-    id: string;
-    title: string;
-    description?: string;
-    image?: string;
-    pubkeys: string[];
-    encode: () => string;
-    kind: number;
-    pubkey: string;
-    created_at: number;
-    author?: import('@nostr-dev-kit/ndk').NDKUser;
-  }
-
-  let allPacks = $derived.by(() => {
-    const relayPacks: Pack[] = packEvents.map(event => ({
-      id: event.id || '',
-      title: event.tagValue('title') || 'Untitled Pack',
-      description: event.tagValue('description'),
-      image: event.tagValue('image'),
-      pubkeys: event.tags.filter(t => t[0] === 'p').map(t => t[1]),
-      encode: () => event.encode(),
-      kind: event.kind || 39089,
-      pubkey: event.pubkey,
-      created_at: event.created_at || 0,
-      author: event.author,
-    }));
-
-    // Use relay packs if available, otherwise mock data
-    return relayPacks.length > 0 ? relayPacks : mockFollowPacks;
-  });
+  let allPacks = $derived(packEvents);
 
   let filteredPacks = $derived.by(() => {
     let filtered = allPacks;
@@ -103,17 +72,21 @@
         const followPubkeys = Array.from(userFollows).map(user => user.pubkey);
         filtered = filtered.filter(pack => followPubkeys.includes(pack.pubkey));
       } else if (activeFilter === 'include-me' && userPubkey) {
-        filtered = filtered.filter(pack => pack.pubkeys.includes(userPubkey));
+        filtered = filtered.filter(pack => {
+          const packPubkeys = pack.tags.filter(t => t[0] === 'p').map(t => t[1]);
+          return packPubkeys.includes(userPubkey);
+        });
       }
     }
 
     // Apply search query
     if (searchQuery) {
       const search = searchQuery.toLowerCase();
-      filtered = filtered.filter(pack =>
-        pack.title.toLowerCase().includes(search) ||
-        (pack.description && pack.description.toLowerCase().includes(search))
-      );
+      filtered = filtered.filter(pack => {
+        const title = pack.tagValue('title') || '';
+        const description = pack.tagValue('description') || '';
+        return title.toLowerCase().includes(search) || description.toLowerCase().includes(search);
+      });
     }
 
     return filtered;
@@ -142,9 +115,8 @@
     displayLimit = 12;
   });
 
-  function handlePackClick(pack: Pack) {
-    const author = ndk.getUser({ pubkey: pack.pubkey });
-    const url = getPackUrl(pack, author);
+  function handlePackClick(pack: NDKFollowPack) {
+    const url = getPackUrl(pack);
     goto(url);
   }
 
@@ -175,7 +147,7 @@
 
 {#snippet createPackAction()}
   <button
-    onclick={() => createPackModal.open()}
+    onclick={() => createPackModal.show = true}
     class="px-4 py-2.5 bg-primary hover:bg-accent-dark text-foreground rounded-lg transition-colors font-medium text-sm flex items-center gap-2 flex-shrink-0"
   >
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,6 +234,10 @@
     {#if visiblePacks.length > 0}
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {#each visiblePacks as pack (pack.id)}
+          {@const packImage = pack.tagValue('image')}
+          {@const packTitle = pack.tagValue('title') || 'Untitled Pack'}
+          {@const packDescription = pack.tagValue('description')}
+          {@const packPubkeys = pack.tags.filter(t => t[0] === 'p').map(t => t[1])}
           <div
             role="button"
             tabindex="0"
@@ -269,11 +245,11 @@
             onkeydown={(e) => e.key === 'Enter' && handlePackClick(pack)}
             class="block bg-card border border-border rounded-xl overflow-hidden hover:border-border transition-colors group cursor-pointer"
           >
-            {#if pack.image}
+            {#if packImage}
               <div class="h-32 w-full">
                 <img
-                  src={pack.image}
-                  alt={pack.title}
+                  src={packImage}
+                  alt={packTitle}
                   class="w-full h-full object-cover"
                 />
               </div>
@@ -282,21 +258,21 @@
             <div class="p-5">
               <div class="mb-4">
                 <h3 class="font-semibold text-foreground group-hover:text-primary transition-colors">
-                  {pack.title}
+                  {packTitle}
                 </h3>
                 <p class="text-sm text-muted-foreground mt-1">
-                  {pack.pubkeys.length} members
+                  {packPubkeys.length} members
                 </p>
               </div>
 
-              {#if pack.description}
+              {#if packDescription}
                 <p class="text-sm text-muted-foreground mb-4 line-clamp-2">
-                  {pack.description}
+                  {packDescription}
                 </p>
               {/if}
 
               <div class="flex -space-x-2">
-                {#each pack.pubkeys.slice(0, 4) as pubkey, index (pubkey)}
+                {#each packPubkeys.slice(0, 4) as pubkey, index (pubkey)}
                   <button
                     type="button"
                     onclick={(e) => { e.stopPropagation(); goto(getProfileUrl(pubkey)); }}
@@ -308,10 +284,10 @@
                     </User.Root>
                   </button>
                 {/each}
-                {#if pack.pubkeys.length > 4}
+                {#if packPubkeys.length > 4}
                   <div class="w-8 h-8 rounded-full bg-muted ring-2 ring-neutral-900 flex items-center justify-center">
                     <span class="text-xs text-muted-foreground">
-                      +{pack.pubkeys.length - 4}
+                      +{packPubkeys.length - 4}
                     </span>
                   </div>
                 {/if}

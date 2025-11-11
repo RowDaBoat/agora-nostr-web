@@ -1,3 +1,7 @@
+/*
+	Installed from @ndk/svelte@latest
+*/
+
 // @ndk-version: user-input@0.6.0
 /**
  * UserInput - Headless user search/input primitives
@@ -23,16 +27,16 @@
  * ```
  */
 
-import Root from './user-input-root.svelte';
-import Search from './user-input-search.svelte';
-import Results from './user-input-results.svelte';
-import Item from './user-input-item.svelte';
+import Root from "./user-input-root.svelte";
+import Search from "./user-input-search.svelte";
+import Results from "./user-input-results.svelte";
+import Item from "./user-input-item.svelte";
 
 export const UserInput = {
-  Root,
-  Search,
-  Results,
-  Item,
+	Root,
+	Search,
+	Results,
+	Item,
 };
 
-export type { UserInputContext } from './user-input.context.js';
+export type { UserInputContext } from "./user-input.context.js";

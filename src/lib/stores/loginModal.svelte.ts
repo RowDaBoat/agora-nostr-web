@@ -1,23 +1,19 @@
-import { createModalStore } from './modalFactory.svelte';
-
 type LoginState = 'signup' | 'login';
 
-const baseModal = createModalStore<LoginState>();
+let show = $state(false);
+let state = $state<LoginState>('signup');
 
 export const loginModal = {
   get show() {
-    return baseModal.show;
+    return show;
+  },
+  set show(value: boolean) {
+    show = value;
   },
   get state() {
-    return baseModal.data || 'signup';
+    return state;
   },
-  open(openState: LoginState = 'signup') {
-    baseModal.open(openState);
-  },
-  close() {
-    baseModal.close();
-  },
-  setState(newState: LoginState) {
-    baseModal.open(newState);
+  set state(value: LoginState) {
+    state = value;
   }
 };

@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { getContext } from 'svelte';
   import { USER_CONTEXT_KEY, type UserContext } from './user.context.js';
@@ -55,7 +59,7 @@
   });
 </script>
 
-<div class={cn("rounded-full relative w-12 h-12", className)}>
+<div data-user-avatar="" class={cn("rounded-full relative w-12 h-12", className)}>
   <!-- Fallback layer (always visible until image loads) -->
   {#if !imageLoaded || !imageUrl}
     {#if customFallback}
@@ -73,10 +77,11 @@
   <!-- Image layer (only visible when loaded) -->
   {#if imageUrl}
     <img
+      data-user-avatar--img=""
       src={imageUrl}
       {alt}
       class={cn(
-        "rounded-full object-cover block w-full h-full absolute inset-0",
+        "rounded-full object-cover block w-full h-full absolute inset-0 bg-background",
         imageLoaded ? "opacity-100" : "opacity-0"
       )}
       onload={handleImageLoad}

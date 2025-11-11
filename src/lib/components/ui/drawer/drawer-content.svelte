@@ -4,20 +4,20 @@
 	import { cn } from "$lib/utils.js";
 
 	let {
-		ref = $bindable(null),
+		
 		class: className,
 		portalProps,
 		children,
 		...restProps
-	}: Drawer.ContentProps & {
-		portalProps?: Drawer.PortalProps;
+	}: any & {
+		portalProps?: any;
 	} = $props();
 </script>
 
 <Drawer.Portal {...portalProps}>
 	<DrawerOverlay />
 	<Drawer.Content
-		bind:ref
+		
 		data-slot="drawer-content"
 		class={cn(
 			"group/drawer-content bg-background fixed z-[1001] flex h-auto flex-col",

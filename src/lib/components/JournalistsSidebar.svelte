@@ -58,7 +58,7 @@
   }
 </script>
 
-<div class="p-4 bg-card rounded-lg border border-border">
+<div class="p-4">
   <div class="flex items-center gap-2 mb-4">
     <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -81,24 +81,7 @@
             nameSize="text-sm font-medium"
             class="flex-1 min-w-0"
           >
-            {#snippet meta()}
-              <p class="text-xs text-muted-foreground">
-                {journalist.articleCount} {journalist.articleCount === 1 ? 'article' : 'articles'}
-              </p>
-            {/snippet}
           </User>
-          {#if ndk.$currentUser && journalist.pubkey !== ndk.$currentUser.pubkey}
-            <button
-              onclick={() => toggleFollow(journalist.pubkey)}
-              class="px-3 py-1 text-xs font-medium rounded-full transition-colors flex-shrink-0 {
-                isFollowed
-                  ? 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  : 'text-primary hover:bg-primary/10'
-              }"
-            >
-              {isFollowed ? 'Following' : 'Follow'}
-            </button>
-          {/if}
         </div>
       {/each}
     {/if}

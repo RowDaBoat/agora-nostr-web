@@ -1,5 +1,9 @@
-import MarkdownEventContent from './markdown-event-content.svelte';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import MarkdownEventContent from "./markdown-event-content.svelte";
 
 export { MarkdownEventContent };
 export default MarkdownEventContent;
-export type { MarkdownEventContentProps } from './markdown-event-content.svelte.js';
+export type { MarkdownEventContentProps } from "./markdown-event-content.svelte.js";

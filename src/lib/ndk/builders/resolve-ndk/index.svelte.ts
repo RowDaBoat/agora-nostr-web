@@ -1,5 +1,9 @@
-import { getContext, hasContext } from 'svelte';
-import type { NDKSvelte } from '@nostr-dev-kit/svelte';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import { getContext, hasContext } from "svelte";
+import type { NDKSvelte } from "@nostr-dev-kit/svelte";
 
 /**
  * Context key for NDK instance
@@ -8,7 +12,7 @@ import type { NDKSvelte } from '@nostr-dev-kit/svelte';
  * setContext(NDK_CONTEXT_KEY, ndk);
  * ```
  */
-export const NDK_CONTEXT_KEY = 'ndk';
+export const NDK_CONTEXT_KEY = "ndk";
 
 /**
  * Resolves NDK from explicit parameter or Svelte context
@@ -32,23 +36,23 @@ export const NDK_CONTEXT_KEY = 'ndk';
  * ```
  */
 export function resolveNDK(providedNDK?: NDKSvelte): NDKSvelte {
-    // Explicit NDK takes precedence
-    if (providedNDK) return providedNDK;
+	// Explicit NDK takes precedence
+	if (providedNDK) return providedNDK;
 
-    // Try to get from context (only works during component initialization)
-    try {
-        if (hasContext(NDK_CONTEXT_KEY)) {
-            const contextNDK = getContext<NDKSvelte>(NDK_CONTEXT_KEY);
-            if (contextNDK) return contextNDK;
-        }
-    } catch {
-        // getContext called outside component initialization - that's ok
-        // Fall through to error below
-    }
+	// Try to get from context (only works during component initialization)
+	try {
+		if (hasContext(NDK_CONTEXT_KEY)) {
+			const contextNDK = getContext<NDKSvelte>(NDK_CONTEXT_KEY);
+			if (contextNDK) return contextNDK;
+		}
+	} catch {
+		// getContext called outside component initialization - that's ok
+		// Fall through to error below
+	}
 
-    throw new Error(
-        `NDK not found. Either:
+	throw new Error(
+		`NDK not found. Either:
 1. Provide as second parameter: createBuilder(() => config, ndk)
-2. Set in Svelte context: setContext('${NDK_CONTEXT_KEY}', ndk)`
-    );
+2. Set in Svelte context: setContext('${NDK_CONTEXT_KEY}', ndk)`,
+	);
 }

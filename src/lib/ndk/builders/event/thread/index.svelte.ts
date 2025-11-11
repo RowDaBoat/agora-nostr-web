@@ -1,3 +1,7 @@
+/*
+	Installed from @ndk/svelte@latest
+*/
+
 import { NDKEvent, type NDKSubscription } from "@nostr-dev-kit/ndk";
 import { NDKKind } from "@nostr-dev-kit/ndk";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
@@ -5,22 +9,22 @@ import type { NDKSvelte } from "@nostr-dev-kit/svelte";
 import { resolveNDK } from "../../resolve-ndk/index.svelte.js";
 import type { ThreadView, ThreadNode } from "./types.js";
 import {
-    findRootId,
-    buildParentChain,
-    buildContinuationChain,
-    buildLinearChain,
-    splitRepliesByTarget,
-    buildThreadFilters,
-    collectDescendantIds
+	findRootId,
+	buildParentChain,
+	buildContinuationChain,
+	buildLinearChain,
+	splitRepliesByTarget,
+	buildThreadFilters,
+	collectDescendantIds,
 } from "./utils.js";
 
 export interface ThreadViewConfig {
-    /** The event to focus on (center of the thread view) */
-    focusedEvent: NDKEvent | string;
-    /** Maximum depth to traverse when building parent chain (default: 20) */
-    maxDepth?: number;
-    /** Event kinds to include in the thread (default: [1, 9802]) */
-    kinds?: number[];
+	/** The event to focus on (center of the thread view) */
+	focusedEvent: NDKEvent | string;
+	/** Maximum depth to traverse when building parent chain (default: 20) */
+	maxDepth?: number;
+	/** Event kinds to include in the thread (default: [1, 9802]) */
+	kinds?: number[];
 }
 
 /**
@@ -67,275 +71,287 @@ export interface ThreadViewConfig {
  * ```
  */
 export function createThreadView(
-    config: () => ThreadViewConfig,
-    ndk?: NDKSvelte
+	config: () => ThreadViewConfig,
+	ndk?: NDKSvelte,
 ): ThreadView {
-    const resolvedNDK = resolveNDK(ndk);
-    const { focusedEvent, maxDepth = 20, kinds = [NDKKind.Text, 9802] } = config();
-    // Internal reactive state
-    let _events = $state<ThreadNode[]>([]);
-    let _replies = $state<NDKEvent[]>([]);
-    let _otherReplies = $state<NDKEvent[]>([]);
-    let _main = $state<NDKEvent | null>(null);
+	const resolvedNDK = resolveNDK(ndk);
+	const {
+		focusedEvent,
+		maxDepth = 20,
+		kinds = [NDKKind.Text, 9802],
+	} = config();
+	// Internal reactive state
+	let _events = $state<ThreadNode[]>([]);
+	let _replies = $state<NDKEvent[]>([]);
+	let _otherReplies = $state<NDKEvent[]>([]);
+	let _main = $state<NDKEvent | null>(null);
 
-    // Subscription management
-    let subscription: NDKSubscription | undefined;
-    let missingEventSubscriptions = new SvelteMap<string, NDKSubscription>();
+	// Subscription management
+	let subscription: NDKSubscription | undefined;
+	let missingEventSubscriptions = new SvelteMap<string, NDKSubscription>();
 
-    // Event cache for the current thread
-    let eventMap = new SvelteMap<string, NDKEvent>();
+	// Event cache for the current thread
+	let eventMap = new SvelteMap<string, NDKEvent>();
 
-    // Track which events we've already requested descendants for
-    let requestedDescendantIds = new SvelteSet<string>();
+	// Track which events we've already requested descendants for
+	let requestedDescendantIds = new SvelteSet<string>();
 
-    // Initialize main event
-    $effect(() => {
-        initializeMainEvent();
-    });
+	// Initialize main event
+	$effect(() => {
+		initializeMainEvent();
+	});
 
-    async function initializeMainEvent() {
-        if (typeof focusedEvent === 'string') {
-            // Fetch the event if we only have an ID
-            const event = await resolvedNDK.fetchEvent(focusedEvent);
-            if (event) {
-                _main = event;
-                startThreadSubscription();
-            }
-        } else {
-            _main = focusedEvent;
-            startThreadSubscription();
-        }
-    }
+	async function initializeMainEvent() {
+		if (typeof focusedEvent === "string") {
+			// Fetch the event if we only have an ID
+			const event = await resolvedNDK.fetchEvent(focusedEvent);
+			if (event) {
+				_main = event;
+				startThreadSubscription();
+			}
+		} else {
+			_main = focusedEvent;
+			startThreadSubscription();
+		}
+	}
 
-    function startThreadSubscription() {
-        if (!_main || subscription) return;
+	function startThreadSubscription() {
+		if (!_main || subscription) return;
 
-        // Find or guess the root ID
-        const rootId = findRootId(_main);
+		// Find or guess the root ID
+		const rootId = findRootId(_main);
 
-        // Build filters for thread events
-        const filters = buildThreadFilters(rootId, _main.id, kinds);
+		// Build filters for thread events
+		const filters = buildThreadFilters(rootId, _main.id, kinds);
 
-        // Create subscription
-        subscription = resolvedNDK.subscribe(
-            filters,
-            {
-                closeOnEose: false,
-                groupable: false // Important for real-time updates
-            }
-        );
+		// Create subscription
+		subscription = resolvedNDK.subscribe(filters, {
+			closeOnEose: false,
+			groupable: false, // Important for real-time updates
+		});
 
-        subscription.on('event', (event: NDKEvent) => {
-            // Add to our event map
-            eventMap.set(event.id, event);
+		subscription.on("event", (event: NDKEvent) => {
+			// Add to our event map
+			eventMap.set(event.id, event);
 
-            // Rebuild the thread structure
-            rebuildThreadStructure();
-        });
+			// Rebuild the thread structure
+			rebuildThreadStructure();
+		});
 
-        // Initial rebuild
-        rebuildThreadStructure();
-    }
+		// Initial rebuild
+		rebuildThreadStructure();
+	}
 
-    function rebuildThreadStructure() {
-        if (!_main) return;
+	function rebuildThreadStructure() {
+		if (!_main) return;
 
-        // Build parent chain
-        const parents = buildParentChain(_main, eventMap, maxDepth);
+		// Build parent chain
+		const parents = buildParentChain(_main, eventMap, maxDepth);
 
-        // Build continuation chain (same-author linear thread after focused event)
-        const continuation = buildContinuationChain(_main, eventMap, maxDepth);
+		// Build continuation chain (same-author linear thread after focused event)
+		const continuation = buildContinuationChain(_main, eventMap, maxDepth);
 
-        // Merge into complete linear chain
-        const newEvents = buildLinearChain(parents, _main, continuation);
+		// Merge into complete linear chain
+		const newEvents = buildLinearChain(parents, _main, continuation);
 
-        // Update events (reactive)
-        _events = newEvents;
+		// Update events (reactive)
+		_events = newEvents;
 
-        // Build set of all event IDs in the linear thread
-        const threadEventIds = new Set(newEvents.map(node => node.id));
+		// Build set of all event IDs in the linear thread
+		const threadEventIds = new Set(newEvents.map((node) => node.id));
 
-        // Split replies by target event
-        const allEvents = Array.from(eventMap.values());
-        const { replies, otherReplies } = splitRepliesByTarget(
-            _main.id,
-            allEvents,
-            threadEventIds
-        );
+		// Split replies by target event
+		const allEvents = Array.from(eventMap.values());
+		const { replies, otherReplies } = splitRepliesByTarget(
+			_main.id,
+			allEvents,
+			threadEventIds,
+		);
 
-        // Update replies (reactive)
-        _replies = replies;
-        _otherReplies = otherReplies;
+		// Update replies (reactive)
+		_replies = replies;
+		_otherReplies = otherReplies;
 
-        // Fetch missing events in the linear chain
-        fetchMissingEvents();
+		// Fetch missing events in the linear chain
+		fetchMissingEvents();
 
-        // Recursively fetch descendants for thread expansion
-        expandThreadDescendants();
-    }
+		// Recursively fetch descendants for thread expansion
+		expandThreadDescendants();
+	}
 
-    function fetchMissingEvents() {
-        // Find missing events in the linear chain
-        const missingNodes = _events.filter(node => !node.event);
+	function fetchMissingEvents() {
+		// Find missing events in the linear chain
+		const missingNodes = _events.filter((node) => !node.event);
 
-        for (const node of missingNodes) {
-            // Skip if we're already fetching this event
-            if (missingEventSubscriptions.has(node.id)) continue;
+		for (const node of missingNodes) {
+			// Skip if we're already fetching this event
+			if (missingEventSubscriptions.has(node.id)) continue;
 
-            // Create a targeted subscription for the missing event
-            const filters = [{ ids: [node.id] }];
+			// Create a targeted subscription for the missing event
+			const filters = [{ ids: [node.id] }];
 
-            // Add relay hint if available
-            const relayUrls = node.relayHint ? [node.relayHint] : undefined;
+			// Add relay hint if available
+			const relayUrls = node.relayHint ? [node.relayHint] : undefined;
 
-            const sub = resolvedNDK.subscribe(
-                filters,
-                {
-                    closeOnEose: true,
-                    groupable: false,
-                    // TODO: Add relay hint support when NDK supports it
-                    // relays: relayUrls
-                }
-            );
+			const sub = resolvedNDK.subscribe(filters, {
+				closeOnEose: true,
+				groupable: false,
+				// TODO: Add relay hint support when NDK supports it
+				// relays: relayUrls
+			});
 
-            sub.on('event', (event: NDKEvent) => {
-                if (event.id === node.id) {
-                    // Add to event map
-                    eventMap.set(event.id, event);
+			sub.on("event", (event: NDKEvent) => {
+				if (event.id === node.id) {
+					// Add to event map
+					eventMap.set(event.id, event);
 
-                    // Rebuild thread structure
-                    rebuildThreadStructure();
+					// Rebuild thread structure
+					rebuildThreadStructure();
 
-                    // Clean up this subscription
-                    sub.stop();
-                    missingEventSubscriptions.delete(node.id);
-                }
-            });
+					// Clean up this subscription
+					sub.stop();
+					missingEventSubscriptions.delete(node.id);
+				}
+			});
 
-            missingEventSubscriptions.set(node.id, sub);
-        }
-    }
+			missingEventSubscriptions.set(node.id, sub);
+		}
+	}
 
-    function expandThreadDescendants() {
-        // Get all current event IDs
-        const currentEventIds = collectDescendantIds(eventMap);
+	function expandThreadDescendants() {
+		// Get all current event IDs
+		const currentEventIds = collectDescendantIds(eventMap);
 
-        // Find new events we haven't requested descendants for yet
-        const newEventIds = currentEventIds.filter(id => !requestedDescendantIds.has(id));
+		// Find new events we haven't requested descendants for yet
+		const newEventIds = currentEventIds.filter(
+			(id) => !requestedDescendantIds.has(id),
+		);
 
-        if (newEventIds.length === 0) return;
+		if (newEventIds.length === 0) return;
 
-        // Mark these as requested
-        newEventIds.forEach(id => requestedDescendantIds.add(id));
+		// Mark these as requested
+		newEventIds.forEach((id) => requestedDescendantIds.add(id));
 
-        // Build filters to fetch events replying to these new events
-        const descendantFilters = newEventIds.map(id => ({ kinds, '#e': [id] }));
+		// Build filters to fetch events replying to these new events
+		const descendantFilters = newEventIds.map((id) => ({ kinds, "#e": [id] }));
 
-        if (descendantFilters.length === 0) return;
+		if (descendantFilters.length === 0) return;
 
-        // Subscribe to descendants
-        const descendantSub = resolvedNDK.subscribe(
-            descendantFilters,
-            {
-                closeOnEose: true,
-                groupable: false
-            }
-        );
+		// Subscribe to descendants
+		const descendantSub = resolvedNDK.subscribe(descendantFilters, {
+			closeOnEose: true,
+			groupable: false,
+		});
 
-        descendantSub.on('event', (event: NDKEvent) => {
-            // Add to event map if new
-            if (!eventMap.has(event.id)) {
-                eventMap.set(event.id, event);
-                // Rebuild will be triggered when subscription closes
-            }
-        });
+		descendantSub.on("event", (event: NDKEvent) => {
+			// Add to event map if new
+			if (!eventMap.has(event.id)) {
+				eventMap.set(event.id, event);
+				// Rebuild will be triggered when subscription closes
+			}
+		});
 
-        descendantSub.on('eose', () => {
-            // After fetching, rebuild the thread structure
-            rebuildThreadStructure();
-            descendantSub.stop();
-        });
-    }
+		descendantSub.on("eose", () => {
+			// After fetching, rebuild the thread structure
+			rebuildThreadStructure();
+			descendantSub.stop();
+		});
+	}
 
-    async function focusOn(event: NDKEvent | string) {
-        let newMainEvent: NDKEvent | null = null;
+	async function focusOn(event: NDKEvent | string) {
+		let newMainEvent: NDKEvent | null = null;
 
-        // Resolve the event
-        if (typeof event === 'string') {
-            // Check if we already have it in our cache
-            newMainEvent = eventMap.get(event) || null;
-            if (!newMainEvent) {
-                const fetchedEvent = await resolvedNDK.fetchEvent(event);
-                if (fetchedEvent) {
-                    newMainEvent = fetchedEvent;
-                    eventMap.set(fetchedEvent.id, fetchedEvent);
-                }
-            }
-        } else {
-            newMainEvent = event;
-            // Ensure it's in our event map
-            if (!eventMap.has(event.id)) {
-                eventMap.set(event.id, event);
-            }
-        }
+		// Resolve the event
+		if (typeof event === "string") {
+			// Check if we already have it in our cache
+			newMainEvent = eventMap.get(event) || null;
+			if (!newMainEvent) {
+				const fetchedEvent = await resolvedNDK.fetchEvent(event);
+				if (fetchedEvent) {
+					newMainEvent = fetchedEvent;
+					eventMap.set(fetchedEvent.id, fetchedEvent);
+				}
+			}
+		} else {
+			newMainEvent = event;
+			// Ensure it's in our event map
+			if (!eventMap.has(event.id)) {
+				eventMap.set(event.id, event);
+			}
+		}
 
-        if (!newMainEvent) return;
+		if (!newMainEvent) return;
 
-        // Check if this is in the same thread (share a root)
-        const currentRootId = _main ? findRootId(_main) : null;
-        const newRootId = findRootId(newMainEvent);
-        const sameThread = currentRootId === newRootId;
+		// Check if this is in the same thread (share a root)
+		const currentRootId = _main ? findRootId(_main) : null;
+		const newRootId = findRootId(newMainEvent);
+		const sameThread = currentRootId === newRootId;
 
-        if (sameThread) {
-            // Just update the main event and rebuild from existing data
-            _main = newMainEvent;
-            rebuildThreadStructure();
-        } else {
-            // Different thread - need to reset everything
-            stopAllSubscriptions();
-            eventMap.clear();
-            requestedDescendantIds.clear();
-            _events = [];
-            _replies = [];
-            _otherReplies = [];
-            _main = newMainEvent;
-            eventMap.set(newMainEvent.id, newMainEvent);
-            startThreadSubscription();
-        }
-    }
+		if (sameThread) {
+			// Just update the main event and rebuild from existing data
+			_main = newMainEvent;
+			rebuildThreadStructure();
+		} else {
+			// Different thread - need to reset everything
+			stopAllSubscriptions();
+			eventMap.clear();
+			requestedDescendantIds.clear();
+			_events = [];
+			_replies = [];
+			_otherReplies = [];
+			_main = newMainEvent;
+			eventMap.set(newMainEvent.id, newMainEvent);
+			startThreadSubscription();
+		}
+	}
 
-    function stopAllSubscriptions() {
-        // Stop main subscription
-        subscription?.stop();
-        subscription = undefined;
+	function stopAllSubscriptions() {
+		// Stop main subscription
+		subscription?.stop();
+		subscription = undefined;
 
-        // Stop all missing event subscriptions
-        for (const sub of missingEventSubscriptions.values()) {
-            sub.stop();
-        }
-        missingEventSubscriptions.clear();
-    }
+		// Stop all missing event subscriptions
+		for (const sub of missingEventSubscriptions.values()) {
+			sub.stop();
+		}
+		missingEventSubscriptions.clear();
+	}
 
-    // Automatic cleanup on component unmount
-    $effect(() => {
-        return () => {
-            stopAllSubscriptions();
-        };
-    });
+	// Automatic cleanup on component unmount
+	$effect(() => {
+		return () => {
+			stopAllSubscriptions();
+		};
+	});
 
-    // Return public API
-    return {
-        // Reactive getters
-        get events() { return _events; },
-        get replies() { return _replies; },
-        get otherReplies() { return _otherReplies; },
-        get allReplies() { return [..._replies, ..._otherReplies]; },
-        get focusedEventId() { return _main?.id ?? null; },
+	// Return public API
+	return {
+		// Reactive getters
+		get events() {
+			return _events;
+		},
+		get replies() {
+			return _replies;
+		},
+		get otherReplies() {
+			return _otherReplies;
+		},
+		get allReplies() {
+			return [..._replies, ..._otherReplies];
+		},
+		get focusedEventId() {
+			return _main?.id ?? null;
+		},
 
-        // Methods
-        focusOn
-    };
+		// Methods
+		focusOn,
+	};
 }
 
 // Re-export types
-export type { ThreadView, ThreadNode, CreateThreadViewOptions, ThreadingMetadata } from "./types.js";
+export type {
+	ThreadView,
+	ThreadNode,
+	CreateThreadViewOptions,
+	ThreadingMetadata,
+} from "./types.js";

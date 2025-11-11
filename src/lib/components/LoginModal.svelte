@@ -27,7 +27,7 @@
       error = '';
       const signer = new NDKNip07Signer();
       await ndk.$sessions.login(signer);
-      loginModal.close();
+      loginModal.show = false;
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to login';
     } finally {
@@ -46,7 +46,7 @@
       error = '';
       const signer = new NDKPrivateKeySigner(nsecInput.trim());
       await ndk.$sessions.login(signer);
-      loginModal.close();
+      loginModal.show = false;
       nsecInput = '';
     } catch (err) {
       error = err instanceof Error ? err.message : 'Invalid nsec';
@@ -56,7 +56,7 @@
   }
 
   function closeModal() {
-    loginModal.close();
+    loginModal.show = false;
     loginMethod = null;
     nsecInput = '';
     error = '';
@@ -72,7 +72,7 @@
   <Dialog.Root bind:open={loginModal.show}>
     <Dialog.Content
       class={loginModal.state === 'signup' ? 'max-w-lg' : 'max-w-md'}
-      onClose={() => loginModal.close()}
+      onClose={() => loginModal.show = false}
     >
         {#if loginModal.state === 'signup'}
           <!-- Signup State - Enticing Welcome Screen -->
@@ -148,7 +148,7 @@
 
                 <Button
                   variant="ghost"
-                  onclick={() => loginModal.setState('login')}
+                  onclick={() => loginModal.state = 'login'}
                   class="w-full"
                 >
                   Already have a Nostr account? <span class="font-semibold underline ml-1">Sign in here</span>
@@ -222,7 +222,7 @@
 
               <Button
                 variant="ghost"
-                onclick={() => loginModal.setState('signup')}
+                onclick={() => loginModal.state = 'signup'}
                 class="w-full"
               >
                 <span class="font-semibold underline">Create a new account</span>
@@ -285,7 +285,7 @@
   </Dialog.Root>
 {:else}
   <Drawer.Root bind:open={loginModal.show}>
-    <Drawer.Content onClose={() => loginModal.close()}>
+    <Drawer.Content onClose={() => loginModal.show = false}>
         {#if loginModal.state === 'signup'}
           <!-- Signup State - Enticing Welcome Screen -->
           <div class="relative">
@@ -358,7 +358,7 @@
 
                   <Button
                     variant="ghost"
-                    onclick={() => loginModal.setState('login')}
+                    onclick={() => loginModal.state = 'login'}
                     class="w-full"
                   >
                     Already have a Nostr account? <span class="font-semibold underline ml-1">Sign in here</span>
@@ -433,7 +433,7 @@
 
               <Button
                 variant="ghost"
-                onclick={() => loginModal.setState('signup')}
+                onclick={() => loginModal.state = 'signup'}
                 class="w-full"
               >
                 <span class="font-semibold underline">Create a new account</span>

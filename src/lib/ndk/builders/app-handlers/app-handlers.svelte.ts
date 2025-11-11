@@ -1,11 +1,15 @@
-import { NDKEvent, type NDKFilter } from '@nostr-dev-kit/ndk';
-import type { NDKSvelte } from '@nostr-dev-kit/svelte';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import { NDKEvent, type NDKFilter } from "@nostr-dev-kit/ndk";
+import type { NDKSvelte } from "@nostr-dev-kit/svelte";
 
 /**
  * Platform information from NIP-89 handler
  */
 export type HandlerPlatform = {
-	platform: 'web' | 'ios' | 'android';
+	platform: "web" | "ios" | "android";
 	url: string;
 };
 
@@ -40,7 +44,7 @@ export type AppHandlerInfo = {
  */
 export function createAppHandlerRecommendations(
 	getProps: () => { kind: number },
-	ndk: NDKSvelte
+	ndk: NDKSvelte,
 ) {
 	let handlers = $state<string[]>([]);
 	let loading = $state(false);
@@ -56,16 +60,15 @@ export function createAppHandlerRecommendations(
 		try {
 			const filter: NDKFilter = {
 				kinds: [31989],
-				'#d': [kind.toString()]
+				"#d": [kind.toString()],
 			};
 
-			console.log('running', filter)
 			const events = await ndk.fetchEvents(filter);
 			const handlerSet = new Set<string>();
 
 			// Extract 'a' tags that reference kind 31990 handlers
 			for (const event of events) {
-				const aTags = event.getMatchingTags('a');
+				const aTags = event.getMatchingTags("a");
 				for (const [, handlerAddress] of aTags) {
 					if (handlerAddress) {
 						handlerSet.add(handlerAddress);
@@ -75,7 +78,8 @@ export function createAppHandlerRecommendations(
 
 			handlers = Array.from(handlerSet);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Failed to fetch recommendations';
+			error =
+				err instanceof Error ? err.message : "Failed to fetch recommendations";
 		} finally {
 			loading = false;
 		}
@@ -91,7 +95,7 @@ export function createAppHandlerRecommendations(
 		get error() {
 			return error;
 		},
-		load
+		load,
 	};
 }
 
@@ -120,7 +124,7 @@ export function createAppHandlerRecommendations(
  */
 export function createAppHandlerInfo(
 	getProps: () => { address: string },
-	ndk: NDKSvelte
+	ndk: NDKSvelte,
 ) {
 	let info = $state<AppHandlerInfo | null>(null);
 	let loading = $state(false);
@@ -135,42 +139,42 @@ export function createAppHandlerInfo(
 
 		try {
 			// Parse address: kind:pubkey:d-tag
-			const [kindStr, pubkey, dTag] = address.split(':');
+			const [kindStr, pubkey, dTag] = address.split(":");
 			const kind = parseInt(kindStr, 10);
 
 			if (kind !== 31990) {
-				throw new Error('Invalid handler address: must be kind 31990');
+				throw new Error("Invalid handler address: must be kind 31990");
 			}
 
 			const filter: NDKFilter = {
 				kinds: [31990],
 				authors: [pubkey],
-				'#d': [dTag]
+				"#d": [dTag],
 			};
 
 			const events = await ndk.fetchEvents(filter);
 			const event = Array.from(events)[0];
 
 			if (!event) {
-				throw new Error('Handler not found');
+				throw new Error("Handler not found");
 			}
 
 			// Parse handler information
 			const platforms: HandlerPlatform[] = [];
 
 			// Extract platform URLs
-			const webTags = event.getMatchingTags('web');
-			const iosTags = event.getMatchingTags('ios');
-			const androidTags = event.getMatchingTags('android');
+			const webTags = event.getMatchingTags("web");
+			const iosTags = event.getMatchingTags("ios");
+			const androidTags = event.getMatchingTags("android");
 
 			if (webTags.length > 0 && webTags[0][1]) {
-				platforms.push({ platform: 'web', url: webTags[0][1] });
+				platforms.push({ platform: "web", url: webTags[0][1] });
 			}
 			if (iosTags.length > 0 && iosTags[0][1]) {
-				platforms.push({ platform: 'ios', url: iosTags[0][1] });
+				platforms.push({ platform: "ios", url: iosTags[0][1] });
 			}
 			if (androidTags.length > 0 && androidTags[0][1]) {
-				platforms.push({ platform: 'android', url: androidTags[0][1] });
+				platforms.push({ platform: "android", url: androidTags[0][1] });
 			}
 
 			// Extract metadata from content (JSON)
@@ -192,10 +196,11 @@ export function createAppHandlerInfo(
 				name,
 				about,
 				picture,
-				platforms
+				platforms,
 			};
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Failed to fetch handler info';
+			error =
+				err instanceof Error ? err.message : "Failed to fetch handler info";
 		} finally {
 			loading = false;
 		}
@@ -211,7 +216,7 @@ export function createAppHandlerInfo(
 		get error() {
 			return error;
 		},
-		load
+		load,
 	};
 }
 

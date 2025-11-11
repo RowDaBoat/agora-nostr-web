@@ -42,10 +42,14 @@ export function useImageUpload(ndk: NDK, options: UseImageUploadOptions = {}) {
           img.src = URL.createObjectURL(file);
         });
 
+        const hash = Array.isArray(upload.result.sha256)
+          ? upload.result.sha256[0]
+          : (upload.result.sha256 || '');
+
         uploadedImages = [...uploadedImages, {
           url: upload.result.url,
           mimeType: file.type,
-          hash: upload.result.sha256 || '',
+          hash,
           blurhash: upload.result.blurhash,
           dimensions
         }];

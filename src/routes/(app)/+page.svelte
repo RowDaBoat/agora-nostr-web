@@ -21,7 +21,6 @@
   import { createMediaPostModal } from '$lib/stores/createMediaPostModal.svelte';
   import { homePageFilter } from '$lib/stores/homePageFilter.svelte';
   import { page } from '$app/stores';
-    import EventCardClassic from '$lib/ndk/components/event/cards/classic/event-card-classic.svelte';
 
   type MediaFilter = 'conversations' | 'images' | 'videos' | 'articles';
   let selectedFilter = $state<MediaFilter>('conversations');
@@ -93,8 +92,6 @@
     return [];
   });
 
-  console.log('[HomePage] Creating subscriptions');
-
   const notesFeed = createLazyFeed(ndk, () => {
     const filters: NDKFilter[] = [{
 					kinds: [NDKKind.Text, 9802],
@@ -112,12 +109,16 @@
       filters[0].authors = authorsArray;
     }
 
-    if (!isFollowPackSelection && ndk.$currentPubkey) {
-      console.log('adding a filter for self')
-      filters.push({ ...filters[0], authors: [ndk.$currentPubkey] });
-    } else {
-      console.log('not adding filter for self', isFollowPackSelection, !!ndk.$currentPubkey)
-    }
+    if (!isFollowPackSelection(settings.selectedRelay) && ndk.$currentPubkey) {
+					console.log("adding a filter for self");
+					filters.push({ ...filters[0], authors: [ndk.$currentPubkey] });
+				} else {
+					console.log(
+						"not adding filter for self",
+						isFollowPackSelection,
+						!!ndk.$currentPubkey,
+					);
+				}
 
     return {
 					filters,
@@ -343,7 +344,7 @@
 
 <div class="max-w-full mx-auto">
   <!-- Feed -->
-  <div class="divide-y divide-neutral-800/50">
+  <div class="flex flex-col">
     {#if selectedFilter === 'articles'}
       <div class="pb-6">
         {#if filteredArticles.length === 0 && articlesFeed.eosed}
@@ -478,7 +479,7 @@
           {#if event.kind === 9802}
             <HighlightCard {event} variant="feed" />
           {:else}
-            <EventCardClassic {ndk} {event} />
+            <NoteCard {event} />
           {/if}
         {/each}
       {/if}

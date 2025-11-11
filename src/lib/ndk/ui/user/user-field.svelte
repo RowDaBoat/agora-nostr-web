@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { getContext } from 'svelte';
   import { USER_CONTEXT_KEY, type UserContext } from './user.context.js';
@@ -27,7 +31,7 @@
 {#if field === 'about'}
   <Bio class={cn(className)} />
 {:else if fieldValue}
-  <span class={cn(className)}>
+  <span data-user-field="" class={cn(className)}>
     {fieldValue}
   </span>
 {/if}

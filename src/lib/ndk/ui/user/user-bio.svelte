@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { getContext } from 'svelte';
   import { USER_CONTEXT_KEY, type UserContext } from './user.context.js';
@@ -20,7 +24,7 @@
 </script>
 
 {#if bio}
-  <p class={cn(className)}>
+  <p data-user-bio="" class={cn(className)}>
     {bio}
   </p>
 {/if}

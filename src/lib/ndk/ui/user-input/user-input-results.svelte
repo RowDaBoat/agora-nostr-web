@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { getContext } from 'svelte';
   import type { Snippet } from 'svelte';
@@ -34,16 +38,12 @@
   const hasQuery = $derived(context.query.trim().length > 0);
 </script>
 
-<div class="absolute top-full left-0 right-0 z-50 empty:hidden {className}" role="listbox">
+<div class={className} role="listbox">
   {#if hasResults && children}
     {#each displayedResults as result (result.user.pubkey)}
       {@render children(result)}
     {/each}
   {:else if hasQuery && !context.loading && empty}
     {@render empty()}
-  {:else if hasQuery && !context.loading}
-    <div>
-      No users found
-    </div>
   {/if}
 </div>

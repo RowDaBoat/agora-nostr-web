@@ -28,6 +28,10 @@
     limit: 10
   });
 
+  function selectTrustee() {
+
+  }
+
   function handleAddTrustee(pubkey: string) {
     if (trustees.length >= maxTrustees) return;
     if (trustees.some(t => t.pubkey === pubkey)) return;
@@ -55,7 +59,7 @@
     <div class="space-y-2">
       {#each trustees as trustee}
         <div class="flex items-center gap-3 p-3 bg-neutral-100 dark:bg-card border border rounded-lg">
-          <User pubkey={trustee.pubkey} variant="avatar-name-handle" showHoverCard={false} class="flex-1 min-w-0" />
+          <User pubkey={trustee.pubkey} variant="avatar-name-handle" showHoverCard={false} class="flex-1 min-w-0" onclick={selectTrustee} />
           <button
             onclick={() => handleRemoveTrustee(trustee.pubkey)}
             class="p-2 hover:bg-neutral-200 dark:hover:bg-muted rounded-lg transition-colors"
@@ -101,7 +105,7 @@
             onclick={() => handleAddTrustee(pubkey)}
             class="w-full p-3 hover:bg-neutral-100 dark:hover:bg-card transition-colors border-b border last:border-b-0"
           >
-            <User {pubkey} variant="avatar-name-handle" showHoverCard={false} class="w-full" />
+            <User {pubkey} variant="avatar-name-handle" showHoverCard={false} class="w-full" onclick={() => {}} />
           </button>
         {/each}
       </div>

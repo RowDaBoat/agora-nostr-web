@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
-  import { NDKFollowPack, NDKKind } from '@nostr-dev-kit/ndk';
+  import { NDKFollowPack, NDKKind, NDKEvent } from '@nostr-dev-kit/ndk';
   import { portal } from '$lib/utils/portal.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import FollowPackMemberItem from './FollowPackMemberItem.svelte';

@@ -52,7 +52,8 @@
     if (ndk.$currentUser) {
       showDropdown = !showDropdown;
     } else {
-      loginModal.open('signup');
+      loginModal.show = true;
+      loginModal.state = 'signup';
     }
   }
 

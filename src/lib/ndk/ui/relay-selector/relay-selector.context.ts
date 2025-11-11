@@ -1,4 +1,8 @@
-import type { NDKSvelte } from '@nostr-dev-kit/svelte';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import type { NDKSvelte } from "@nostr-dev-kit/svelte";
 
 /**
  * Context shared between Relay Selector components
@@ -41,4 +45,4 @@ export interface RelaySelectorContext {
 	selectAll: () => void;
 }
 
-export const RELAY_SELECTOR_CONTEXT_KEY = Symbol('relay-selector');
+export const RELAY_SELECTOR_CONTEXT_KEY = Symbol("relay-selector");

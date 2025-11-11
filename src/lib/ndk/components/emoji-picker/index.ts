@@ -1,3 +1,7 @@
+/*
+	Installed from @ndk/svelte@latest
+*/
+
 // @ndk-version: emoji-picker@0.2.0
 /**
  * EmojiPicker - Flexible emoji selection components
@@ -36,19 +40,22 @@
  * ```
  */
 
-import List from './emoji-picker-list.svelte';
-import Content from './emoji-picker-content.svelte';
-import Item from './emoji-picker-item.svelte';
-import Dropdown from './emoji-picker-dropdown.svelte';
+import List from "./emoji-picker-list.svelte";
+import Content from "./emoji-picker-content.svelte";
+import Item from "./emoji-picker-item.svelte";
+import Dropdown from "./emoji-picker-dropdown.svelte";
 
 // Export as namespace for dot notation
 export const EmojiPicker = {
-  List,
-  Content,
-  Item,
-  Dropdown,
+	List,
+	Content,
+	Item,
+	Dropdown,
 };
 
 // Export hook and types
-export { createEmojiPicker } from './createEmojiPicker.svelte.js';
-export type { EmojiData, EmojiPickerConfig } from './createEmojiPicker.svelte.js';
+export { createEmojiPicker } from "./createEmojiPicker.svelte.js";
+export type {
+	EmojiData,
+	EmojiPickerConfig,
+} from "./createEmojiPicker.svelte.js";

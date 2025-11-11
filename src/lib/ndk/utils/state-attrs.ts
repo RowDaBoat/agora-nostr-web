@@ -1,3 +1,7 @@
+/*
+	Installed from @ndk/svelte@latest
+*/
+
 /**
  * State-based data attribute helpers for UI components.
  * Based on bits-ui's state attribute system.
@@ -36,7 +40,9 @@ export function getDataOpenClosed(condition: boolean): "open" | "closed" {
  * <button data-state={getDataActiveInactive(isActive)}>
  * ```
  */
-export function getDataActiveInactive(condition: boolean): "active" | "inactive" {
+export function getDataActiveInactive(
+	condition: boolean,
+): "active" | "inactive" {
 	return condition ? "active" : "inactive";
 }
 
@@ -106,7 +112,9 @@ export function getDataVisible(condition: boolean): "" | undefined {
  * <div data-state={getDataState(null)}>          // no data-state attribute
  * ```
  */
-export function getDataState(state: string | null | undefined): string | undefined {
+export function getDataState(
+	state: string | null | undefined,
+): string | undefined {
 	return state ?? undefined;
 }
 
@@ -119,7 +127,9 @@ export function getDataState(state: string | null | undefined): string | undefin
  * <div data-progress={getDataProgress(uploadProgress)}>  // data-progress="75%"
  * ```
  */
-export function getDataProgress(value: number | null | undefined): string | undefined {
+export function getDataProgress(
+	value: number | null | undefined,
+): string | undefined {
 	if (value == null) return undefined;
 	return `${Math.round(value)}%`;
 }
@@ -133,7 +143,9 @@ export function getDataProgress(value: number | null | undefined): string | unde
  * <div data-count={getDataCount(notificationCount)}>  // data-count="5"
  * ```
  */
-export function getDataCount(count: number | null | undefined): string | undefined {
+export function getDataCount(
+	count: number | null | undefined,
+): string | undefined {
 	if (count == null) return undefined;
 	return String(count);
 }
@@ -148,7 +160,7 @@ export function getDataCount(count: number | null | undefined): string | undefin
  * ```
  */
 export function getDataOrientation(
-	orientation: "horizontal" | "vertical"
+	orientation: "horizontal" | "vertical",
 ): "horizontal" | "vertical" {
 	return orientation;
 }

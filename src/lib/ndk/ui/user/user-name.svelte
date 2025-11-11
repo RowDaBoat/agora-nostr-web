@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { getContext } from 'svelte';
   import { USER_CONTEXT_KEY, type UserContext } from './user.context.js';
@@ -47,6 +51,6 @@
   });
 </script>
 
-<span class={cn(className)}>
+<span data-user-name="" class={cn(className)}>
   {displayText}
 </span>

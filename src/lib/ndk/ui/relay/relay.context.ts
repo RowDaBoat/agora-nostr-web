@@ -1,20 +1,24 @@
-import type { NDKSvelte, RelayInfoState } from '@nostr-dev-kit/svelte';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import type { NDKSvelte, RelayInfoState } from "@nostr-dev-kit/svelte";
 
 /**
  * Context shared between Relay components
  */
 export interface RelayContext {
-    /** NDK instance */
-    ndk: NDKSvelte;
+	/** NDK instance */
+	ndk: NDKSvelte;
 
-    /** Relay URL */
-    relayUrl: string;
+	/** Relay URL */
+	relayUrl: string;
 
-    /** Relay info state (NIP-11) */
-    relayInfo: RelayInfoState;
+	/** Relay info state (NIP-11) */
+	relayInfo: RelayInfoState;
 
-    /** Click handler */
-    onclick?: (e: MouseEvent) => void;
+	/** Click handler */
+	onclick?: (e: MouseEvent) => void;
 }
 
-export const RELAY_CONTEXT_KEY = Symbol('relay');
+export const RELAY_CONTEXT_KEY = Symbol("relay");

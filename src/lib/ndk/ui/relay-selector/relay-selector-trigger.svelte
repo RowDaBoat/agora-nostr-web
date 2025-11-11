@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import { RELAY_SELECTOR_CONTEXT_KEY, type RelaySelectorContext } from './relay-selector.context.js';

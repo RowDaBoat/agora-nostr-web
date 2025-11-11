@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from 'svelte-i18n';
+
   interface Props {
     selectedCommunity: string | null;
     onSelectCommunity: (community: string) => void;
@@ -83,11 +85,10 @@
     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
     <div class="absolute bottom-12 left-12 right-12 text-foreground">
       <h1 class="text-5xl font-bold mb-4">
-        Your Voice Matters
+        {$t('onboarding.step1Community.title')}
       </h1>
       <p class="text-xl opacity-90">
-        Join a community where every voice counts. Connect with leaders,
-        share stories, and build the future together.
+        {$t('onboarding.step1Community.subtitle')}
       </p>
     </div>
   </div>
@@ -96,16 +97,16 @@
   <div class="flex-1 flex items-center justify-center p-8 lg:p-12">
     <div class="max-w-xl w-full">
       <div class="mb-12 lg:hidden">
-        <h1 class="text-4xl font-bold mb-3">Your Voice Matters</h1>
+        <h1 class="text-4xl font-bold mb-3">{$t('onboarding.step1Community.titleMobile')}</h1>
         <p class="text-muted-foreground">
-          Choose your community to connect with local voices
+          {$t('onboarding.step1Community.subtitleMobile')}
         </p>
       </div>
 
       <div class="lg:mb-8">
-        <h2 class="text-2xl font-semibold mb-3">Choose Your Community</h2>
+        <h2 class="text-2xl font-semibold mb-3">{$t('onboarding.step1Community.chooseCommunity')}</h2>
         <p class="text-muted-foreground text-sm">
-          Select where you want to connect and contribute
+          {$t('onboarding.step1Community.selectDescription')}
         </p>
       </div>
 
@@ -142,7 +143,7 @@
                   <span class="font-semibold">{community.name}</span>
                 </div>
                 <div class="text-xs text-foreground/80 mt-1">
-                  {community.leaders.length} community leaders
+                  {community.leaders.length} {$t('onboarding.step1Community.communityLeaders')}
                 </div>
               </div>
             </div>
@@ -161,7 +162,7 @@
           }
         `}
       >
-        Continue →
+        {$t('onboarding.step1Community.continue')} →
       </button>
     </div>
   </div>

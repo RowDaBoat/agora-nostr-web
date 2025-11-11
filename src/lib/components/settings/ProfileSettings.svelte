@@ -78,6 +78,8 @@
 
   // Update form when profile loads
   $effect(() => {
+    if (!profile) return;
+    
     // Only update if we have profile data (check for any profile property)
     if (profile.name || profile.displayName || profile.about || profile.image || profile.banner) {
       // Extract hashtags from profile event

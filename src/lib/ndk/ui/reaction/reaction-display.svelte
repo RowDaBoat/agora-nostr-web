@@ -1,3 +1,7 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
   import { cn } from '../../utils/cn.js';

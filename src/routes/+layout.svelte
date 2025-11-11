@@ -14,6 +14,18 @@
   import '../app.css';
   import type { Snippet } from 'svelte';
 
+  import { defaultContentRenderer } from "$lib/ndk/ui/content-renderer/index.js";
+  
+  import "$lib/ndk/components/hashtag/";
+  import "$lib/ndk/components/mention-modern/";
+  import "$lib/ndk/components/event-card-classic/";
+  import "$lib/ndk/components/event-card-compact/";
+  import "$lib/ndk/components/event-card-generic/";
+  import Media from "$lib/ndk/components/media-render-bento-grid";
+
+  defaultContentRenderer.mediaComponent = Media;
+
+
   interface Props {
     children: Snippet;
   }

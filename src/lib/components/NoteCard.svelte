@@ -1,8 +1,15 @@
 <script lang="ts">
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
   import { ndk } from '$lib/ndk.svelte';
-  import { EventCard } from '$lib/ndk/components/event/cards/compound';
+  import {EventCard} from '$lib/ndk/components/event-card';
   import EventActions from './EventActions.svelte';
+    import RepostButtonAvatars from '$lib/ndk/components/repost-button-avatars';
+    import { goto } from '$app/navigation';
+    import ReactionButtonAvatars from '$lib/ndk/components/reaction-button-avatars';
+    import ReplyButtonAvatars from '$lib/ndk/components/reply-button-avatars';
+    import ComposeDialog from './ComposeDialog.svelte';
+    import { cn } from '$lib/utils';
+    import ZapButtonAvatars from '$lib/ndk/components/zap-button-avatars';
 
   interface Props {
     event: NDKEvent;
@@ -19,6 +26,8 @@
     showThreadLine = false,
     onNavigate
   }: Props = $props();
+
+  let showReplyModal = $state(false);
 
   const avatarSize = $derived(
     variant === 'thread-main' ? 'lg' as const :
@@ -41,27 +50,36 @@
   const headerVariant = $derived(variant === 'thread-main' ? 'full' : 'compact');
 
   const spacingClass = $derived(variant === 'thread-main' ? 'mb-2' : 'mb-1.5');
+
+  function zap(zapFn: (amount: number, comment?: string) => Promise<void>) {
+    zapFn(1, "test zap from agora")
+  }
+
+  function userClicked(pubkey: string) {
+    const user = ndk.getUser(pubkey);
+    goto(`/p/${user.npub}`);
+  }
 </script>
 
 <EventCard.Root
   {ndk}
   {event}
   {interactive}
-  onclick={onNavigate}
-  class="p-3 sm:p-4 flex flex-col max-sm:max-w-screen {cardClass} transition-colors min-w-0"
+  onclick={() => goto(`/e/${event.encode()}`)}
+  onUserClick={userClicked}
+  class="p-3 sm:p-4 flex flex-col max-sm:max-w-screen {cardClass} transition-colors min-w-0 border-b border-border"
 >
   <!-- Header Row: Avatar + Name/Handle/Time -->
-  <div class={spacingClass}>
+  <div class={cn(spacingClass, "flex flex-row justify-between")}>
     <EventCard.Header
       variant={headerVariant}
       {avatarSize}
     />
+    <EventCard.Dropdown />
   </div>
 
   <!-- Reply indicator -->
-  {#if variant === 'default'}
-    <!-- TODO: ReplyIndicator component not found in registry -->
-  {/if}
+  <EventCard.ReplyIndicator />
 
   <!-- Content -->
   <div class="mb-2">
@@ -69,7 +87,12 @@
   </div>
 
   <!-- Actions -->
-  {#if showActions}
-    <EventActions {event} {variant} />
-  {/if}
+  <EventCard.Actions>
+    <ReplyButtonAvatars {ndk} {event} class="hover:bg-muted" onclick={() => showReplyModal = true} />
+    <ReactionButtonAvatars {ndk} {event} class="hover:bg-muted" />
+    <RepostButtonAvatars {ndk} {event} class="hover:bg-muted" />
+    <ZapButtonAvatars {ndk} {event} class="hover:bg-muted" onclick={zap} />
+  </EventCard.Actions>
 </EventCard.Root>
+
+<ComposeDialog bind:open={showReplyModal} replyTo={event} />

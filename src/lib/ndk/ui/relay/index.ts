@@ -1,3 +1,7 @@
+/*
+	Installed from @ndk/svelte@latest
+*/
+
 /**
  * Relay - Composable relay display components
  *
@@ -35,33 +39,33 @@
  */
 
 // Core components
-import Root from './relay-root.svelte';
-import Icon from './relay-icon.svelte';
-import Name from './relay-name.svelte';
-import Url from './relay-url.svelte';
-import Description from './relay-description.svelte';
-import BookmarkButton from './relay-bookmark-button.svelte';
-import BookmarkedBy from './relay-bookmarked-by.svelte';
-import ConnectionStatus from './relay-connection-status.svelte';
-import Input from './relay-input.svelte';
+import Root from "./relay-root.svelte";
+import Icon from "./relay-icon.svelte";
+import Name from "./relay-name.svelte";
+import Url from "./relay-url.svelte";
+import Description from "./relay-description.svelte";
+import BookmarkButton from "./relay-bookmark-button.svelte";
+import BookmarkedBy from "./relay-bookmarked-by.svelte";
+import ConnectionStatus from "./relay-connection-status.svelte";
+import Input from "./relay-input.svelte";
 
 // Selector primitives
-import { Selector } from '../relay-selector/index.js';
+import { Selector } from "../relay-selector/index.js";
 
 // Export as namespace for dot notation
 export const Relay = {
-  Root,
-  Icon,
-  Name,
-  Url,
-  Description,
-  BookmarkButton,
-  BookmarkedBy,
-  ConnectionStatus,
-  Input,
-  Selector,
+	Root,
+	Icon,
+	Name,
+	Url,
+	Description,
+	BookmarkButton,
+	BookmarkedBy,
+	ConnectionStatus,
+	Input,
+	Selector,
 };
 
 // Export types
-export type { RelayContext } from './relay.context.js';
-export type { RelaySelectorContext } from '../relay-selector/index.js';
+export type { RelayContext } from "./relay.context.js";
+export type { RelaySelectorContext } from "../relay-selector/index.js";

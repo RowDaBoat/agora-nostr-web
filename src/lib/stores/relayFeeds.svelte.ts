@@ -1,4 +1,3 @@
-import type { NDKSvelte } from '@nostr-dev-kit/svelte';
 import { NDKRelayFeedList } from '@nostr-dev-kit/ndk';
 
 class RelayFeedsStore {

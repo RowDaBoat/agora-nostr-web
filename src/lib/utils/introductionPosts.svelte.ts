@@ -35,7 +35,7 @@ export function createIntroductionPostsManager(ndk: NDKSvelte, inviteRelay?: str
   } : undefined);
 
   const introductionPosts = $derived.by(() => {
-    if (!introEvents || introEvents.size === 0) return [];
+    if (!introEvents || introEvents.length === 0) return [];
 
     const engagementMap = new Map<string, number>();
 

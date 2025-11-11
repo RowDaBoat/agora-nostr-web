@@ -1,5 +1,9 @@
-import type { NDKSvelte } from '@nostr-dev-kit/svelte';
-import type { ContentRenderer } from '../content-renderer';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import type { NDKSvelte } from "@nostr-dev-kit/svelte";
+import type { ContentRenderer } from "../content-renderer";
 
 export interface MarkdownEventContentProps {
 	ndk?: NDKSvelte;

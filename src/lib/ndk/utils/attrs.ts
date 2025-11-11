@@ -1,3 +1,7 @@
+/*
+	Installed from @ndk/svelte@latest
+*/
+
 /**
  * Data attribute generation system for UI components.
  * Based on bits-ui's attribute system but without external dependencies.
@@ -61,7 +65,7 @@ class Attrs<TParts extends readonly string[]> {
  * ```
  */
 export function createAttrs<TParts extends readonly string[]>(
-	config: AttrsConfig & { parts: TParts }
+	config: AttrsConfig & { parts: TParts },
 ): AttrsObject<TParts> {
 	return new Attrs(config).attrs;
 }

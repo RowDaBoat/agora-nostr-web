@@ -173,7 +173,7 @@ class OnboardingStore {
 
     // Set language based on selected community
     if (community) {
-      const communityToLocale: Record<string, string> = {
+      const communityToLocale: Record<string, 'en' | 'es' | 'fa' | 'km' | 'sn'> = {
         venezuela: 'es',
         nicaragua: 'es',
         cambodia: 'km',

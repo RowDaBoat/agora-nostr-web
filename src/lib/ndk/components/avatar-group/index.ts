@@ -1,3 +1,7 @@
+/*
+	Installed from @ndk/svelte@latest
+*/
+
 /**
  * AvatarGroup - Display multiple user avatars
  *
@@ -42,7 +46,7 @@
  * ```
  */
 
-import AvatarGroup from './avatar-group.svelte';
+import AvatarGroup from "./avatar-group.svelte";
 
 export { AvatarGroup };
 export default AvatarGroup;

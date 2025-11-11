@@ -1,6 +1,10 @@
-import type { ContentRenderer } from './index.svelte';
+/*
+	Installed from @ndk/svelte@latest
+*/
 
-export const CONTENT_RENDERER_CONTEXT_KEY = Symbol('content-renderer');
+import type { ContentRenderer } from "./index.svelte";
+
+export const CONTENT_RENDERER_CONTEXT_KEY = Symbol("content-renderer");
 
 export interface ContentRendererContext {
 	renderer: ContentRenderer;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ndk } from '$lib/ndk.svelte';
   import { createNotificationFeed } from '$lib/ndk/builders/notification/index.svelte';
-  import { Notification } from '$lib/ndk/ui/notification';
+  import * as Notification from '$lib/ndk/ui/notification';
   import TimeAgo from '$lib/components/TimeAgo.svelte';
 
   interface Props {

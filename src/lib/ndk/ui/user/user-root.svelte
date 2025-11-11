@@ -1,8 +1,12 @@
+<!--
+	Installed from @ndk/svelte@latest
+-->
+
 <script lang="ts">
   import { setContext } from 'svelte';
   import type { NDKUser, NDKUserProfile } from '@nostr-dev-kit/ndk';
   import type { NDKSvelte } from '@nostr-dev-kit/svelte';
-  import { createProfileFetcher } from '@nostr-dev-kit/svelte';
+  import { createProfileFetcher } from '../../builders/profile/index.svelte.js';
   import { USER_CONTEXT_KEY } from './user.context.js';
   import type { Snippet } from 'svelte';
   import { cn } from "../../utils/cn.js";
@@ -11,6 +15,8 @@
     ndk: NDKSvelte;
 
     user?: NDKUser;
+
+    npub?: string;
 
     pubkey?: string;
 
@@ -27,6 +33,7 @@
     ndk,
     user,
     pubkey,
+    npub,
     profile: propProfile,
     onclick,
     class: className = '',
@@ -36,13 +43,8 @@
   // Resolve NDKUser from either user prop or pubkey
   const ndkUser = $derived.by(() => {
     if (user) return user;
-    if (pubkey) {
-      try {
-        return ndk.getUser({ pubkey });
-      } catch {
-        return null;
-      }
-    }
+    if (npub) { try { return ndk.getUser({ npub }); } catch { return null; } }
+    if (pubkey) { try { return ndk.getUser({ pubkey }); } catch { return null; } }
     return null;
   });
 
@@ -73,6 +75,6 @@
   setContext(USER_CONTEXT_KEY, context);
 </script>
 
-<div class={cn("contents", className)}>
+<div data-user-root="" class={cn("contents", className)}>
   {@render children()}
 </div>

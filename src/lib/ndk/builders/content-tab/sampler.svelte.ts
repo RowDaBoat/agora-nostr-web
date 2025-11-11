@@ -1,6 +1,10 @@
-import type { NDKSvelte } from '@nostr-dev-kit/svelte';
-import type { NDKSubscriptionOptions } from '@nostr-dev-kit/ndk';
-import { getContext } from 'svelte';
+/*
+	Installed from @ndk/svelte@latest
+*/
+
+import type { NDKSvelte } from "@nostr-dev-kit/svelte";
+import type { NDKSubscriptionOptions } from "@nostr-dev-kit/ndk";
+import { getContext } from "svelte";
 
 interface ContentTabConfig {
 	pubkeys: string[];
@@ -28,7 +32,8 @@ export function byCount(tabs: ContentTab[]): ContentTab[] {
  */
 export function byRecency(tabs: ContentTab[]): ContentTab[] {
 	return [...tabs].sort((a, b) => {
-		if (a.lastPublished === undefined && b.lastPublished === undefined) return 0;
+		if (a.lastPublished === undefined && b.lastPublished === undefined)
+			return 0;
 		if (a.lastPublished === undefined) return 1;
 		if (b.lastPublished === undefined) return -1;
 		return b.lastPublished - a.lastPublished;
@@ -62,9 +67,9 @@ export function byRecency(tabs: ContentTab[]): ContentTab[] {
  */
 export function createContentSampler(
 	config: () => ContentTabConfig,
-	ndk?: NDKSvelte
+	ndk?: NDKSvelte,
 ) {
-	const ndkInstance = ndk ?? getContext<NDKSvelte>('ndk');
+	const ndkInstance = ndk ?? getContext<NDKSvelte>("ndk");
 
 	const configValue = $derived(config());
 	const { pubkeys, kinds, since, subOpts, sort } = $derived(configValue);
@@ -78,10 +83,15 @@ export function createContentSampler(
 		return {
 			filters: [
 				{ kinds, authors: pubkeys, since, limit: 400 },
-				...kinds.map((kind) => ({ kinds: [kind], authors: pubkeys, since, limit: 1 }))
+				...kinds.map((kind) => ({
+					kinds: [kind],
+					authors: pubkeys,
+					since,
+					limit: 1,
+				})),
 			],
 			cacheUnconstrainFilter: [],
-			...subOpts
+			...subOpts,
 		};
 	});
 
@@ -100,14 +110,17 @@ export function createContentSampler(
 			if (tab) {
 				tab.count++;
 				const eventTimestamp = event.created_at ?? 0;
-				if (tab.lastPublished === undefined || eventTimestamp > tab.lastPublished) {
+				if (
+					tab.lastPublished === undefined ||
+					eventTimestamp > tab.lastPublished
+				) {
 					tab.lastPublished = eventTimestamp;
 				}
 			}
 		}
 
 		// Convert to array and filter out kinds with no events
-		let result = Array.from(kindMap.values()).filter(tab => tab.count > 0);
+		let result = Array.from(kindMap.values()).filter((tab) => tab.count > 0);
 
 		// Apply sorting if provided
 		if (sort) {
@@ -120,6 +133,6 @@ export function createContentSampler(
 	return {
 		get tabs() {
 			return tabs;
-		}
+		},
 	};
 }

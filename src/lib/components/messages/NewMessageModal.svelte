@@ -5,7 +5,7 @@
   import { MediaQuery } from 'svelte/reactivity';
   import * as Dialog from '$lib/components/ui/dialog';
   import * as Drawer from '$lib/components/ui/drawer';
-  import { UserSearchCombobox } from '$lib/ndk/components/user/inputs/search';
+  import { UserSearchCombobox } from '$lib/ndk/components/user-search';
 
   interface Props {
     isOpen: boolean;
@@ -22,7 +22,7 @@
 </script>
 
 {#if isDesktop.current}
-  <Dialog.Root open={isOpen} onOpenChange={(newOpen) => { if (!newOpen) onClose(); }}>
+  <Dialog.Root open={isOpen} onOpenChange={(newOpen: boolean) => { if (!newOpen) onClose(); }}>
     <Dialog.Content class="max-w-md">
       <Dialog.Header>
         <Dialog.Title>New Message</Dialog.Title>
@@ -36,7 +36,7 @@
     </Dialog.Content>
   </Dialog.Root>
 {:else}
-  <Drawer.Root open={isOpen} onOpenChange={(newOpen) => { if (!newOpen) onClose(); }}>
+  <Drawer.Root open={isOpen} onOpenChange={(newOpen: boolean) => { if (!newOpen) onClose(); }}>
     <Drawer.Content>
       <Drawer.Header class="text-left">
         <Drawer.Title>New Message</Drawer.Title>

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { ndk } from '$lib/ndk.svelte';
-  import { createThreadView } from '@nostr-dev-kit/svelte';
-  import type { ThreadView } from '@nostr-dev-kit/svelte';
+  import { createThreadView } from '$lib/ndk/builders/event';
+  import type { ThreadView } from '$lib/ndk/builders/event/thread/types';
   import { NDKEvent } from '@nostr-dev-kit/ndk';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import HighlightCard from '$lib/components/HighlightCard.svelte';
@@ -81,7 +81,7 @@
       <p class="mt-4 text-neutral-400">Loading thread...</p>
     </div>
   {:else}
-    <main class="w-full lg:max-w-2xl mx-auto">
+    <main class="w-full mx-auto">
       <!-- Parent Notes (Thread Context) -->
       {#each parentChain as node, index}
         {#if !node.event}

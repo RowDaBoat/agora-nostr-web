@@ -4,7 +4,6 @@
   import { ndk } from '$lib/ndk.svelte';
   import { layoutMode } from '$lib/stores/layoutMode.svelte';
   import ArticleHeader from '$lib/components/ArticleHeader.svelte';
-  import ArticleContent from '$lib/components/ArticleContent.svelte';
   import CommentSection from '$lib/components/CommentSection.svelte';
   import TextHighlightToolbar from '$lib/components/TextHighlightToolbar.svelte';
   import HighlightCard from '$lib/components/HighlightCard.svelte';
@@ -13,16 +12,14 @@
   import { NDKKind, NDKList, NDKEvent } from '@nostr-dev-kit/ndk';
   import { nip19 } from 'nostr-tools';
   import { extractArticleImage } from '$lib/utils/extractArticleImage';
+    import { ArticleContent } from '$lib/ndk/components/article-content';
+    import ArticleCardHero from '$lib/ndk/components/article-card-hero/article-card-hero.svelte';
 
   let error = $state<string | null>(null);
   let isBookmarked = $state(false);
   let showShareMenu = $state(false);
   let copied = $state(false);
   let userError = $state<string | null>(null);
-  let showHighlightToolbar = $state(false);
-  let selectedText = $state('');
-  let selectedRange = $state<Range | null>(null);
-  let toolbarPosition = $state({ x: 0, y: 0 });
   let selectedHighlight = $state<NDKEvent | null>(null);
 
   const naddr = $derived($page.params.naddr);
@@ -38,8 +35,6 @@
       article = event ? NDKArticle.from(event) : null;
     });
   });
-
-  const highlights = ndk.$subscribe(() => article ? { filters: { kinds: [NDKKind.Highlight], ...article.filter() } } : undefined);
 
   const heroImage = $derived(article ? extractArticleImage(article) : null);
 
@@ -67,42 +62,6 @@
     } catch (err) {
       console.error('Failed to check bookmark status:', err);
     }
-  }
-
-
-  function handleTextSelected(text: string, range: Range) {
-    selectedText = text;
-    selectedRange = range;
-
-    const rect = range.getBoundingClientRect();
-    toolbarPosition = {
-      x: rect.left + rect.width / 2,
-      y: rect.top, // position: fixed uses viewport coords, no need to add scrollY
-    };
-
-    showHighlightToolbar = true;
-  }
-
-  function handleHighlightCreated() {
-    showHighlightToolbar = false;
-    selectedText = '';
-    selectedRange = null;
-
-    // Clear the text selection
-    window.getSelection()?.removeAllRanges();
-  }
-
-  function handleCancelHighlight() {
-    showHighlightToolbar = false;
-    selectedText = '';
-    selectedRange = null;
-
-    // Clear the text selection
-    window.getSelection()?.removeAllRanges();
-  }
-
-  function handleHighlightClick(highlight: NDKEvent) {
-    selectedHighlight = highlight;
   }
 
   function closeDrawer() {
@@ -211,125 +170,89 @@
     </button>
   </div>
 {:else}
-  <div class="article-container">
+  <div class="article-container relative">
     <!-- Header -->
-    <header class="article-header">
-      <button class="back-btn" onclick={goBack}>
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <h1>{article.title || 'Article'}</h1>
-      <div class="article-actions">
-        <button
-          type="button"
-          onclick={handleBookmark}
-          disabled={!ndk.$currentUser}
-          class="action-btn {isBookmarked ? 'bookmarked' : ''}"
-          title={ndk.$currentUser ? (isBookmarked ? 'Remove bookmark' : 'Add bookmark') : 'Login to bookmark'}
-        >
-          <svg class={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-          </svg>
-        </button>
-
-        <div class="relative">
-          <button
-            type="button"
-            onclick={() => showShareMenu = !showShareMenu}
-            class="action-btn"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-            </svg>
-          </button>
-
-          {#if showShareMenu}
-            <div class="share-menu">
-              <button
-                type="button"
-                onclick={() => handleShare('twitter')}
-                class="share-menu-item"
-              >
-                Share on X
-              </button>
-              <button
-                type="button"
-                onclick={() => handleShare('facebook')}
-                class="share-menu-item"
-              >
-                Share on Facebook
-              </button>
-              <button
-                type="button"
-                onclick={() => handleShare('linkedin')}
-                class="share-menu-item"
-              >
-                Share on LinkedIn
-              </button>
-            </div>
-          {/if}
-        </div>
-
-        <button
-          type="button"
-          onclick={handleCopyIdentifier}
-          class="action-btn"
-        >
-          {#if copied}
-            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-          {:else}
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-          {/if}
-        </button>
-      </div>
-    </header>
+     <div class="absolute left-0 right-0 top-0">
+       <header class="article-header">
+         <button class="back-btn" onclick={goBack}>
+           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+           </svg>
+         </button>
+         <h1>{article.title || 'Article'}</h1>
+         <div class="article-actions">
+           <button
+             type="button"
+             onclick={handleBookmark}
+             disabled={!ndk.$currentUser}
+             class="action-btn {isBookmarked ? 'bookmarked' : ''}"
+             title={ndk.$currentUser ? (isBookmarked ? 'Remove bookmark' : 'Add bookmark') : 'Login to bookmark'}
+           >
+             <svg class={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+             </svg>
+           </button>
+   
+           <div class="relative">
+             <button
+               type="button"
+               onclick={() => showShareMenu = !showShareMenu}
+               class="action-btn"
+             >
+               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+               </svg>
+             </button>
+   
+             {#if showShareMenu}
+               <div class="share-menu">
+                 <button
+                   type="button"
+                   onclick={() => handleShare('twitter')}
+                   class="share-menu-item"
+                 >
+                   Share on X
+                 </button>
+                 <button
+                   type="button"
+                   onclick={() => handleShare('facebook')}
+                   class="share-menu-item"
+                 >
+                   Share on Facebook
+                 </button>
+                 <button
+                   type="button"
+                   onclick={() => handleShare('linkedin')}
+                   class="share-menu-item"
+                 >
+                   Share on LinkedIn
+                 </button>
+               </div>
+             {/if}
+           </div>
+   
+           <button
+             type="button"
+             onclick={handleCopyIdentifier}
+             class="action-btn"
+           >
+             {#if copied}
+               <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+               </svg>
+             {:else}
+               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+               </svg>
+             {/if}
+           </button>
+         </div>
+       </header>
+     </div>
 
     <!-- Content -->
 
-    {#if heroImage}
-      <div class="hero-image">
-        <img
-          src={heroImage}
-          alt={article.title || 'Article hero image'}
-          class="hero-img"
-        />
-        <div class="hero-overlay"></div>
-
-        <div class="hero-content">
-          <div class="hero-text">
-            <h2 class="hero-title">
-              {article.title || 'Untitled'}
-            </h2>
-
-            <div class="hero-author">
-              <User
-                pubkey={article.pubkey}
-                variant="avatar-name-meta"
-                avatarSize="w-10 h-10 sm:w-12 sm:h-12"
-                nameSize="text-base sm:text-lg font-semibold"
-              >
-                {#snippet meta()}
-                  {#if publishedAt}
-                    <time datetime={new Date(publishedAt * 1000).toISOString()} class="text-sm sm:text-base opacity-90">
-                      {new Date(publishedAt * 1000).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </time>
-                  {/if}
-                {/snippet}
-              </User>
-            </div>
-          </div>
-        </div>
-      </div>
-    {/if}
+    <ArticleCardHero {ndk} {article} />
 
     <main class="article-main">
       <article class="article-content">
@@ -347,28 +270,10 @@
           </div>
         {/if}
 
-        {#if !heroImage}
-          <ArticleHeader {article} />
-        {/if}
-
         <ArticleContent
-          content={article.content}
-          emojiTags={article.tags}
-          highlights={highlights.events}
-          onTextSelected={handleTextSelected}
-          onHighlightClick={handleHighlightClick}
+          {article}
         />
       </article>
-
-      {#if showHighlightToolbar && article}
-        <TextHighlightToolbar
-          {article}
-          {selectedText}
-          position={toolbarPosition}
-          onHighlightCreated={handleHighlightCreated}
-          onCancel={handleCancelHighlight}
-        />
-      {/if}
 
       <div class="comments-section">
         <CommentSection {article} onError={(err) => userError = err} />
@@ -423,9 +328,7 @@
     padding: 1rem;
     border-bottom: 1px solid var(--color-border);
     background: var(--color-background);
-    position: sticky;
     width: 100%;
-    top: 0;
     z-index: 10;
   }
 
