@@ -170,6 +170,26 @@ class OnboardingStore {
 
   setSelectedCommunity(community: string | null) {
     this.state.selectedCommunity = community;
+
+    // Set language based on selected community
+    if (community) {
+      const communityToLocale: Record<string, string> = {
+        venezuela: 'es',
+        nicaragua: 'es',
+        cambodia: 'km',
+        zimbabwe: 'sn',
+        afghanistan: 'fa',
+        iran: 'fa',
+      };
+
+      const newLocale = communityToLocale[community];
+      if (newLocale) {
+        console.log(`[Store] Setting language to ${newLocale} based on community ${community}`);
+        settings.setLanguage(newLocale);
+        locale.set(newLocale);
+      }
+    }
+
     saveState(this.state);
   }
 
