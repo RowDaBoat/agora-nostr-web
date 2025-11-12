@@ -63,7 +63,10 @@
 	{#each urls as mediaUrl, i (i)}
 		<button
 			type="button"
-			onclick={() => openLightbox(i)}
+			onclick={(e) => {
+				e.stopPropagation();
+				openLightbox(i);
+			}}
 			class="relative overflow-hidden bg-muted transition-all cursor-pointer hover:opacity-90 {getItemClass(
 				i
 			)}"

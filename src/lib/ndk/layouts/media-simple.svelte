@@ -62,7 +62,10 @@
 		{#if isImage}
 			<button
 				type="button"
-				onclick={() => openLightbox(i)}
+				onclick={(e) => {
+					e.stopPropagation();
+					openLightbox(i);
+				}}
 				class="block w-full mb-2 cursor-pointer hover:opacity-90 transition-opacity"
 			>
 				<img
@@ -75,7 +78,10 @@
 		{:else if isVideo}
 			<button
 				type="button"
-				onclick={() => openLightbox(i)}
+				onclick={(e) => {
+					e.stopPropagation();
+					openLightbox(i);
+				}}
 				class="block w-full mb-2 cursor-pointer hover:opacity-90 transition-opacity"
 			>
 				<!-- svelte-ignore a11y_media_has_caption -->
@@ -87,7 +93,10 @@
 		{:else if isYouTube && videoId}
 			<button
 				type="button"
-				onclick={() => openLightbox(i)}
+				onclick={(e) => {
+					e.stopPropagation();
+					openLightbox(i);
+				}}
 				class="block w-full mb-2 cursor-pointer hover:opacity-90 transition-opacity"
 				aria-label="Open YouTube video in lightbox"
 			>

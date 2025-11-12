@@ -3,17 +3,17 @@
 -->
 
 <script lang="ts">
-	import { Dialog } from 'bits-ui';
-	import ArrowLeft from '../icons/arrow-left/arrow-left.svelte';
-	import ArrowRight from '../icons/arrow-right/arrow-right.svelte';
-	import ZoomIn from '../icons/zoom-in/zoom-in.svelte';
-	import ZoomOut from '../icons/zoom-out/zoom-out.svelte';
-	import CancelIcon from '../icons/cancel/cancel.svelte';
-	import { cn } from '../utils/cn';
+	import { Dialog } from "bits-ui";
+	import ArrowLeft from "../icons/arrow-left/arrow-left.svelte";
+	import ArrowRight from "../icons/arrow-right/arrow-right.svelte";
+	import ZoomIn from "../icons/zoom-in/zoom-in.svelte";
+	import ZoomOut from "../icons/zoom-out/zoom-out.svelte";
+	import CancelIcon from "../icons/cancel/cancel.svelte";
+	import { cn } from "../utils/cn";
 
 	interface MediaItem {
 		url: string;
-		type: 'image' | 'video' | 'youtube';
+		type: "image" | "video" | "youtube";
 		videoId?: string;
 	}
 
@@ -25,7 +25,13 @@
 		class?: string;
 	}
 
-	let { mediaItems, initialIndex = 0, open = $bindable(false), onClose, class: className = '' }: Props = $props();
+	let {
+		mediaItems,
+		initialIndex = 0,
+		open = $bindable(false),
+		onClose,
+		class: className = "",
+	}: Props = $props();
 
 	let currentIndex = $state(initialIndex);
 	let zoomLevel = $state(1);
@@ -94,11 +100,11 @@
 		if (!open) return;
 
 		switch (e.key) {
-			case 'ArrowLeft':
+			case "ArrowLeft":
 				e.preventDefault();
 				navigatePrev();
 				break;
-			case 'ArrowRight':
+			case "ArrowRight":
 				e.preventDefault();
 				navigateNext();
 				break;
@@ -106,7 +112,7 @@
 	}
 
 	function handleWheel(e: WheelEvent) {
-		if (!open || currentMedia.type !== 'image') return;
+		if (!open || currentMedia.type !== "image") return;
 		e.preventDefault();
 
 		if (e.deltaY < 0) {
@@ -117,7 +123,7 @@
 	}
 
 	function handleMouseDown(e: MouseEvent) {
-		if (zoomLevel <= 1 || currentMedia.type !== 'image') return;
+		if (zoomLevel <= 1 || currentMedia.type !== "image") return;
 		isDragging = true;
 		dragStartX = e.clientX - panX;
 		dragStartY = e.clientY - panY;
@@ -141,7 +147,7 @@
 	}
 
 	function handleTouchStart(e: TouchEvent) {
-		if (currentMedia.type !== 'image') return;
+		if (currentMedia.type !== "image") return;
 
 		if (e.touches.length === 2) {
 			touchStartDistance = getTouchDistance(e.touches);
@@ -152,7 +158,7 @@
 	}
 
 	function handleTouchMove(e: TouchEvent) {
-		if (currentMedia.type !== 'image') return;
+		if (currentMedia.type !== "image") return;
 
 		if (e.touches.length === 2) {
 			e.preventDefault();
@@ -172,9 +178,13 @@
 	}
 
 	function handleTouchEnd(e: TouchEvent) {
-		if (currentMedia.type !== 'image') return;
+		if (currentMedia.type !== "image") return;
 
-		if (e.changedTouches.length === 1 && e.touches.length === 0 && zoomLevel === 1) {
+		if (
+			e.changedTouches.length === 1 &&
+			e.touches.length === 0 &&
+			zoomLevel === 1
+		) {
 			const deltaX = e.changedTouches[0].clientX - touchStartX;
 			const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
 
@@ -193,7 +203,11 @@
 	}
 </script>
 
-<svelte:window onkeydown={handleKeydown} onmouseup={handleMouseUp} onmousemove={handleMouseMove} />
+<svelte:window
+	onkeydown={handleKeydown}
+	onmouseup={handleMouseUp}
+	onmousemove={handleMouseMove}
+/>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
 	<Dialog.Portal>
@@ -202,14 +216,16 @@
 		/>
 		<Dialog.Content
 			class={cn(
-				'fixed inset-0 z-[9999] flex items-center justify-center',
-				'data-[state=open]:animate-in data-[state=closed]:animate-out',
-				'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-				'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
-				className
+				"fixed inset-0 z-[9999] flex items-center justify-center",
+				"data-[state=open]:animate-in data-[state=closed]:animate-out",
+				"data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+				"data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+				className,
 			)}
 		>
-			<div class="relative w-full h-full flex items-center justify-center p-4 md:p-8">
+			<div
+				class="relative w-full h-full flex items-center justify-center"
+			>
 				<!-- Media Display -->
 				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 				<div
@@ -222,22 +238,27 @@
 					role="img"
 					tabindex="-1"
 				>
-					{#if currentMedia.type === 'image'}
+					{#if currentMedia.type === "image"}
 						<img
 							src={currentMedia.url}
 							alt=""
-							class="max-w-full max-h-full object-contain transition-transform duration-200 select-none"
-							style="transform: scale({zoomLevel}) translate({panX / zoomLevel}px, {panY / zoomLevel}px); cursor: {zoomLevel > 1 ? 'grab' : 'default'};"
+							class="max-w-full max-h-full object-cover transition-transform duration-200 select-none"
+							style="transform: scale({zoomLevel}) translate({panX /
+								zoomLevel}px, {panY /
+								zoomLevel}px); cursor: {zoomLevel > 1
+								? 'grab'
+								: 'default'};"
 							draggable="false"
 						/>
-					{:else if currentMedia.type === 'video'}
+					{:else if currentMedia.type === "video"}
 						<!-- svelte-ignore a11y_media_has_caption -->
 						<video
 							src={currentMedia.url}
 							controls
-							class="max-w-full max-h-full object-contain"
+							autoplay
+							class="h-screen w-screen max-w-full max-h-full object-cover"
 						></video>
-					{:else if currentMedia.type === 'youtube' && currentMedia.videoId}
+					{:else if currentMedia.type === "youtube" && currentMedia.videoId}
 						<iframe
 							src="https://www.youtube.com/embed/{currentMedia.videoId}"
 							title="YouTube video"
@@ -290,8 +311,10 @@
 				{/if}
 
 				<!-- Zoom Controls -->
-				{#if currentMedia.type === 'image'}
-					<div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-[10000]">
+				{#if currentMedia.type === "image"}
+					<div
+						class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-[10000]"
+					>
 						<button
 							onclick={zoomOut}
 							class="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-30 disabled:cursor-not-allowed"
@@ -300,7 +323,9 @@
 						>
 							<ZoomOut class="h-5 w-5" />
 						</button>
-						<div class="bg-black/50 text-white px-3 py-2 rounded-full text-sm font-medium">
+						<div
+							class="bg-black/50 text-white px-3 py-2 rounded-full text-sm font-medium"
+						>
 							{Math.round(zoomLevel * 100)}%
 						</div>
 						<button
