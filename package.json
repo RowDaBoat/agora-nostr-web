@@ -78,6 +78,6 @@
   ],
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.0.0",
-    "lightningcss-linux-x64-gnu": "^1.0.0"
+    "lightningcss-linux-x64-gnu": "^1.30.0"
   }
 }
