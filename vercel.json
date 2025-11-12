@@ -1,5 +1,5 @@
 {
   "framework": "sveltekit",
   "buildCommand": "npm run build",
-  "installCommand": "npm install --no-optional=false"
+  "installCommand": "rm -rf node_modules && npm install"
 }
