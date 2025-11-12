@@ -19,12 +19,26 @@
     if (!canvas || !value) return;
 
     try {
+      // Create a temporary element to get computed RGB values from CSS variables
+      const tempEl = document.createElement('div');
+      tempEl.style.display = 'none';
+      document.body.appendChild(tempEl);
+
+      // Apply CSS variables and get computed colors
+      tempEl.style.color = 'var(--color-foreground)';
+      const foreground = getComputedStyle(tempEl).color;
+
+      tempEl.style.color = 'var(--color-background)';
+      const background = getComputedStyle(tempEl).color;
+
+      document.body.removeChild(tempEl);
+
       await QRCode.toCanvas(canvas, value, {
         width: size,
         margin: 2,
         color: {
-          dark: '#000000',
-          light: '#FFFFFF'
+          dark: foreground || '#000000',
+          light: background || '#ffffff'
         }
       });
     } catch (err) {
