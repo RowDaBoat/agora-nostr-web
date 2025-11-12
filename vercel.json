@@ -1,5 +1,5 @@
 {
   "framework": "sveltekit",
-  "buildCommand": "npm run build",
-  "installCommand": "rm -rf node_modules && npm install"
+  "buildCommand": "bun run build",
+  "installCommand": "bun install"
 }
