@@ -76,7 +76,7 @@
 
 <div class="bg-background">
   <!-- Responsive Layout Switcher -->
-  {#if isDesktop.matches}
+  {#if isDesktop.current}
     <DesktopLayout onSearchClick={handleSearchClick}>
       {@render children()}
     </DesktopLayout>
