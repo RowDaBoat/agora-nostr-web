@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-vercel';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -10,16 +10,13 @@ const config = {
 	vitePlugin: {
 		dynamicCompileOptions({ filename }) {
 			// Disable runes mode for packages that use legacy Svelte syntax ($$restProps)
-			if (filename?.includes('node_modules/svelte-motion') ||
-					filename?.includes('node_modules/vaul-svelte')) {
+			if (filename?.includes('node_modules/svelte-motion')) {
 				return { runes: false };
 			}
 		}
 	},
 	kit: {
-		adapter: adapter({
-			fallback: 'index.html'
-		}),
+		adapter: adapter(),
 		alias: {
 			'$lib': './src/lib',
 			'$i18n': './src/i18n',
