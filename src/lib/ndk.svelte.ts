@@ -14,13 +14,13 @@ const DEFAULT_RELAYS = [
 ];
 
 // Initialize SQLite WASM cache (worker-only, browser only)
-const cacheAdapter = new NDKCacheSqliteWasm({
+const cacheAdapter = browser ? new NDKCacheSqliteWasm({
   dbName: "agora",
   workerUrl: `/worker-${CACHE_WORKER_VERSION}.js`,
   wasmUrl: "/sql-wasm.wasm",
-});
+}) : undefined;
 
-export const cacheInitialized = cacheAdapter.initializeAsync();
+export const cacheInitialized = cacheAdapter?.initializeAsync();
 
 // Initialize signature verification worker (only in browser)
 let sigVerifyWorker: Worker | undefined;
@@ -35,7 +35,7 @@ export const ndk = createNDK({
   aiGuardrails: false,
   futureTimestampGrace: 30,
   clientName: 'Agora',
-  session: {
+  session: browser ? {
     storage: new LocalStorage(),
     autoSave: true,
     fetches: {
@@ -45,7 +45,7 @@ export const ndk = createNDK({
       relayList: true,
       monitor: [NDKBlossomList, NDKInterestList, NDKRelayFeedList],
     }
-  }
+  } : undefined
 })
 
 // Set the relay authentication policy (browser only)
