@@ -52,6 +52,10 @@ export function createZapAction(
 	// Subscribe to zaps
 	let zapsSub = $state<ReturnType<NDKSvelte["$subscribe"]> | null>(null);
 
+	// Optimistic UI state
+	let optimisticZapAmount = $state(0);
+	let optimisticUserZapped = $state(false);
+
 	$effect(() => {
 		const { target } = config();
 		if (!target) {
@@ -72,7 +76,12 @@ export function createZapAction(
 
 	const stats = $derived.by(() => {
 		const sub = zapsSub;
-		if (!sub) return { count: 0, totalAmount: 0, hasZapped: false };
+		if (!sub)
+			return {
+				count: optimisticUserZapped ? 1 : 0,
+				totalAmount: optimisticZapAmount,
+				hasZapped: optimisticUserZapped,
+			};
 
 		const zaps = Array.from(sub.events);
 		const zapInvoices = zaps.map(zapInvoiceFromEvent).filter(Boolean);
@@ -87,9 +96,10 @@ export function createZapAction(
 			: false;
 
 		return {
-			count: zaps.length,
-			totalAmount: Math.floor(totalAmount / 1000), // Convert millisats to sats
-			hasZapped,
+			count: zaps.length + (optimisticUserZapped ? 1 : 0),
+			totalAmount:
+				Math.floor(totalAmount / 1000) + optimisticZapAmount, // Convert millisats to sats + optimistic
+			hasZapped: hasZapped || optimisticUserZapped,
 		};
 	});
 
@@ -103,12 +113,29 @@ export function createZapAction(
 			throw new Error("User must be logged in to zap");
 		}
 
-		// Use NDKZapper to send the zap
-		const zapper = new NDKZapper(target, amount * 1000, "msat", {
-			comment,
-		});
+		// Optimistically update UI immediately
+		optimisticZapAmount = amount;
+		optimisticUserZapped = true;
 
-		await zapper.zap();
+		try {
+			// Use NDKZapper to send the zap
+			const zapper = new NDKZapper(target, amount * 1000, "msat", {
+				comment,
+			});
+
+			await zapper.zap();
+
+			// Clear optimistic state after a delay to let the real zap event arrive
+			setTimeout(() => {
+				optimisticZapAmount = 0;
+				optimisticUserZapped = false;
+			}, 3000);
+		} catch (error) {
+			// Rollback optimistic updates on failure
+			optimisticZapAmount = 0;
+			optimisticUserZapped = false;
+			throw error;
+		}
 	}
 
 	const events = $derived(zapsSub ? Array.from(zapsSub.events) : []);

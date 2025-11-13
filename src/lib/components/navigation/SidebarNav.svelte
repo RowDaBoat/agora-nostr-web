@@ -17,12 +17,14 @@
     collapsed?: boolean;
     onToggleCollapse?: () => void;
     onSearchClick?: () => void;
+    onPrimaryAction?: () => void;
   }
 
   const {
     collapsed = false,
     onToggleCollapse,
-    onSearchClick
+    onSearchClick,
+    onPrimaryAction
   }: Props = $props();
 
   const wallet = ndk.$wallet;
@@ -127,6 +129,36 @@
   const visibleNavItems = $derived(
     navItems.filter(item => !item.visible || item.visible())
   );
+
+  // Primary action button configuration based on route
+  interface PrimaryActionConfig {
+    icon: string;
+    label: string;
+  }
+
+  const primaryActionConfig = $derived.by((): PrimaryActionConfig => {
+    if (currentPath === '/marketplace') {
+      return {
+        icon: 'plus',
+        label: $t('classifieds.createListing')
+      };
+    } else if (currentPath === '/trades') {
+      return {
+        icon: 'plus',
+        label: 'Create Trade'
+      };
+    } else if (currentPath === '/agora/invites') {
+      return {
+        icon: 'invite',
+        label: 'Create Invite'
+      };
+    } else {
+      return {
+        icon: 'edit',
+        label: $t('navigation.compose')
+      };
+    }
+  });
 </script>
 
 <aside class="hidden lg:flex {collapsed ? 'w-16' : 'w-64'} p-2 flex-col border-r border-border fixed left-0 top-0 bottom-0 overflow-y-auto overflow-x-visible transition-all duration-300 ease-in-out bg-background">
@@ -253,6 +285,20 @@
         </button>
       {/if}
     {/each}
+
+    <!-- Primary Action Button (only shown when logged in) -->
+    {#if ndk.$currentUser && onPrimaryAction}
+      <button
+        onclick={onPrimaryAction}
+        class="w-full flex items-center justify-center {collapsed ? 'p-3' : 'gap-2 px-6 py-3'} bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full transition-colors mt-4"
+        title={collapsed ? primaryActionConfig.label : undefined}
+      >
+        <Icon name={primaryActionConfig.icon} size="md" />
+        {#if !collapsed}
+          <span>{primaryActionConfig.label}</span>
+        {/if}
+      </button>
+    {/if}
   </nav>
 
   <!-- Login/User Section -->

@@ -16,16 +16,21 @@
   // Subscribe to zaps for this event
   const zaps = ndk.$zaps(() => ({ target: event, validated: true }));
 
-  // Check if current user has zapped
+  // Optimistic UI state
+  let optimisticZapAmount = $state(0);
+  let optimisticUserZapped = $state(false);
+
+  // Check if current user has zapped (including optimistic state)
   const userHasZapped = $derived.by(() => {
+    if (optimisticUserZapped) return true;
     const currentPubkey = ndk.$currentPubkey;
     if (!currentPubkey) return false;
     return hasZappedBy(zaps.events, currentPubkey);
   });
 
-  // Format large numbers
+  // Format large numbers (including optimistic amount)
   const formattedAmount = $derived.by(() => {
-    const amount = zaps.totalAmount;
+    const amount = zaps.totalAmount + optimisticZapAmount;
     if (amount >= 1000000) {
       return `${(amount / 1000000).toFixed(1)}M`;
     } else if (amount >= 1000) {
@@ -33,6 +38,9 @@
     }
     return amount.toString();
   });
+
+  // Count including optimistic zap
+  const zapCount = $derived(zaps.count + (optimisticUserZapped ? 1 : 0));
 
   let showZapModal = $state(false);
   let isZapping = $state(false);
@@ -45,6 +53,9 @@
       return;
     }
 
+    // Optimistically update UI immediately
+    optimisticZapAmount = amount;
+    optimisticUserZapped = true;
     isZapping = true;
 
     try {
@@ -58,6 +69,10 @@
       console.error('Failed to zap:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to send zap';
 
+      // Rollback optimistic updates on failure
+      optimisticZapAmount = 0;
+      optimisticUserZapped = false;
+
       if (errorMessage.includes('wallet') || errorMessage.includes('NWC')) {
         toast.error('Lightning wallet error. Please check your wallet connection in settings.');
       } else if (errorMessage.includes('invoice')) {
@@ -67,6 +82,11 @@
       }
     } finally {
       isZapping = false;
+      // Clear optimistic state after a delay to let the real zap event arrive
+      setTimeout(() => {
+        optimisticZapAmount = 0;
+        optimisticUserZapped = false;
+      }, 3000);
     }
   }
 
@@ -148,7 +168,7 @@
       {/if}
     </div>
     <span class="text-xs font-semibold text-white">
-      {#if zaps.totalAmount > 0}
+      {#if zaps.totalAmount + optimisticZapAmount > 0}
         {formattedAmount}
       {:else}
         Zap
@@ -199,10 +219,10 @@
         Zapped!
       {:else if isZapping}
         Zapping...
-      {:else if zaps.totalAmount > 0}
+      {:else if zaps.totalAmount + optimisticZapAmount > 0}
         {formattedAmount}
-        {#if zaps.count > 0}
-          <span class="text-xs opacity-70">({zaps.count})</span>
+        {#if zapCount > 0}
+          <span class="text-xs opacity-70">({zapCount})</span>
         {/if}
       {:else}
         Zap

@@ -76,6 +76,8 @@
   function handleClick() {
     onclick?.(zapAction.zap);
   }
+
+  const hasAnyZaps = $derived(zapperPubkeys.length > 0 || zapAction.hasZapped);
 </script>
 
 <button
@@ -86,7 +88,7 @@
   class={buttonStyles({ variant, class: className })}
   aria-label={`${zapAction.totalAmount} sats from ${zapAction.count} ${zapAction.count === 1 ? 'zapper' : 'zappers'}`}
 >
-  <ZapIcon size={16} filled={zapperPubkeys.length > 0} class="flex-shrink-0" />
+  <ZapIcon size={16} filled={hasAnyZaps} class="flex-shrink-0" />
   {#if zapperPubkeys.length > 0}
     <AvatarGroup
       {ndk}
@@ -98,10 +100,10 @@
       skipCurrentUser={false}
       {onlyFollows}
     />
-    {#if showCount && zapAction.totalAmount > 0}
-      <span class="text-sm font-medium text-amber-500">
-        {zapAction.totalAmount}
-      </span>
-    {/if}
+  {/if}
+  {#if showCount && zapAction.totalAmount > 0}
+    <span class="text-sm font-medium text-amber-500">
+      {zapAction.totalAmount}
+    </span>
   {/if}
 </button>

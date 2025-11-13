@@ -53,6 +53,20 @@
     isCreateOrderModalOpen = true;
   };
 
+  // Primary action handler - context-aware based on route
+  const handlePrimaryAction = () => {
+    const path = window.location.pathname;
+    if (path === '/marketplace') {
+      handleListingClick();
+    } else if (path === '/trades') {
+      handleTradeClick();
+    } else if (path === '/agora/invites') {
+      handleInviteClick();
+    } else {
+      handleComposeClick();
+    }
+  };
+
   // Handle messages subscription lifecycle
   $effect(() => {
     if (!ndk.$currentUser) {
@@ -77,7 +91,7 @@
 <div class="bg-background">
   <!-- Responsive Layout Switcher -->
   {#if isDesktop.current}
-    <DesktopLayout onSearchClick={handleSearchClick}>
+    <DesktopLayout onSearchClick={handleSearchClick} onPrimaryAction={handlePrimaryAction}>
       {@render children()}
     </DesktopLayout>
   {:else}

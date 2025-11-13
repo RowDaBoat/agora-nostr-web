@@ -1,0 +1,1 @@
+import{s as t,g as e,a}from"./-h67YDCL.js";class o{#s=t(!1);get show(){return e(this.#s)}set show(s){a(this.#s,s,!0)}#t=t("signup");get state(){return e(this.#t)}set state(s){a(this.#t,s,!0)}open(s="signup"){this.state=s,this.show=!0}close(){this.show=!1}}const r=new o;export{r as l};

@@ -1,0 +1,1 @@
+import{a8 as b,a9 as t,aa as h,a3 as k,ab as S}from"./-h67YDCL.js";function u(a,s){return a===s||a?.[S]===s}function d(a={},s,f,T){return b(()=>{var i,r;return t(()=>{i=r,r=[],h(()=>{a!==f(...r)&&(s(a,...r),i&&u(f(...i),a)&&s(null,...i))})}),()=>{k(()=>{r&&u(f(...r),a)&&s(null,...r)})}}),a}export{d as b};

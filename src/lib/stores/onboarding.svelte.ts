@@ -371,134 +371,19 @@ class OnboardingStore {
       return;
     }
 
-    // Capture these values ONCE at the start to avoid reactive dependencies
-    const invite = this.state.invite;
-    const profile = { ...this.state.profileData };
-
     try {
-      console.log('[Store] Starting invite setup sequence...');
+      console.log('[Store] Publishing kind:514 invite confirmation...');
 
-      // 1. Fetch inviter's contacts to copy
-      let followsList: string[] = [];
-      if (invite?.inviter) {
-        console.log('[Store] Fetching inviter contacts for:', invite.inviter);
-        const inviterContactEvent = await ndk.fetchEvent({
-          kinds: [3],
-          authors: [invite.inviter]
-        });
-
-        if (inviterContactEvent) {
-          console.log('[Store] ✓ Found inviter contact list');
-          const pTags = new Set(
-            inviterContactEvent.tags
-              .filter(tag => tag[0] === 'p')
-              .map(tag => tag[1])
-              .filter(isValidPubkey)
-          );
-          pTags.add(invite.inviter);
-          followsList = Array.from(pTags);
-          console.log(`[Store] Found ${followsList.length} contacts from inviter`);
-        } else {
-          console.log('[Store] ⊘ No contact list found for inviter, only following inviter');
-          followsList = [invite.inviter];
-        }
-      }
-
-      // 2. Fetch inviter's mint list for wallet
-      let mints: string[] = ['https://mint.minibits.cash/Bitcoin'];
-      if (invite?.inviter) {
-        console.log('[Store] Fetching inviter mint list (kind 10019) for:', invite.inviter);
-        const inviterMintListEvent = await ndk.fetchEvent({
-          kinds: [NDKKind.CashuMintList],
-          authors: [invite.inviter]
-        });
-
-        if (inviterMintListEvent) {
-          console.log('[Store] ✓ Found inviter mint list event');
-          const inviterMintList = NDKCashuMintList.from(inviterMintListEvent);
-          if (inviterMintList?.mints && inviterMintList.mints.length > 0) {
-            mints = [...inviterMintList.mints, ...mints];
-            console.log('[Store] Using inviter mints + default:', mints);
-          }
-        } else {
-          console.log('[Store] ⊘ No mint list found for inviter, using defaults');
-        }
-      }
-
-      // 3. Build relay list
-      const relays = new Set<string>();
-      if (invite?.inviteRelay) {
-        relays.add(invite.inviteRelay);
-      }
-      relays.add('wss://purplepag.es');
-      relays.add('wss://relay.primal.net');
-
-      if (!ndk.$sessions) {
-        console.error('[Store] ✗ No sessions manager available');
-        return;
-      }
-
-      // 4. Get npub from signer for npub.cash address
-      const user = await signer.user();
-      const npub = user.npub;
-
-      // 5. Enable npub.cash and get Lightning address
-      npubCash.setEnabled(true);
-      const lud16 = npubCash.getLightningAddress();
-
-      // 6. Use createAccount with existing signer to get signed events WITHOUT publishing
-      console.log('[Store] Creating account with createAccount() using existing signer...');
-      const { events } = await ndk.$sessions.createAccount(
-        {
-          profile: {
-            name: profile.name,
-            about: profile.bio,
-            ...(profile.location && { location: profile.location }),
-            ...(profile.picture && { picture: profile.picture }),
-            ...(profile.nip05 && { nip05: profile.nip05 }),
-            ...(lud16 && { lud16 })
-          },
-          relays: Array.from(relays),
-          wallet: {
-            mints,
-            relays: [...WALLET_DEFAULT_RELAYS]
-          },
-          follows: followsList
-        },
-        { publish: false, signer }
-      );
-
-      console.log('[Store] ✓ Created signed events:', events.length);
-
-      // 7. CRITICAL: Publish 514 confirmation FIRST before any other events
+      // Only publish the kind:514 invite confirmation event
+      // Do NOT touch kind:0 (profile) or kind:3 (contacts)
       await this.publishInviteConfirmation(signer);
-
-      // 8. Publish events to invite relay first, then default relays
-      if (invite?.inviteRelay) {
-        console.log('[Store] Publishing events to invite relay:', invite.inviteRelay);
-        const relay = ndk.pool.getRelay(invite.inviteRelay, true);
-        if (relay) {
-          const relaySet = NDKRelaySet.fromRelayUrls([invite.inviteRelay], ndk);
-          for (const event of events) {
-            await event.publish(relaySet);
-            console.log(`[Store] ✓ Published kind:${event.kind} to invite relay`);
-          }
-        }
-      }
-
-      // 9. Publish to default relays
-      console.log('[Store] Publishing events to default relays...');
-      for (const event of events) {
-        await event.publish();
-        console.log(`[Store] ✓ Published kind:${event.kind} to default relays`);
-      }
 
       this.state.hasCompletedInviteSetup = true;
       saveState(this.state);
-      console.log('[Store] ✓ Invite setup complete');
+      console.log('[Store] ✓ Invite acceptance complete (kind:514 published)');
     } catch (err) {
-      console.error('[Store] ✗ Error during invite setup:', err);
-      throw err;
+      await this.publishInviteConfirmation(signer);
+      console.error('[Store] ✗ Error during invite acceptance:', err);
     }
   }
 

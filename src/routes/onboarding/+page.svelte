@@ -1,48 +1,92 @@
 <script lang="ts">
-  import { ndk } from '$lib/ndk.svelte';
-  import { goto } from '$app/navigation';
-  import { NDKPrivateKeySigner, NDKEvent } from '@nostr-dev-kit/ndk';
-  import { followPackUsers } from '$lib/utils/followPacks';
-  import { onboardingStore } from '$lib/stores/onboarding.svelte';
-  import Step1Community from '$lib/pages/onboarding/Step1Community.svelte';
-  import Step2FollowPacks from '$lib/pages/onboarding/Step2FollowPacks.svelte';
-  import Step3Features from '$lib/pages/onboarding/Step3Features.svelte';
-  import Step4Profile from '$lib/pages/onboarding/Step6Profile.svelte';
-  import Step5Introduction from '$lib/pages/onboarding/Step7Introduction.svelte';
-  import Step6Welcome from '$lib/pages/onboarding/Step8Welcome.svelte';
+  import { ndk } from "$lib/ndk.svelte";
+  import { goto } from "$app/navigation";
+  import { NDKPrivateKeySigner, NDKEvent } from "@nostr-dev-kit/ndk";
+  import { followPackUsers } from "$lib/utils/followPacks";
+  import { onboardingStore } from "$lib/stores/onboarding.svelte";
+  import Step1Community from "$lib/pages/onboarding/Step1Community.svelte";
+  import Step2FollowPacks from "$lib/pages/onboarding/Step2FollowPacks.svelte";
+  import Step3Features from "$lib/pages/onboarding/Step3Features.svelte";
+  import Step4Profile from "$lib/pages/onboarding/Step6Profile.svelte";
+  import Step5Introduction from "$lib/pages/onboarding/Step7Introduction.svelte";
+  import Step6Welcome from "$lib/pages/onboarding/Step8Welcome.svelte";
 
   let signer = $state<NDKPrivateKeySigner | null>(null);
+  let hasExistingProfile = $state(false);
+  let checkedForProfile = $state(false);
 
   // Derived values from store
   const currentStep = $derived(onboardingStore.currentStep);
   const totalSteps = $derived(onboardingStore.totalSteps);
   const progressPercentage = $derived((currentStep / totalSteps) * 100);
   const inviteData = $derived(onboardingStore.invite);
-  const hasCompletedInviteSetup = $derived(onboardingStore.hasCompletedInviteSetup);
+  const hasCompletedInviteSetup = $derived(
+    onboardingStore.hasCompletedInviteSetup,
+  );
   const selectedCommunity = $derived(onboardingStore.selectedCommunity);
   const selectedPacks = $derived(onboardingStore.selectedPacks);
   const profileData = $derived(onboardingStore.profileData);
 
-  // Generate key (but don't login yet - that happens at completion)
+  // Check if user already has a profile (for existing users signing in via invite)
   $effect(() => {
-      if (signer) return;
-      signer = NDKPrivateKeySigner.generate();
-      console.log('[Onboarding] ✓ Generated new keypair, pubkey:', signer.pubkey);
+    const activeUser = ndk.$activeUser;
+    if (!activeUser || checkedForProfile) return;
+
+    (async () => {
+      try {
+        console.log("[Onboarding] Checking for existing profile...");
+        const profile = await activeUser.fetchProfile();
+        if (profile && (profile.name || profile.displayName || profile.about)) {
+          console.log(
+            "[Onboarding] ✓ Found existing profile, will skip profile step",
+          );
+          hasExistingProfile = true;
+        } else {
+          console.log("[Onboarding] No existing profile found");
+          hasExistingProfile = false;
+        }
+      } catch (err) {
+        console.log("[Onboarding] Error checking for profile:", err);
+        hasExistingProfile = false;
+      } finally {
+        checkedForProfile = true;
+      }
+    })();
+  });
+
+  // Generate key for new users (but don't login yet - that happens at completion)
+  $effect(() => {
+    // Don't generate a key if user is already logged in
+    if (signer || ndk.$activeUser) return;
+    signer = NDKPrivateKeySigner.generate();
+    console.log("[Onboarding] ✓ Generated new keypair, pubkey:", signer.pubkey);
   });
 
   // NOTE: completeInviteSetup is now called explicitly in handleStep4Next for invite flow
   // Removed from reactive effect to prevent it from running on every profile data change
 
   function goToStep(step: number) {
+    // Skip profile step (4) if user already has a profile
+    if (step === 4 && hasExistingProfile) {
+      console.log(
+        "[Onboarding] Skipping profile step - user has existing profile",
+      );
+      step = 5;
+    }
     onboardingStore.setStep(step);
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.scrollTo(0, 0);
     }
   }
 
   function goBack() {
     if (currentStep > onboardingStore.minStep) {
-      goToStep(currentStep - 1);
+      let prevStep = currentStep - 1;
+      // When going back, skip profile step if user has existing profile
+      if (prevStep === 4 && hasExistingProfile) {
+        prevStep = 3;
+      }
+      goToStep(prevStep);
     }
   }
 
@@ -57,61 +101,83 @@
   }
 
   async function completeOnboarding() {
-    if (!signer) {
-      console.error('[Onboarding] ✗ No signer available');
+    // For existing users, they're already logged in. Only new users need the signer.
+    const activeUser = ndk.$activeUser;
+    const isExistingUser = hasExistingProfile && activeUser;
+
+    if (!isExistingUser && !signer) {
+      console.error("[Onboarding] ✗ No signer available for new user");
       return;
     }
 
     try {
-      console.log('[Onboarding] Starting onboarding completion...');
+      console.log("[Onboarding] Starting onboarding completion...");
 
-      // 1. Login first
-      console.log('[Onboarding] Logging in...');
-      await ndk.$sessions?.login(signer);
-      console.log('[Onboarding] ✓ Logged in with pubkey:', signer.pubkey);
-
-      // 2. Check if this is an invite flow or regular onboarding
-      if (inviteData && !hasCompletedInviteSetup) {
-        console.log('[Onboarding] Invite flow: completing invite setup');
-        await onboardingStore.completeInviteSetup(signer);
+      // 1. Login first (only for new users)
+      if (!isExistingUser && signer) {
+        console.log("[Onboarding] Logging in new user...");
+        await ndk.$sessions?.login(signer);
+        console.log("[Onboarding] ✓ Logged in with pubkey:", signer.pubkey);
       } else {
-        console.log('[Onboarding] Regular flow: publishing profile and setup');
-        await onboardingStore.publishProfileAndSetup(signer);
+        console.log("[Onboarding] Existing user already logged in");
       }
 
-      // 3. Publish follow packs if selected
+      // 2. Get the signer to use (either new user's signer or existing user's signer from session)
+      const signerToUse = signer || ndk.signer;
+      if (!signerToUse) {
+        alert("[Onboarding] ✗ No signer available");
+        return;
+      }
+
+      // 3. Check if this is an invite flow or regular onboarding
+      if (inviteData && !hasCompletedInviteSetup) {
+        console.log("[Onboarding] Invite flow: completing invite setup");
+        await onboardingStore.completeInviteSetup(signerToUse);
+      } else if (!isExistingUser) {
+        // Only publish profile and setup for new users
+        console.log("[Onboarding] Regular flow: publishing profile and setup");
+        await onboardingStore.publishProfileAndSetup(signerToUse);
+      } else {
+        console.log("[Onboarding] Existing user: skipping profile publishing");
+      }
+
+      // 4. Publish follow packs if selected
       if (selectedPacks.length > 0) {
-        console.log('[Onboarding] Publishing kind:3 from', selectedPacks.length, 'packs');
+        console.log(
+          "[Onboarding] Publishing kind:3 from",
+          selectedPacks.length,
+          "packs",
+        );
         await followPackUsers(ndk, selectedPacks);
       }
 
-      // 4. Publish introduction if provided
+      // 5. Publish introduction if provided
       const introText = onboardingStore.introductionText;
       if (introText) {
-        console.log('[Onboarding] Publishing introduction post');
+        console.log("[Onboarding] Publishing introduction post");
         try {
           const introData = JSON.parse(introText);
           const event = new NDKEvent(ndk);
           event.kind = 1;
           event.content = introData.content;
-          event.tags = introData.hashtags.map((tag: string) => ['t', tag]);
+          event.tags = introData.hashtags.map((tag: string) => ["t", tag]);
 
           if (introData.mentionInviter) {
-            event.tags.push(['p', introData.mentionInviter]);
+            event.tags.push(["p", introData.mentionInviter]);
           }
 
           await event.publish();
-          console.log('[Onboarding] ✓ Published introduction');
+          console.log("[Onboarding] ✓ Published introduction");
         } catch (err) {
-          console.error('[Onboarding] ✗ Error publishing introduction:', err);
+          console.error("[Onboarding] ✗ Error publishing introduction:", err);
         }
       }
 
-      console.log('[Onboarding] ✓ Onboarding complete');
+      console.log("[Onboarding] ✓ Onboarding complete");
       onboardingStore.clear();
-      goto('/');
+      goto("/");
     } catch (err) {
-      console.error('[Onboarding] ✗ Error during onboarding completion:', err);
+      console.error("[Onboarding] ✗ Error during onboarding completion:", err);
     }
   }
 </script>
@@ -134,8 +200,15 @@
       class="fixed top-6 left-6 z-50 w-9 h-9 bg-card border border rounded-full flex items-center justify-center hover:bg-accent transition-colors"
       aria-label="Go back"
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M19 12H5M12 19l-7-7 7-7" />
       </svg>
     </button>
   {/if}
@@ -160,9 +233,7 @@
     {/if}
 
     {#if currentStep === 3}
-      <Step3Features
-        onNext={() => goToStep(4)}
-      />
+      <Step3Features onNext={() => goToStep(4)} />
     {/if}
 
     {#if currentStep === 4}

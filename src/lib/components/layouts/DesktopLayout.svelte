@@ -20,9 +20,10 @@
   interface Props {
     children: Snippet;
     onSearchClick?: () => void;
+    onPrimaryAction?: () => void;
   }
 
-  const { children, onSearchClick }: Props = $props();
+  const { children, onSearchClick, onPrimaryAction }: Props = $props();
 
   const path = $derived($page.url.pathname);
 
@@ -83,6 +84,7 @@
     collapsed={layoutStore.sidebarCollapsed}
     onToggleCollapse={() => layoutStore.toggleSidebar()}
     {onSearchClick}
+    {onPrimaryAction}
   />
 
   <!-- Main Content Container -->
