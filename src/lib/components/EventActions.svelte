@@ -5,7 +5,7 @@
   import { toast } from '$lib/stores/toast.svelte';
   import { clickOutside } from '$lib/utils/clickOutside';
   import ComposeDialog from './ComposeDialog.svelte';
-  import ZapButton from './ZapButton.svelte';
+  import ZapButton from '$lib/ndk/components/zap-button/zap-button.svelte';
   import Icon from './Icon.svelte';
   import ReactionButton from '$lib/ndk/components/reaction-button/reaction-button.svelte';
 
@@ -142,7 +142,7 @@
       <span class="text-xs font-semibold">{tiktokReactionStats.count}</span>
     </button>
 
-    <ZapButton {event} variant="tiktok" />
+    <ZapButton {event} variant="ghost" class="flex flex-col items-center gap-1 hover:scale-110 transition-transform [&>button]:w-12 [&>button]:h-12 [&>button]:rounded-full [&>button]:bg-white/20 [&>button]:backdrop-blur-sm [&>button]:flex [&>button]:items-center [&>button]:justify-center [&>span]:text-xs [&>span]:font-semibold [&>span]:text-white" />
   </div>
 {:else}
   <div class="flex items-center gap-3 sm:gap-6 {variant === 'thread-main' ? 'border-t border-border pt-3' : ''} text-muted-foreground">
@@ -201,7 +201,7 @@
     class="hover:text-red-400 transition-colors group [&>span]:text-sm [&>span]:group-hover:underline"
   />
 
-  <ZapButton {event} />
+  <ZapButton {event} variant="ghost" />
   </div>
 {/if}
 

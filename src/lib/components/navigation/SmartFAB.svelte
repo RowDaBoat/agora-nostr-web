@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import Icon from '../Icon.svelte';
+  import Icon, { type IconName } from '../Icon.svelte';
 
   interface FABConfig {
-    icon: string;
+    icon: IconName;
     label?: string;
     action: () => void;
   }

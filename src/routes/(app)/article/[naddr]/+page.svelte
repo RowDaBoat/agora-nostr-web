@@ -6,7 +6,7 @@
   import ArticleHeader from '$lib/components/ArticleHeader.svelte';
   import CommentSection from '$lib/components/CommentSection.svelte';
   import TextHighlightToolbar from '$lib/components/TextHighlightToolbar.svelte';
-  import HighlightCard from '$lib/components/HighlightCard.svelte';
+  import HighlightCard from '$lib/ndk/components/highlight-card-feed/highlight-card-feed.svelte';
   import User from '$lib/components/User.svelte';
   import { NDKArticle } from '@nostr-dev-kit/ndk';
   import { NDKKind, NDKList, NDKEvent } from '@nostr-dev-kit/ndk';
@@ -308,7 +308,7 @@
         </button>
       </div>
       <div class="drawer-content">
-        <HighlightCard event={selectedHighlight} variant="default" />
+        <HighlightCard {ndk} event={selectedHighlight} />
       </div>
     </div>
   {/if}

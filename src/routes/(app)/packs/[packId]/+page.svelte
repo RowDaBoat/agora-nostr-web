@@ -11,7 +11,7 @@
   import { User } from '$lib/ndk/ui/user';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import CreateFollowPackDialog from '$lib/components/CreateFollowPackDialog.svelte';
-  import UserCard from '$lib/components/UserCard.svelte';
+  import UserCard from '$lib/ndk/components/user-card-classic/user-card-classic.svelte';
   import { getProfileUrl } from '$lib/utils/navigation';
   import FollowPackHero from '$lib/ndk/components/follow-pack-hero/follow-pack-hero.svelte';
 
@@ -213,7 +213,7 @@
     {:else}
       <div class="grid gap-4 md:grid-cols-2">
         {#each pubkeys as pubkey (pubkey)}
-          <UserCard {pubkey} />
+          <UserCard {ndk} {pubkey} />
         {/each}
       </div>
     {/if}

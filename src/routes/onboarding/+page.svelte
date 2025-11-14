@@ -132,11 +132,11 @@
       // 3. Check if this is an invite flow or regular onboarding
       if (inviteData && !hasCompletedInviteSetup) {
         console.log("[Onboarding] Invite flow: completing invite setup");
-        await onboardingStore.completeInviteSetup(signerToUse);
+        await onboardingStore.completeInviteSetup(signerToUse as NDKPrivateKeySigner);
       } else if (!isExistingUser) {
         // Only publish profile and setup for new users
         console.log("[Onboarding] Regular flow: publishing profile and setup");
-        await onboardingStore.publishProfileAndSetup(signerToUse);
+        await onboardingStore.publishProfileAndSetup(signerToUse as NDKPrivateKeySigner);
       } else {
         console.log("[Onboarding] Existing user: skipping profile publishing");
       }

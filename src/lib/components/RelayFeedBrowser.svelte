@@ -5,7 +5,6 @@
   import { useRelayInfoCached } from '$lib/utils/relayInfo.svelte';
   import NoteCard from './NoteCard.svelte';
   import ArticlePreviewCard from './ArticlePreviewCard.svelte';
-  import HighlightCard from './HighlightCard.svelte';
   import MediaGrid from './MediaGrid.svelte';
   import LoadMoreTrigger from './LoadMoreTrigger.svelte';
 

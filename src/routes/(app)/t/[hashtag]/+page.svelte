@@ -3,7 +3,7 @@
   import { ndk } from '$lib/ndk.svelte';
   import { settings } from '$lib/stores/settings.svelte';
   import { sidebarStore } from '$lib/stores/sidebar.svelte';
-  import { NDKKind, type NDKEvent, NDKArticle, type NDKFilter } from '@nostr-dev-kit/ndk';
+  import { NDKKind, type NDKEvent, NDKArticle, type NDKFilter, NDKSubscriptionCacheUsage } from '@nostr-dev-kit/ndk';
   import { User } from '$lib/ndk/ui/user';
   import NoteCard from '$lib/components/NoteCard.svelte';
   import ArticlePreviewCard from '$lib/components/ArticlePreviewCard.svelte';
@@ -76,7 +76,7 @@
 
     return {
       filters: [filter],
-      cacheUsage: 1, // NDKSubscriptionCacheUsage.CACHE_FIRST
+      cacheUsage: NDKSubscriptionCacheUsage.CACHE_FIRST,
       relayUrls: relaysToUse.length > 0 ? relaysToUse : undefined
     };
   }, {
@@ -117,7 +117,7 @@
 
   const events = $derived(selectedFilter === 'articles' ? [] : notesFeed.events);
   const eosed = $derived(selectedFilter === 'articles' ? articlesFeed.eosed : notesFeed.eosed);
-  const status = $derived(selectedFilter === 'articles' ? 'connected' : 'connected');
+  const status = $derived('connected' as 'connected' | 'connecting');
   const hasMore = $derived(selectedFilter === 'articles' ? articlesFeed.hasMore : notesFeed.hasMore);
   const isLoading = $derived(selectedFilter === 'articles' ? articlesFeed.isLoading : notesFeed.isLoading);
 

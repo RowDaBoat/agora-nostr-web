@@ -8,7 +8,7 @@
   import NoteCard from '$lib/components/NoteCard.svelte';
   import ArticlePreviewCard from '$lib/components/ArticlePreviewCard.svelte';
   import FeaturedArticleCard from '$lib/components/FeaturedArticleCard.svelte';
-  import HighlightCard from '$lib/components/HighlightCard.svelte';
+  import HighlightCard from '$lib/ndk/components/highlight-card-feed/highlight-card-feed.svelte';
   import MediaGrid from '$lib/components/MediaGrid.svelte';
   import TikTokVideoFeed from '$lib/components/TikTokVideoFeed.svelte';
   import LoadMoreTrigger from '$lib/components/LoadMoreTrigger.svelte';
@@ -387,7 +387,7 @@
               <div class="grid grid-cols-2 gap-4 w-full">
                 {#each recentHighlights as highlight (highlight.id)}
                   <div class="min-w-0">
-                    <HighlightCard event={highlight} variant="grid" />
+                    <HighlightCard {ndk} event={highlight} />
                   </div>
                 {/each}
               </div>
@@ -475,7 +475,7 @@
       {:else}
         {#each events as event (event.id)}
           {#if event.kind === 9802}
-            <HighlightCard {event} variant="feed" />
+            <HighlightCard {ndk} {event} />
           {:else}
             <NoteCard {event} />
           {/if}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { NDKEvent } from '@nostr-dev-kit/ndk';
-  import HighlightCard from './HighlightCard.svelte';
+  import HighlightCard from '$lib/ndk/components/highlight-card-feed/highlight-card-feed.svelte';
+  import { ndk } from '$lib/ndk.svelte';
   import EmptyState from './EmptyState.svelte';
 
   interface Props {
@@ -16,7 +17,7 @@
 {:else}
   <div class="divide-y divide-neutral-800/50">
     {#each highlights as highlight (highlight.id)}
-      <HighlightCard event={highlight} />
+      <HighlightCard {ndk} event={highlight} />
     {/each}
   </div>
 {/if}

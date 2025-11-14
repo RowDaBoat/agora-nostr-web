@@ -56,18 +56,18 @@
     </div>
   {:else}
     <!-- Favorite Relays Section (only show if user has favorites) -->
-    {#if favoriteRelays?.relayUrls.length > 0}
+    {#if favoriteRelays?.relayUrls && favoriteRelays.relayUrls.length > 0}
       <div class="space-y-3">
         <h2 class="text-lg font-semibold text-foreground flex items-center gap-2">
           <svg class="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
           </svg>
           Your Favorite Relays
-          <span class="text-sm text-muted-foreground font-normal">({favoriteRelays.length})</span>
+          <span class="text-sm text-muted-foreground font-normal">({favoriteRelays?.relayUrls.length ?? 0})</span>
         </h2>
 
         <div class="grid gap-3">
-          {#each favoriteRelays as relayUrl (relayUrl)}
+          {#each favoriteRelays?.relayUrls ?? [] as relayUrl (relayUrl)}
             <RelayCard
               {relayUrl}
               isFavorite={true}

@@ -10,7 +10,7 @@
   import RelaySelector from '../RelaySelector.svelte';
   import LoginButton from '../LoginButton.svelte';
   import UserMenu from '../UserMenu.svelte';
-  import Icon from '../Icon.svelte';
+  import Icon, { type IconName } from '../Icon.svelte';
   import Badge from '../Badge.svelte';
 
   interface Props {
@@ -37,7 +37,7 @@
     component?: any;
     componentProps?: Record<string, any>;
     href?: string;
-    icon?: string;
+    icon?: IconName;
     label?: string;
     active?: (path: string) => boolean;
     badge?: () => number | null;
@@ -132,7 +132,7 @@
 
   // Primary action button configuration based on route
   interface PrimaryActionConfig {
-    icon: string;
+    icon: IconName;
     label: string;
   }
 

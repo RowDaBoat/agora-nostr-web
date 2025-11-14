@@ -23,6 +23,7 @@
   let profile = $state<NDKUserProfile | null>(null);
 
   $effect(() => {
+    if (!identifier) return;
     ndk.fetchUser(identifier).then(u => {
       user = u;
       if (u?.pubkey) {
@@ -453,7 +454,6 @@
   <Dialog.Root bind:open={isEditProfileModalOpen}>
     <Dialog.Content
       class="max-w-2xl max-h-[90vh] overflow-y-auto"
-      onClose={() => isEditProfileModalOpen = false}
     >
       <Dialog.Header>
         <Dialog.Title>Edit Profile</Dialog.Title>

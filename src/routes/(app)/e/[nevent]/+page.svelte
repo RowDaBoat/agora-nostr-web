@@ -5,7 +5,7 @@
   import type { ThreadView } from '$lib/ndk/builders/event/thread/types';
   import { NDKEvent } from '@nostr-dev-kit/ndk';
   import NoteCard from '$lib/components/NoteCard.svelte';
-  import HighlightCard from '$lib/components/HighlightCard.svelte';
+  import HighlightCard from '$lib/ndk/components/highlight-card-feed/highlight-card-feed.svelte';
   import MissingEventCard from '$lib/components/MissingEventCard.svelte';
 
   // Decode the nevent parameter
@@ -94,7 +94,7 @@
             }}
           />
         {:else if node.event.kind === 9802}
-          <HighlightCard event={node.event} variant="default" />
+          <HighlightCard {ndk} event={node.event} />
         {:else}
           <NoteCard
             event={node.event}
@@ -107,7 +107,7 @@
 
       <!-- Main Note - Highlighted with larger text -->
       {#if mainEvent.kind === 9802}
-        <HighlightCard event={mainEvent} variant="default" />
+        <HighlightCard {ndk} event={mainEvent} />
       {:else}
         <NoteCard
           event={mainEvent}
@@ -126,7 +126,7 @@
           </div>
           {#each thread.replies as reply}
             {#if reply.kind === 9802}
-              <HighlightCard event={reply} variant="default" />
+              <HighlightCard {ndk} event={reply} />
             {:else}
               <NoteCard
                 event={reply}

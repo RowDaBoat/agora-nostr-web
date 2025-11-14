@@ -65,12 +65,12 @@
     // Apply filter type
     if (activeFilter !== 'all') {
       const userPubkey = ndk.$currentUser?.pubkey;
-      const userFollows = ndk.$currentUser?.follows;
+      const userFollows = ndk.$sessions?.follows;
 
       if (activeFilter === 'mine' && userPubkey) {
         filtered = filtered.filter(pack => pack.pubkey === userPubkey);
       } else if (activeFilter === 'follows' && userFollows) {
-        const followPubkeys = Array.from(userFollows).map(user => user.pubkey);
+        const followPubkeys = Array.from(userFollows).map(user => typeof user === 'string' ? user : user.pubkey);
         filtered = filtered.filter(pack => followPubkeys.includes(pack.pubkey));
       } else if (activeFilter === 'include-me' && userPubkey) {
         filtered = filtered.filter(pack => {

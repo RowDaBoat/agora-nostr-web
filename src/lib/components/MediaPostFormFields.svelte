@@ -16,6 +16,7 @@
     isNsfw?: boolean;
     disabled?: boolean;
     relayButton?: Snippet;
+    addImagesButton?: Snippet;
   }
 
   let {
@@ -25,7 +26,8 @@
     mentions = $bindable([]),
     isNsfw = $bindable(false),
     disabled = false,
-    relayButton
+    relayButton,
+    addImagesButton
   }: Props = $props();
 
   let isHashtagSelectorOpen = $state(false);
@@ -75,8 +77,10 @@
 
   <!-- Action buttons -->
   <div class="flex items-center gap-1 border-t border-border pt-3">
-    <!-- Add more images (passed via slot) -->
-    <slot name="addImagesButton" />
+    <!-- Add more images (passed via snippet) -->
+    {#if addImagesButton}
+      {@render addImagesButton()}
+    {/if}
 
     <!-- Hashtags -->
     <Button
