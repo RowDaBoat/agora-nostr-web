@@ -7,9 +7,8 @@ import {
 } from './shamir';
 import { BackupError, BackupErrorCode } from '../errors';
 
-// Note: Some tests are skipped because shamirs-secret-sharing-ts requires Node's Buffer
-// which is not available in happy-dom test environment. These tests should run in
-// integration testing with Node environment or E2E tests.
+// These tests run in Node environment (configured in vite.config.ts) to support
+// shamirs-secret-sharing-ts which requires Node's Buffer.
 
 describe('SHARD_CONSTANTS', () => {
   it('should have minimum threshold of 2', () => {
@@ -33,10 +32,8 @@ describe('createEncryptedShards', () => {
   const validSecret = 'deadbeef'.repeat(8); // 64 hex chars
   const validPassphrase = 'SecurePass123!';
 
-  // These tests require Node's Buffer which isn't available in happy-dom
-  // They are marked as skipped and should be run as integration tests
   describe('valid configurations', () => {
-    it.skip('should create 3 shards with threshold 2', async () => {
+    it('should create 3 shards with threshold 2', async () => {
       const config: ShardConfig = { threshold: 2, totalShards: 3 };
       const shards = await createEncryptedShards(validSecret, validPassphrase, config);
 
@@ -45,14 +42,14 @@ describe('createEncryptedShards', () => {
       expect(shards[0].totalShards).toBe(3);
     });
 
-    it.skip('should create 5 shards with threshold 3', async () => {
+    it('should create 5 shards with threshold 3', async () => {
       const config: ShardConfig = { threshold: 3, totalShards: 5 };
       const shards = await createEncryptedShards(validSecret, validPassphrase, config);
 
       expect(shards).toHaveLength(5);
     });
 
-    it.skip('should create shards with sequential indices starting at 1', async () => {
+    it('should create shards with sequential indices starting at 1', async () => {
       const config: ShardConfig = { threshold: 2, totalShards: 3 };
       const shards = await createEncryptedShards(validSecret, validPassphrase, config);
 
@@ -61,7 +58,7 @@ describe('createEncryptedShards', () => {
       expect(shards[2].index).toBe(3);
     });
 
-    it.skip('should create encrypted data for each shard', async () => {
+    it('should create encrypted data for each shard', async () => {
       const config: ShardConfig = { threshold: 2, totalShards: 3 };
       const shards = await createEncryptedShards(validSecret, validPassphrase, config);
 
@@ -73,7 +70,7 @@ describe('createEncryptedShards', () => {
       }
     });
 
-    it.skip('should create unique encrypted data for each shard', async () => {
+    it('should create unique encrypted data for each shard', async () => {
       const config: ShardConfig = { threshold: 2, totalShards: 3 };
       const shards = await createEncryptedShards(validSecret, validPassphrase, config);
 
@@ -129,9 +126,8 @@ describe('reconstructSecret', () => {
   const validSecret = 'deadbeef'.repeat(8); // 64 hex chars
   const validPassphrase = 'SecurePass123!';
 
-  // These tests require Node's Buffer which isn't available in happy-dom
   describe('successful reconstruction', () => {
-    it.skip('should reconstruct secret with exactly threshold shards', async () => {
+    it('should reconstruct secret with exactly threshold shards', async () => {
       const config: ShardConfig = { threshold: 2, totalShards: 3 };
       const shards = await createEncryptedShards(validSecret, validPassphrase, config);
 
@@ -141,7 +137,7 @@ describe('reconstructSecret', () => {
       expect(reconstructed).toBe(validSecret);
     });
 
-    it.skip('should reconstruct secret with more than threshold shards', async () => {
+    it('should reconstruct secret with more than threshold shards', async () => {
       const config: ShardConfig = { threshold: 2, totalShards: 3 };
       const shards = await createEncryptedShards(validSecret, validPassphrase, config);
 
@@ -151,7 +147,7 @@ describe('reconstructSecret', () => {
       expect(reconstructed).toBe(validSecret);
     });
 
-    it.skip('should reconstruct with any combination of threshold shards', async () => {
+    it('should reconstruct with any combination of threshold shards', async () => {
       const config: ShardConfig = { threshold: 2, totalShards: 4 };
       const shards = await createEncryptedShards(validSecret, validPassphrase, config);
 
@@ -171,7 +167,7 @@ describe('reconstructSecret', () => {
       }
     });
 
-    it.skip('should reconstruct with threshold 3 of 5', async () => {
+    it('should reconstruct with threshold 3 of 5', async () => {
       const config: ShardConfig = { threshold: 3, totalShards: 5 };
       const shards = await createEncryptedShards(validSecret, validPassphrase, config);
 
@@ -182,7 +178,7 @@ describe('reconstructSecret', () => {
   });
 
   describe('failed reconstruction', () => {
-    it.skip('should throw with insufficient shards', async () => {
+    it('should throw with insufficient shards', async () => {
       const config: ShardConfig = { threshold: 3, totalShards: 5 };
       const shards = await createEncryptedShards(validSecret, validPassphrase, config);
 
@@ -196,7 +192,7 @@ describe('reconstructSecret', () => {
       await expect(reconstructSecret([], validPassphrase)).rejects.toThrow(BackupError);
     });
 
-    it.skip('should throw with wrong passphrase', async () => {
+    it('should throw with wrong passphrase', async () => {
       const config: ShardConfig = { threshold: 2, totalShards: 3 };
       const shards = await createEncryptedShards(validSecret, validPassphrase, config);
 
@@ -215,7 +211,7 @@ describe('reconstructSecret', () => {
       }
     });
 
-    it.skip('should throw INSUFFICIENT_SHARDS when below threshold', async () => {
+    it('should throw INSUFFICIENT_SHARDS when below threshold', async () => {
       const config: ShardConfig = { threshold: 3, totalShards: 5 };
       const shards = await createEncryptedShards(validSecret, validPassphrase, config);
 
@@ -230,9 +226,8 @@ describe('reconstructSecret', () => {
   });
 });
 
-// These integration tests require Node's Buffer - run separately with node environment
 describe('round-trip encryption', () => {
-  it.skip('should handle a full backup and recovery flow', async () => {
+  it('should handle a full backup and recovery flow', async () => {
     // Simulate a private key (32 bytes = 64 hex chars)
     const privateKey = 'a'.repeat(64);
     const passphrase = 'MySecureBackupPass123!';
@@ -250,7 +245,7 @@ describe('round-trip encryption', () => {
     expect(recoveredKey).toBe(privateKey);
   });
 
-  it.skip('should handle maximum shard configuration', async () => {
+  it('should handle maximum shard configuration', async () => {
     const secret = 'b'.repeat(64);
     const passphrase = 'MaxConfig123!';
     const config: ShardConfig = {
@@ -268,5 +263,40 @@ describe('round-trip encryption', () => {
     );
     expect(recovered).toBe(secret);
   });
-});
 
+  it('should handle minimum shard configuration', async () => {
+    const secret = 'c'.repeat(64);
+    const passphrase = 'MinConfig123!';
+    const config: ShardConfig = {
+      threshold: SHARD_CONSTANTS.MIN_THRESHOLD,
+      totalShards: SHARD_CONSTANTS.MIN_TOTAL_SHARDS,
+    };
+
+    const shards = await createEncryptedShards(secret, passphrase, config);
+    expect(shards).toHaveLength(3);
+
+    const recovered = await reconstructSecret(
+      shards.slice(0, SHARD_CONSTANTS.MIN_THRESHOLD),
+      passphrase
+    );
+    expect(recovered).toBe(secret);
+  });
+
+  it('should handle different secret lengths', async () => {
+    const passphrase = 'TestPass123!';
+    const config: ShardConfig = { threshold: 2, totalShards: 3 };
+
+    // Test various secret lengths
+    const secrets = [
+      'ab'.repeat(16), // 32 hex chars (16 bytes)
+      'cd'.repeat(32), // 64 hex chars (32 bytes) - typical private key
+      'ef'.repeat(64), // 128 hex chars (64 bytes)
+    ];
+
+    for (const secret of secrets) {
+      const shards = await createEncryptedShards(secret, passphrase, config);
+      const recovered = await reconstructSecret(shards.slice(0, 2), passphrase);
+      expect(recovered).toBe(secret);
+    }
+  });
+});
