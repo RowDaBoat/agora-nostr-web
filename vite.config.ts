@@ -5,6 +5,12 @@ export default defineConfig({
   plugins: [
     sveltekit()
   ],
+  test: {
+    include: ['src/**/*.{test,spec}.{js,ts}'],
+    environment: 'happy-dom',
+    globals: true,
+    setupFiles: ['./vitest.setup.ts'],
+  },
   define: {
     'global': 'globalThis'
   },
