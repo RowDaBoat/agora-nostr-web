@@ -1,0 +1,25 @@
+{
+  "name": "Agora Web + Relay",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+  "features": {
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.24"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+  "forwardPorts": [5001, 3334],
+  "portsAttributes": {
+    "5001": {
+      "label": "Agora Web",
+      "onAutoForward": "notify"
+    },
+    "3334": {
+      "label": "Agora Relay",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "remoteUser": "vscode"
+}
