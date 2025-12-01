@@ -12,20 +12,11 @@ class MessagesStore {
   private isStarted = false;
 
   constructor() {
-    // Auto-start when user becomes available
-    $effect(() => {
-      const user = ndk.$currentUser;
-      const hasSigner = !!ndk.signer;
-
-      if (user && hasSigner && !this.isStarted) {
-        this.start();
-      } else if (!user && this.isStarted) {
-        this.stop();
-      }
-    });
+    // Components should call start() when ready
+    // Auto-start logic removed to avoid effect_orphan error
   }
 
-  private async start() {
+  async start() {
     if (this.isStarted || !ndk.$currentUser || !ndk.signer) return;
 
     this.isStarted = true;
