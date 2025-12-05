@@ -89,10 +89,10 @@
     bind:this={buttonElement}
     onclick={handleClick}
     class="{iconOnly
-      ? 'flex items-center justify-center w-8 h-8 rounded-full hover:bg-muted/50 transition-colors'
+      ? 'flex items-center cursor-pointer justify-center w-8 h-8 rounded-full hover:bg-muted/50 transition-colors'
       : collapsed
-        ? 'flex items-center justify-center p-3 rounded-lg transition-colors w-full ' + (active ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted/50')
-        : 'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors w-full ' + (active ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted/50')
+        ? 'flex items-center cursor-pointer justify-center p-3 rounded-lg transition-colors w-full ' + (active ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted/50')
+        : 'flex items-center cursor-pointer gap-3 px-4 py-3 rounded-lg transition-colors w-full ' + (active ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted/50')
     }"
     aria-label={settings.selectedRelay ? 'Change filter' : 'Change following filter'}
     title={collapsed ? displayName : undefined}

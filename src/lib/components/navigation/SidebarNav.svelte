@@ -275,7 +275,7 @@
       {:else if item.type === 'button' && item.onClick}
         <button
           onclick={item.onClick}
-          class="w-full flex items-center {collapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'} rounded-lg transition-colors text-foreground hover:bg-muted"
+          class="w-full flex items-center {collapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'} rounded-lg transition-colors text-foreground hover:bg-muted cursor-pointer"
           title={collapsed && item.label ? item.label : undefined}
         >
           {#if item.icon}
@@ -292,7 +292,7 @@
     {#if ndk.$currentUser && onPrimaryAction}
       <button
         onclick={onPrimaryAction}
-        class="w-full flex items-center justify-center {collapsed ? 'p-3' : 'gap-2 px-6 py-3'} bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full transition-colors mt-4"
+        class="w-full flex items-center justify-center {collapsed ? 'p-3' : 'gap-2 px-6 py-3'} bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full transition-colors mt-4 cursor-pointer"
         title={collapsed ? primaryActionConfig.label : undefined}
       >
         <Icon name={primaryActionConfig.icon} size="md" />
