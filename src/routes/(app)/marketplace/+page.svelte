@@ -68,7 +68,8 @@
     listings.forEach(listing => {
       const categories = listing.tags.filter(t => t[0] === 't').map(t => t[1]);
       if (categories.length > 0) {
-        categories.forEach(category => {
+        const uniqueCategories = [...new Set(categories.map(c => c.toLowerCase()))];
+        uniqueCategories.forEach(category => {
           const key = category.toLowerCase();
           if (!grouped[key]) grouped[key] = [];
           grouped[key].push(listing);
